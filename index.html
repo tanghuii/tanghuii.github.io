@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hui Tang | Academic Homepage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@400;500;600&family=Ma+Shan+Zheng&family=ZCOOL+QingKe+HuangYou&family=Pinyon+Script&family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1a1a2e;
+      --paper: #faf8f5;
+      --accent: #6b4c3b;
+      --accent-light: #a67c52;
+      --subtle: #d4cdc4;
+      --muted: #8a8279;
+      --highlight: #f0ebe4;
+      --card-bg: #ffffff;
+      --shadow: rgba(26, 26, 46, 0.06);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
+    body.zh { font-family: 'Noto Serif SC', 'DM Sans', serif; }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      background: rgba(250, 248, 245, 0.85);
+      border-bottom: 1px solid var(--subtle);
+      transition: box-shadow 0.3s;
+    }
+    nav.scrolled { box-shadow: 0 2px 20px var(--shadow); }
+
+    .nav-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .nav-name {
+      font-family: 'Crimson Pro', serif;
+      font-weight: 600;
+      font-size: 1.15rem;
+      letter-spacing: 0.02em;
+      color: var(--accent);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .nav-links { display: flex; gap: 2rem; }
+    .hamburger { display: none; }
+
+    .nav-links a {
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      transition: color 0.25s;
+      position: relative;
+    }
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 1.5px;
+      background: var(--accent);
+      transition: width 0.3s ease;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-links a:hover::after { width: 100%; }
+
+    /* ── Language Toggle ── */
+    .lang-toggle {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--subtle);
+      border-radius: 100px;
+      overflow: hidden;
+      background: var(--card-bg);
+      flex-shrink: 0;
+    }
+    .lang-btn {
+      padding: 0.3rem 0.7rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.25s;
+      letter-spacing: 0.03em;
+    }
+    .lang-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .hero {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 120px 2rem 80px;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 3.5rem;
+      align-items: start;
+    }
+
+    .avatar-wrapper {
+      position: relative;
+      animation: fadeSlideUp 0.8s ease both;
+    }
+
+    .avatar {
+      width: 220px;
+      height: 270px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: var(--subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      color: var(--muted);
+      border: 1px solid var(--subtle);
+    }
+
+    .avatar-decorator {
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      width: 60px;
+      height: 60px;
+      border-left: 2px solid var(--accent-light);
+      border-top: 2px solid var(--accent-light);
+      border-radius: 4px 0 0 0;
+      opacity: 0.5;
+    }
+
+    .hero-text {
+      padding-top: 0.5rem;
+      animation: fadeSlideUp 0.8s ease 0.15s both;
+    }
+
+    .hero-text h1 {
+      font-family: 'Crimson Pro', serif;
+      font-size: 2.6rem;
+      font-weight: 300;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    .affiliation {
+      font-size: 0.95rem;
+      color: var(--accent);
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+
+    .bio {
+      font-size: 0.98rem;
+      color: #444;
+      line-height: 1.85;
+      max-width: 560px;
+    }
+
+    .contact-row {
+      margin-top: 1.8rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .contact-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1.1rem;
+      border: 1px solid var(--subtle);
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--ink);
+      text-decoration: none;
+      background: var(--card-bg);
+      transition: all 0.25s;
+      letter-spacing: 0.02em;
+    }
+    .contact-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+    .contact-btn svg { width: 15px; height: 15px; opacity: 0.7; }
+
+    section {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 60px 2rem 40px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .section-header h2 {
+      font-family: 'Crimson Pro', serif;
+      font-size: 1.6rem;
+      font-weight: 400;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    body.zh .section-header h2 { font-family: 'Noto Serif SC', serif; }
+
+    .section-header::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--subtle), transparent);
+    }
+
+    .research-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .tag {
+      padding: 0.55rem 1.3rem;
+      background: var(--highlight);
+      border-radius: 100px;
+      font-size: 0.88rem;
+      color: var(--accent);
+      font-weight: 500;
+      border: 1px solid transparent;
+      transition: all 0.25s;
+    }
+    .tag:hover {
+      border-color: var(--accent-light);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 8px;
+      bottom: 8px;
+      width: 1.5px;
+      background: linear-gradient(to bottom, var(--accent-light), var(--subtle));
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-bottom: 2rem;
+    }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -25px;
+      top: 7px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--paper);
+      border: 2px solid var(--accent-light);
+      z-index: 1;
+    }
+    .timeline-item:first-child::before {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .timeline-period {
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.2rem;
+    }
+    .timeline-degree {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 0.15rem;
+    }
+    .timeline-school {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+    .timeline-detail {
+      font-size: 0.83rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .pub-year {
+      font-family: 'Crimson Pro', serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px dashed var(--subtle);
+    }
+    .pub-year:first-child { margin-top: 0; }
+
+    .pub-item {
+      padding: 1.3rem 1.6rem;
+      margin-bottom: 1rem;
+      background: var(--card-bg);
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: all 0.3s;
+    }
+    .pub-item:hover {
+      border-color: var(--subtle);
+      box-shadow: 0 6px 24px var(--shadow);
+      transform: translateY(-2px);
+    }
+
+    .pub-item .pub-title {
+      font-weight: 600;
+      font-size: 0.98rem;
+      color: var(--ink);
+      margin-bottom: 0.35rem;
+      line-height: 1.5;
+    }
+    .pub-item .pub-authors {
+      font-size: 0.87rem;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+    .pub-item .pub-authors strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .pub-item .pub-venue {
+      font-size: 0.85rem;
+      font-style: italic;
+      color: var(--accent-light);
+    }
+
+    .pub-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .badge-first { background: #fef3c7; color: #92400e; }
+    .badge-review { background: #e0e7ff; color: #3730a3; }
+
+    .pub-links {
+      margin-top: 0.7rem;
+      display: flex;
+      gap: 0.6rem;
+    }
+    .pub-link {
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 0.3rem 0.75rem;
+      border: 1px solid var(--subtle);
+      border-radius: 4px;
+      text-decoration: none;
+      color: var(--muted);
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .pub-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .photo-carousel {
+      width: 100%;
+      height: 220px;
+      overflow: hidden;
+      position: relative;
+    }
+    .photo-carousel .slides {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    .photo-carousel .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+    .photo-carousel .slide.active { opacity: 1; }
+    .photo-carousel .slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 40%;
+      display: block;
+      filter: brightness(0.85);
+    }
+    .photo-carousel .photo-caption {
+      position: absolute;
+      bottom: 12px;
+      right: 20px;
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-style: italic;
+      letter-spacing: 0.03em;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      transition: opacity 0.5s;
+    }
+    .carousel-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.25);
+      backdrop-filter: blur(4px);
+      color: #fff;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s;
+      opacity: 0;
+      z-index: 2;
+    }
+    .photo-carousel:hover .carousel-nav { opacity: 1; }
+    .carousel-nav:hover { background: rgba(255,255,255,0.45); }
+    .carousel-nav.prev { left: 12px; }
+    .carousel-nav.next { right: 12px; }
+    .carousel-dots {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 2;
+    }
+    .carousel-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.4);
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.25s;
+    }
+    .carousel-dot.active {
+      background: rgba(255,255,255,0.9);
+      transform: scale(1.3);
+    }
+
+    @media (max-width: 720px) {
+      .photo-carousel { height: 150px; }
+      .carousel-nav { opacity: 1; width: 30px; height: 30px; font-size: 0.9rem; }
+    }
+
+    .awards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .award-item {
+      display: flex;
+      align-items: baseline;
+      gap: 1.5rem;
+      padding: 0.75rem 1.2rem;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .award-item:hover { background: var(--highlight); }
+    .award-year {
+      font-family: 'Crimson Pro', serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--accent);
+      min-width: 80px;
+      flex-shrink: 0;
+    }
+    .award-text {
+      font-size: 0.93rem;
+      color: var(--ink);
+    }
+    .award-note {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.1rem 0.5rem;
+      border-radius: 4px;
+      background: #fef3c7;
+      color: #92400e;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+    .highlight-award {
+      background: linear-gradient(90deg, rgba(166,124,82,0.06) 0%, transparent 100%);
+    }
+    .highlight-award .award-text { font-weight: 600; }
+
+    .cv-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card-bg);
+      border: 1px solid var(--subtle);
+      border-radius: 10px;
+      padding: 2rem 2.5rem;
+      transition: all 0.3s;
+    }
+    .cv-card:hover {
+      box-shadow: 0 8px 32px var(--shadow);
+      transform: translateY(-2px);
+    }
+    .cv-info h3 {
+      font-family: 'Crimson Pro', serif;
+      font-size: 1.25rem;
+      font-weight: 400;
+      margin-bottom: 0.3rem;
+    }
+    .cv-info p {
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    .cv-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.6rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      transition: all 0.25s;
+    }
+    .cv-download:hover {
+      background: var(--accent-light);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(107, 76, 59, 0.25);
+    }
+    .cv-download svg { width: 16px; height: 16px; }
+
+    footer {
+      max-width: 960px;
+      margin: 40px auto 0;
+      padding: 2rem;
+      border-top: 1px solid var(--subtle);
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* ── Like Button ── */
+    .like-btn {
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .like-btn:hover {
+      border-color: #e25555 !important;
+      color: #e25555 !important;
+    }
+    .like-btn.liked {
+      background: linear-gradient(135deg, #e25555, #d94040) !important;
+      color: #fff !important;
+      border-color: transparent !important;
+    }
+    .like-btn .heart {
+      font-size: 1rem;
+      transition: transform 0.3s;
+    }
+    .like-btn:hover .heart { transform: scale(1.2); }
+    .like-btn.liked .heart { animation: heartPop 0.4s ease; }
+    @keyframes heartPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.4); }
+      100% { transform: scale(1); }
+    }
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: #fff;
+      padding: 0.8rem 1.6rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      opacity: 0;
+      transition: all 0.4s ease;
+      z-index: 200;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 720px) {
+      .hamburger {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 5px;
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        z-index: 60;
+        background: none;
+        border: none;
+        padding: 0;
+      }
+      .hamburger span {
+        display: block;
+        width: 100%;
+        height: 2px;
+        background: var(--accent);
+        border-radius: 2px;
+        transition: all 0.3s ease;
+      }
+      .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+      .hamburger.active span:nth-child(2) { opacity: 0; }
+      .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        gap: 0;
+        background: rgba(250, 248, 245, 0.97);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--subtle);
+        box-shadow: 0 8px 24px var(--shadow);
+        padding: 0.5rem 0;
+      }
+      .nav-links.open { display: flex; }
+      .nav-links a {
+        padding: 1rem 2rem;
+        font-size: 0.9rem;
+        border-bottom: 1px solid var(--highlight);
+        text-transform: none;
+        letter-spacing: 0.01em;
+      }
+      .nav-links a:last-child { border-bottom: none; }
+      .nav-links a::after { display: none; }
+      .nav-links a:hover { background: var(--highlight); }
+
+      .hero {
+        grid-template-columns: 1fr;
+        padding: 100px 1.5rem 50px;
+        gap: 2rem;
+        text-align: center;
+      }
+      .avatar-wrapper { margin: 0 auto; }
+      .avatar { width: 160px; height: 200px; font-size: 3.5rem; }
+      .hero-text h1 { font-size: 2rem; }
+      .affiliation { justify-content: center; }
+      .bio { margin: 0 auto; }
+      .contact-row { justify-content: center; }
+      .cv-card { flex-direction: column; gap: 1.5rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <span class="nav-name" style="font-family: 'Pinyon Script', cursive; font-size: 1.5rem;">Hui Tang</span>
+    <div class="nav-right">
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="nav-links" id="nav-links">
+        <a href="#about" data-en="About" data-zh="关于">About</a>
+        <a href="#research" data-en="Research" data-zh="研究方向">Research</a>
+        <a href="#education" data-en="Education" data-zh="教育背景">Education</a>
+        <a href="#publications" data-en="Publications" data-zh="学术论文">Publications</a>
+        <a href="#awards" data-en="Awards" data-zh="获奖荣誉">Awards</a>
+        <a href="#cv" data-en="CV" data-zh="简历">CV</a>
+      </div>
+      <div class="lang-toggle" id="lang-toggle">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="zh">中</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero / About -->
+<section class="hero" id="about">
+  <div class="avatar-wrapper">
+    <div class="avatar-decorator"></div>
+    <img class="avatar" src="photo.jpg" alt="Hui Tang">
+  </div>
+  <div class="hero-text">
+    <h1>Hui Tang <span style="font-family: 'Ma Shan Zheng', cursive; font-weight: 400; font-size: 2.2rem; color: var(--accent); margin-left: 0.4rem;">唐辉</span></h1>
+    <div class="affiliation" data-en="Ph.D. Student in Ecological Economics &middot; University of Groningen" data-zh="生态经济学博士研究生 · 格罗宁根大学">Ph.D. Student in Ecological Economics &middot; University of Groningen</div>
+    <p class="bio" data-en="Hui Tang is a Ph.D. student at the Energy and Sustainability Research Institute Groningen (ESRIG), University of Groningen, the Netherlands. His research focuses on ecological planning, biodiversity conservation and the impacts of global trade on ecosystems. He received his M.S. in Geography from Peking University (2025) and his B.M. in Land Resource Management from China Agricultural University (2022)." data-zh="唐辉，广西桂林人，格罗宁根大学能源与可持续发展研究所（ESRIG）博士研究生。研究方向聚焦于生态规划、生物多样性保护以及全球贸易对生态系统的影响。2025年获北京大学地理学硕士学位，2022年获中国农业大学土地资源管理学士学位。">
+      Hui Tang is a Ph.D. student at the Energy and Sustainability Research Institute Groningen (ESRIG), University of Groningen, the Netherlands. His research focuses on ecological planning, biodiversity conservation and the impacts of global trade on ecosystems. He received his M.S. in Geography from Peking University (2025) and his B.M. in Land Resource Management from China Agricultural University (2022).
+    </p>
+    <div class="contact-row">
+      <a class="contact-btn" href="#" id="email-btn" onclick="this.href='mai'+'lto:'+'h.tan'+'g@'+'rug.nl'; return true;">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        Email
+      </a>
+      <a class="contact-btn" href="https://scholar.google.com/citations?hl=zh-CN&user=-GnehKIAAAAJ&view_op=list_works" target="_blank">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
+        Google Scholar
+      </a>
+      <a class="contact-btn" href="https://www.researchgate.net/profile/Hui-Tang-35" target="_blank">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M19.586 0c-1.373 0-2.488 1.116-2.488 2.488 0 1.373 1.116 2.488 2.488 2.488 1.373 0 2.488-1.116 2.488-2.488C22.074 1.116 20.959 0 19.586 0zM3.488 0C2.116 0 1 1.116 1 2.488S2.116 4.977 3.488 4.977c1.373 0 2.488-1.116 2.488-2.488S4.861 0 3.488 0zM1 7.209v16.791h4.977V7.209H1zm15.163 0c-2.252 0-3.291 1.207-3.86 2.063V7.209H7.372v16.791h4.931v-9.355c0-.502.04-1.004.186-1.363.407-1.004 1.207-2.044 2.665-2.044 1.881 0 2.665 1.542 2.665 3.768v8.994h4.931v-9.637c0-5.159-2.756-7.554-6.387-7.554z"/></svg>
+        ResearchGate
+      </a>
+      <button class="contact-btn like-btn" id="likeBtn" onclick="handleLike()">
+        <span class="heart">&#128077;</span>
+        <span id="likeText" data-en="Like" data-zh="点赞">Like</span>
+        <span id="likeCount">0</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- Research -->
+<section id="research" class="fade-in">
+  <div class="section-header">
+    <h2 data-en="Research Interests" data-zh="研究方向">Research Interests</h2>
+  </div>
+  <div class="research-tags">
+    <span class="tag" data-en="Biodiversity Conservation" data-zh="生物多样性保护">Biodiversity Conservation</span>
+    <span class="tag" data-en="Environmental Input-Output" data-zh="环境投入产出">Environmental Input-Output</span>
+    <span class="tag" data-en="Coupling Human System and Ecosystem" data-zh="人类系统与生态系统耦合">Coupling Human System and Ecosystem</span>
+    <span class="tag" data-en="Ecological Security Pattern" data-zh="生态安全格局">Ecological Security Pattern</span>
+    <span class="tag" data-en="Ecological Restoration" data-zh="生态修复">Ecological Restoration</span>
+    <span class="tag" data-en="Ecosystem Services" data-zh="生态系统服务">Ecosystem Services</span>
+  </div>
+</section>
+
+<!-- Education -->
+<section id="education" class="fade-in">
+  <div class="section-header">
+    <h2 data-en="Education" data-zh="教育背景">Education</h2>
+  </div>
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-period">2025.10 &ndash; Present</div>
+      <div class="timeline-degree" data-en="Ph.D. Student in Ecological Economics" data-zh="博士研究生">Ph.D. Student in Ecological Economics</div>
+      <div class="timeline-school" data-en="University of Groningen, the Netherlands" data-zh="生态经济学 · 格罗宁根大学，荷兰">University of Groningen, the Netherlands</div>
+      <div class="timeline-detail" data-en="Supervised by Prof. <a href='https://www.rug.nl/staff/k.hubacek/?lang=en' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Klaus Hubacek</a> &amp; Prof. <a href='https://www.shanyuli.com/' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Yuli Shan</a>" data-zh="导师：<a href='https://www.rug.nl/staff/k.hubacek/?lang=en' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Klaus Hubacek</a> 教授、<a href='https://www.shanyuli.com/' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>单钰锂</a> 教授">Supervised by Prof. <a href="https://www.rug.nl/staff/k.hubacek/?lang=en" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)">Klaus Hubacek</a> &amp; Prof. <a href="https://www.shanyuli.com/" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)">Yuli Shan</a></div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-period">2022.9 &ndash; 2025.7</div>
+      <div class="timeline-degree" data-en="M.S. in Geography (Urban and Regional Planning)" data-zh="理学硕士">M.S. in Geography (Urban and Regional Planning)</div>
+      <div class="timeline-school" data-en="Peking University, China" data-zh="地理学（城市与区域规划） · 北京大学">Peking University, China</div>
+      <div class="timeline-detail" data-en="Supervised by Prof. <a href='https://ues.pku.edu.cn/jszy/pj/pjgrjl/47d5081a72b1402693d0ef0eac835be3.htm' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Jian Peng</a>" data-zh="导师：<a href='https://ues.pku.edu.cn/jszy/pj/pjgrjl/47d5081a72b1402693d0ef0eac835be3.htm' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>彭建</a> 教授">Supervised by Prof. <a href="https://ues.pku.edu.cn/jszy/pj/pjgrjl/47d5081a72b1402693d0ef0eac835be3.htm" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)">Jian Peng</a></div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-period">2018.9 &ndash; 2022.6</div>
+      <div class="timeline-degree" data-en="B.M. in Land Resource Management" data-zh="管理学学士">B.M. in Land Resource Management</div>
+      <div class="timeline-school" data-en="China Agricultural University, China" data-zh="土地资源管理 · 中国农业大学">China Agricultural University, China</div>
+    </div>
+  </div>
+</section>
+
+<!-- Photo Carousel 1 -->
+<div class="photo-carousel" id="carousel1">
+  <div class="slides">
+    <div class="slide active">
+      <img src="divider1.png" alt="Qinghai Lake">
+      <span class="photo-caption" data-en="Qinghai Lake &nbsp;&middot;&nbsp; Photo by Hui Tang" data-zh="青海湖 &nbsp;&middot;&nbsp; 唐辉 摄">Qinghai Lake &nbsp;&middot;&nbsp; Photo by Hui Tang</span>
+    </div>
+    <div class="slide">
+      <img src="lugu-lake.jpg" alt="Lugu Lake">
+      <span class="photo-caption" data-en="Lugu Lake, Yunnan &nbsp;&middot;&nbsp; Photo by Hui Tang" data-zh="泸沽湖，云南 &nbsp;&middot;&nbsp; 唐辉 摄">Lugu Lake, Yunnan &nbsp;&middot;&nbsp; Photo by Hui Tang</span>
+    </div>
+    <div class="slide">
+      <img src="chaka-salt-lake.jpg" alt="Chaka Salt Lake">
+      <span class="photo-caption" data-en="Chaka Salt Lake, Qinghai &nbsp;&middot;&nbsp; Photo by Hui Tang" data-zh="茶卡盐湖，青海 &nbsp;&middot;&nbsp; 唐辉 摄">Chaka Salt Lake, Qinghai &nbsp;&middot;&nbsp; Photo by Hui Tang</span>
+    </div>
+    <div class="slide">
+      <img src="sailimu-lake.jpg" alt="Sailimu Lake">
+      <span class="photo-caption" data-en="Sailimu Lake, Xinjiang &nbsp;&middot;&nbsp; Photo by Hui Tang" data-zh="赛里木湖，新疆 &nbsp;&middot;&nbsp; 唐辉 摄">Sailimu Lake, Xinjiang &nbsp;&middot;&nbsp; Photo by Hui Tang</span>
+    </div>
+  </div>
+  <button class="carousel-nav prev" onclick="slideCarousel('carousel1',-1)">&#10094;</button>
+  <button class="carousel-nav next" onclick="slideCarousel('carousel1',1)">&#10095;</button>
+  <div class="carousel-dots" id="dots1"></div>
+</div>
+
+<!-- Publications -->
+<section id="publications" class="fade-in">
+  <div class="section-header">
+    <h2 data-en="Publications" data-zh="学术论文">Publications</h2>
+  </div>
+
+  <div class="pub-year">2026</div>
+
+  <div class="pub-item">
+    <div class="pub-title">Inequality reduction of conservation responsibility: An unexpected outcome of achieving the 30&times;30 biodiversity target in China <span class="pub-badge badge-first">First Author</span> <span class="pub-badge badge-review">Under Review</span></div>
+    <div class="pub-authors"><strong>Tang H.</strong>, Hu T., Lin Y., Li X., Xu D., Chen Y., Xia P., Peng J.*</div>
+    <div class="pub-venue">Landscape and Urban Planning</div>
+  </div>
+
+  <div class="pub-item">
+    <div class="pub-title">China&rsquo;s grain production increase has benefited half of global terrestrial vertebrates <span class="pub-badge badge-first">First Author</span> <span class="pub-badge badge-review">In Prep</span></div>
+    <div class="pub-authors"><strong>Tang H.</strong>, Hubacek K., Hu T., Xu D., Liu Y., Peng J.*</div>
+    <div class="pub-venue">Ready for submission</div>
+  </div>
+
+  <div class="pub-year">2025</div>
+
+  <div class="pub-item">
+    <div class="pub-title">A landscape ecological approach to spatial conservation planning &ndash; ecological security pattern</div>
+    <div class="pub-authors">Peng J.*, Xu D., <strong>Tang H.</strong>, Jiang H., Dong J., Wu J.</div>
+    <div class="pub-venue">Trends in Ecology &amp; Evolution, 40(10), 1010&ndash;1022</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://www.sciencedirect.com/science/article/abs/pii/S0169534725002150" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-item">
+    <div class="pub-title">Considering dynamic landscape ecological risk to identify ecological security patterns in urban agglomeration</div>
+    <div class="pub-authors">Li X., <strong>Tang H.</strong>, Peng J.*</div>
+    <div class="pub-venue">Progress in Physical Geography: Earth and Environment, 50(1), 37&ndash;53</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://journals.sagepub.com/doi/10.1177/03091333251391061" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-item">
+    <div class="pub-title">Optimization of ecological security pattern in a mining city: Multi-scenario comparison of ecological restoration</div>
+    <div class="pub-authors">Zhong D., Peng J., Xu D., <strong>Tang H.</strong>, Jiang H., Hu T., Yang Y., Wu J.</div>
+    <div class="pub-venue">Land Degradation &amp; Development, 37(2), 689&ndash;703</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://onlinelibrary.wiley.com/doi/10.1002/ldr.70135" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-year">2024</div>
+
+  <div class="pub-item">
+    <div class="pub-title">Trade-off between comprehensive and specific ecosystem characteristics conservation in ecological security pattern construction <span class="pub-badge badge-first">First Author</span></div>
+    <div class="pub-authors"><strong>Tang H.</strong>, Peng J.*, Jiang H., Lin Y., Xu D.</div>
+    <div class="pub-venue">Global Ecology and Conservation, 49, e02776</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://www.sciencedirect.com/science/article/pii/S2351989423004110" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-item">
+    <div class="pub-title">Ecological restoration reference of terrestrial space: Theoretical recognition, identification framework and key issues <span class="pub-badge badge-first">First Author</span></div>
+    <div class="pub-authors"><strong>Tang H.</strong>, Peng J.*, Xu D., Wu J.</div>
+    <div class="pub-venue">Journal of Natural Resources (in Chinese), 39(12), 2768&ndash;2782</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://www.jnr.ac.cn/EN/10.31497/zrzyxb.20241202" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-item">
+    <div class="pub-title">Ten key issues for ecological restoration of territorial space</div>
+    <div class="pub-authors">Peng J.*, Xu D., Xu Z., <strong>Tang H.</strong>, Jiang H., Dong J., Liu Y.</div>
+    <div class="pub-venue">National Science Review, doi:10.1093/nsr/nwae176</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://academic.oup.com/nsr/article/11/7/nwae176/7676199" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-item">
+    <div class="pub-title">Constructing ecological security patterns with differentiated management intensity based on multifunctional landscape identification and multi-criteria decision-making</div>
+    <div class="pub-authors">Jiang H., Peng J.*, Xu D., <strong>Tang H.</strong></div>
+    <div class="pub-venue">Global Ecology and Conservation, 50, e02862</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://www.sciencedirect.com/science/article/pii/S2351989424000660" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-item">
+    <div class="pub-title">Unveiling decoupled social-ecological network of great lake basin: An ecosystem services approach</div>
+    <div class="pub-authors">Peng J.*, Zhang Z., Lin Y., <strong>Tang H.</strong>, Xu Z., Zheng H.</div>
+    <div class="pub-venue">Earth&rsquo;s Future, 12(11), E2024EF004994</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://doi.org/10.1029/2024EF004994" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-item">
+    <div class="pub-title">Bridging climate refuges for climate change adaptation: A spatio-temporal connectivity network approach</div>
+    <div class="pub-authors">Xu D., Peng J.*, Liu M., Jiang H., <strong>Tang H.</strong>, Dong J., Meersmans J.</div>
+    <div class="pub-venue">Geography and Sustainability, 6(2), 100235</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://www.sciencedirect.com/science/article/pii/S2666683924000889" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-item">
+    <div class="pub-title">Constructing ecological network based on multi-objective genetic algorithm: A case study of Changsha City, China</div>
+    <div class="pub-authors">Xiao S., Peng J.*, Hu T., <strong>Tang H.</strong></div>
+    <div class="pub-venue">Landscape Ecology, 39, 212</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://link.springer.com/article/10.1007/s10980-024-02010-y" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-year">2023</div>
+
+  <div class="pub-item">
+    <div class="pub-title">Spatial analysis enables priority selection in conservation practices for landscapes that need ecological security <span class="pub-badge badge-first">First Author</span></div>
+    <div class="pub-authors"><strong>Tang H.</strong>, Peng J.*, Jiang H., Lin Y., Dong J., Liu M., Meersmans J.</div>
+    <div class="pub-venue">Journal of Environmental Management, 345, 118888</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://www.sciencedirect.com/science/article/abs/pii/S0301479723016766" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-item">
+    <div class="pub-title">Regarding reference state to identify priority areas for ecological restoration in a karst region</div>
+    <div class="pub-authors">Peng J.*, <strong>Tang H.</strong>, Su C., Jiang H., Dong J., Xu D.</div>
+    <div class="pub-venue">Journal of Environmental Management, 348, 119214</div>
+    <div class="pub-links">
+      <a class="pub-link" href="https://www.sciencedirect.com/science/article/abs/pii/S0301479723020625" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a>
+    </div>
+  </div>
+
+  <div class="pub-year" data-en="Book" data-zh="著作">Book</div>
+
+  <div class="pub-item">
+    <div class="pub-title">Construction and Optimization of Regional Ecological Security Pattern</div>
+    <div class="pub-authors">Peng J., Jiang H., Xu D., <strong>Tang H.</strong>, Liu M., Dong J.</div>
+    <div class="pub-venue">Beijing: China Science Press, 2024 (in Chinese)</div>
+  </div>
+
+</section>
+
+<!-- Photo Carousel 2 -->
+<div class="photo-carousel" id="carousel2">
+  <div class="slides">
+    <div class="slide active">
+      <img src="divider2.jpg" alt="Three-River-Source National Park">
+      <span class="photo-caption" data-en="Three-River-Source National Park &nbsp;&middot;&nbsp; Photo by Hui Tang" data-zh="三江源国家公园 &nbsp;&middot;&nbsp; 唐辉 摄">Three-River-Source National Park &nbsp;&middot;&nbsp; Photo by Hui Tang</span>
+    </div>
+    <div class="slide">
+      <img src="bayinbuluke.jpg" alt="Bayinbuluke, Xinjiang">
+      <span class="photo-caption" data-en="Bayinbuluke, Xinjiang &nbsp;&middot;&nbsp; Photo by Hui Tang" data-zh="巴音布鲁克，新疆 &nbsp;&middot;&nbsp; 唐辉 摄">Bayinbuluke, Xinjiang &nbsp;&middot;&nbsp; Photo by Hui Tang</span>
+    </div>
+    <div class="slide">
+      <img src="sanjiangyuan-antelope.jpg" alt="Three-River-Source National Park">
+      <span class="photo-caption" data-en="Three-River-Source National Park &nbsp;&middot;&nbsp; Photo by Hui Tang" data-zh="三江源国家公园 &nbsp;&middot;&nbsp; 唐辉 摄">Three-River-Source National Park &nbsp;&middot;&nbsp; Photo by Hui Tang</span>
+    </div>
+    <div class="slide">
+      <img src="xinjiang-grassland.jpg" alt="Nalati, Xinjiang">
+      <span class="photo-caption" data-en="Nalati, Xinjiang &nbsp;&middot;&nbsp; Photo by Hui Tang" data-zh="那拉提，新疆 &nbsp;&middot;&nbsp; 唐辉 摄">Nalati, Xinjiang &nbsp;&middot;&nbsp; Photo by Hui Tang</span>
+    </div>
+    <div class="slide">
+      <img src="sanjiangyuan-cranes.jpg" alt="Three-River-Source National Park">
+      <span class="photo-caption" data-en="Three-River-Source National Park &nbsp;&middot;&nbsp; Photo by Hui Tang" data-zh="三江源国家公园 &nbsp;&middot;&nbsp; 唐辉 摄">Three-River-Source National Park &nbsp;&middot;&nbsp; Photo by Hui Tang</span>
+    </div>
+  </div>
+  <button class="carousel-nav prev" onclick="slideCarousel('carousel2',-1)">&#10094;</button>
+  <button class="carousel-nav next" onclick="slideCarousel('carousel2',1)">&#10095;</button>
+  <div class="carousel-dots" id="dots2"></div>
+</div>
+
+<!-- Awards -->
+<section id="awards" class="fade-in">
+  <div class="section-header">
+    <h2 data-en="Selected Awards" data-zh="获奖荣誉">Selected Awards</h2>
+  </div>
+  <div class="awards-list">
+    <div class="award-item highlight-award">
+      <span class="award-year">2025</span>
+      <span class="award-text" data-en="Top 10 Research Advances in Chinese Geographical Sciences" data-zh="中国地理科学十大研究进展">Top 10 Research Advances in Chinese Geographical Sciences <span class="award-note">8/12</span></span>
+    </div>
+    <div class="award-item">
+      <span class="award-year">2025</span>
+      <span class="award-text" data-en="Outstanding Graduate of Beijing City" data-zh="北京市优秀毕业生">Outstanding Graduate of Beijing City</span>
+    </div>
+    <div class="award-item">
+      <span class="award-year">2025</span>
+      <span class="award-text" data-en="Outstanding Graduate of Peking University" data-zh="北京大学优秀毕业生">Outstanding Graduate of Peking University</span>
+    </div>
+    <div class="award-item highlight-award">
+      <span class="award-year">2024</span>
+      <span class="award-text" data-en="China National Scholarship for Postgraduates" data-zh="研究生国家奖学金">China National Scholarship for Postgraduates <span class="award-note">Top 1%</span></span>
+    </div>
+    <div class="award-item">
+      <span class="award-year">2024</span>
+      <span class="award-text" data-en="Merit Student of Peking University" data-zh="北京大学三好学生">Merit Student of Peking University</span>
+    </div>
+    <div class="award-item">
+      <span class="award-year">2023</span>
+      <span class="award-text" data-en="Model Merit Student of Peking University" data-zh="北京大学三好学生标兵">Model Merit Student of Peking University</span>
+    </div>
+    <div class="award-item">
+      <span class="award-year">2022</span>
+      <span class="award-text" data-en="Outstanding Graduate of Beijing City" data-zh="北京市优秀毕业生">Outstanding Graduate of Beijing City</span>
+    </div>
+    <div class="award-item highlight-award">
+      <span class="award-year">2021</span>
+      <span class="award-text" data-en="Presidential Scholarship of China Agricultural University" data-zh="中国农业大学校长奖学金">Presidential Scholarship of China Agricultural University <span class="award-note">Top 0.14%</span></span>
+    </div>
+    <div class="award-item highlight-award">
+      <span class="award-year">2020 &amp; 2021</span>
+      <span class="award-text" data-en="China National Scholarship for Undergraduates" data-zh="本科生国家奖学金">China National Scholarship for Undergraduates <span class="award-note">Top 1%</span></span>
+    </div>
+    <div class="award-item">
+      <span class="award-year">2021</span>
+      <span class="award-text" data-en="Merit Student of Beijing City" data-zh="北京市三好学生">Merit Student of Beijing City</span>
+    </div>
+  </div>
+</section>
+
+<!-- CV -->
+<section id="cv" class="fade-in">
+  <div class="section-header">
+    <h2 data-en="Curriculum Vitae" data-zh="个人简历">Curriculum Vitae</h2>
+  </div>
+  <div class="cv-card">
+    <div class="cv-info">
+      <h3 data-en="Full CV" data-zh="完整简历">Full CV</h3>
+      <p data-en="Last updated: March 2026" data-zh="最后更新：2026年3月">Last updated: March 2026</p>
+    </div>
+    <a class="cv-download" href="CV_Hui_Tang_2026.pdf" download>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <span data-en="Download PDF" data-zh="下载 PDF">Download PDF</span>
+    </a>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<!-- Footer -->
+<footer>
+  <p>&copy; 2026 Hui Tang &nbsp;&middot;&nbsp; Hosted on <a href="https://pages.github.com/" target="_blank">GitHub Pages</a></p>
+</footer>
+
+<script>
+  // Nav scroll shadow
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+  });
+
+  // Fade-in on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+  // Hamburger menu toggle
+  const hamburger = document.getElementById('hamburger');
+  const navLinks = document.getElementById('nav-links');
+
+  hamburger.addEventListener('click', () => {
+    hamburger.classList.toggle('active');
+    navLinks.classList.toggle('open');
+  });
+
+  navLinks.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      hamburger.classList.remove('active');
+      navLinks.classList.remove('open');
+    });
+  });
+
+  // ── Language Toggle ──
+  let currentLang = 'en';
+  const langToggle = document.getElementById('lang-toggle');
+
+  langToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.lang-btn');
+    if (!btn || btn.dataset.lang === currentLang) return;
+
+    currentLang = btn.dataset.lang;
+
+    // Update active button
+    langToggle.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    // Update body class for font
+    document.body.classList.toggle('zh', currentLang === 'zh');
+
+    // Update html lang attribute
+    document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+
+    // Update all translatable elements
+    document.querySelectorAll('[data-en][data-zh]').forEach(el => {
+      // Preserve child elements like .award-note and .pub-badge
+      const notes = el.querySelectorAll('.award-note, .pub-badge');
+      let preserved = '';
+      notes.forEach(n => { preserved += ' ' + n.outerHTML; });
+      el.innerHTML = el.getAttribute('data-' + currentLang) + preserved;
+    });
+
+    // Update page title
+    document.title = currentLang === 'zh' ? '唐辉 | 学术主页' : 'Hui Tang | Academic Homepage';
+  });
+
+  // ── Like Button ──
+  // Uses CountAPI (mileshilliard.com) for global count + localStorage to prevent repeat likes
+  const LIKE_API = 'https://countapi.mileshilliard.com/api/v1';
+  const LIKE_KEY = 'hui-tang-academic-homepage-likes'; // unique key for your site
+  let hasLiked = localStorage.getItem('hasLiked') === 'true';
+  const likeBtn = document.getElementById('likeBtn');
+  const likeCountEl = document.getElementById('likeCount');
+  const toast = document.getElementById('toast');
+
+  // Load current count from API on page load
+  async function loadLikeCount() {
+    try {
+      const res = await fetch(LIKE_API + '/get/' + LIKE_KEY);
+      if (res.ok) {
+        const data = await res.json();
+        likeCountEl.textContent = data.value || 0;
+      }
+    } catch (e) {
+      // Fallback: show local count if API is down
+      likeCountEl.textContent = localStorage.getItem('likeCountLocal') || '0';
+    }
+  }
+
+  if (hasLiked) {
+    likeBtn.classList.add('liked');
+  }
+  loadLikeCount();
+
+  async function handleLike() {
+    if (hasLiked) return;
+    hasLiked = true;
+    localStorage.setItem('hasLiked', 'true');
+    likeBtn.classList.add('liked');
+
+    // Call API to increment
+    try {
+      const res = await fetch(LIKE_API + '/hit/' + LIKE_KEY);
+      if (res.ok) {
+        const data = await res.json();
+        likeCountEl.textContent = data.value;
+        localStorage.setItem('likeCountLocal', data.value);
+      }
+    } catch (e) {
+      // Fallback: increment locally
+      let local = parseInt(localStorage.getItem('likeCountLocal') || '0') + 1;
+      localStorage.setItem('likeCountLocal', local);
+      likeCountEl.textContent = local;
+    }
+
+    // Show toast
+    const msg = currentLang === 'zh' ? '感谢您的支持！' : 'Thank you for your support!';
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  // ── Photo Carousels ──
+  const carousels = {};
+  const autoplayInterval = 5000;
+
+  function initCarousel(id) {
+    const el = document.getElementById(id);
+    const slides = el.querySelectorAll('.slide');
+    const dotsContainer = el.querySelector('.carousel-dots');
+    
+    // Create dots
+    slides.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+      dot.onclick = () => goToSlide(id, i);
+      dotsContainer.appendChild(dot);
+    });
+
+    carousels[id] = {
+      el, slides, current: 0,
+      dots: dotsContainer.querySelectorAll('.carousel-dot'),
+      timer: setInterval(() => slideCarousel(id, 1), autoplayInterval)
+    };
+
+    // Pause on hover
+    el.addEventListener('mouseenter', () => clearInterval(carousels[id].timer));
+    el.addEventListener('mouseleave', () => {
+      carousels[id].timer = setInterval(() => slideCarousel(id, 1), autoplayInterval);
+    });
+  }
+
+  function goToSlide(id, index) {
+    const c = carousels[id];
+    c.slides[c.current].classList.remove('active');
+    c.dots[c.current].classList.remove('active');
+    c.current = index;
+    c.slides[c.current].classList.add('active');
+    c.dots[c.current].classList.add('active');
+  }
+
+  function slideCarousel(id, dir) {
+    const c = carousels[id];
+    const next = (c.current + dir + c.slides.length) % c.slides.length;
+    goToSlide(id, next);
+  }
+
+  initCarousel('carousel1');
+  initCarousel('carousel2');
+</script>
+</body>
+</html>
