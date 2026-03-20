@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1WEB63LSGJ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-1WEB63LSGJ');
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Publications | Hui Tang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@400;500;600&family=Pinyon+Script&family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1a1a2e;
+      --paper: #faf8f5;
+      --accent: #6b4c3b;
+      --accent-light: #a67c52;
+      --subtle: #d4cdc4;
+      --muted: #8a8279;
+      --highlight: #f0ebe4;
+      --card-bg: #ffffff;
+      --shadow: rgba(26, 26, 46, 0.06);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
+    body.zh { font-family: 'Noto Serif SC', 'DM Sans', serif; }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .top-bar {
+      position: fixed; top: 0; width: 100%; z-index: 50;
+      backdrop-filter: blur(16px);
+      background: rgba(250, 248, 245, 0.88);
+      border-bottom: 1px solid var(--subtle);
+      height: 60px; display: flex; align-items: center;
+    }
+    .top-bar-inner {
+      max-width: 1100px; width: 100%; margin: 0 auto; padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      text-decoration: none; font-family: 'Pinyon Script', cursive;
+      font-size: 1.5rem; color: var(--accent); transition: opacity 0.25s;
+    }
+    .back-link:hover { opacity: 0.7; }
+    .back-arrow { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; opacity: 0.6; }
+    .lang-toggle { display: flex; border: 1px solid var(--subtle); border-radius: 100px; overflow: hidden; background: var(--card-bg); }
+    .lang-btn { padding: 0.3rem 0.7rem; font-size: 0.75rem; font-weight: 600; border: none; background: transparent; color: var(--muted); cursor: pointer; transition: all 0.25s; }
+    .lang-btn.active { background: var(--accent); color: #fff; }
+
+    .page-header {
+      max-width: 1100px; margin: 0 auto; padding: 100px 2rem 2rem;
+    }
+    .page-header h1 {
+      font-family: 'Crimson Pro', serif; font-size: 2.4rem; font-weight: 300;
+      color: var(--ink); margin-bottom: 0.3rem;
+    }
+    body.zh .page-header h1 { font-family: 'Noto Serif SC', serif; }
+    .page-header .subtitle { font-size: 0.92rem; color: var(--muted); }
+    .stats-row { display: flex; gap: 2rem; margin-top: 1.2rem; flex-wrap: wrap; }
+    .stat { display: flex; align-items: baseline; gap: 0.4rem; }
+    .stat-num { font-family: 'Crimson Pro', serif; font-size: 1.8rem; font-weight: 600; color: var(--accent); }
+    .stat-label { font-size: 0.82rem; color: var(--muted); }
+
+    .year-section { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem 0.5rem; }
+    .year-label {
+      font-family: 'Crimson Pro', serif; font-size: 1.6rem; font-weight: 600;
+      color: var(--accent); display: flex; align-items: center; gap: 1rem;
+    }
+    .year-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, var(--subtle), transparent); }
+
+    .pub-grid {
+      max-width: 1100px; margin: 0 auto; padding: 1rem 2rem;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: 1.2rem;
+    }
+
+    .pub-card {
+      display: flex; gap: 1.2rem;
+      background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,235,228,0.5) 100%);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(212,205,196,0.4);
+      border-radius: 12px; padding: 1.4rem;
+      transition: all 0.35s ease; text-decoration: none; color: inherit;
+      cursor: pointer; flex-wrap: wrap;
+      position: relative;
+      overflow: hidden;
+    }
+    .pub-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-light), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .pub-card:hover::before { opacity: 1; }
+    .pub-card:hover {
+      border-color: rgba(166,124,82,0.3);
+      box-shadow: 0 12px 36px rgba(26,26,46,0.1), 0 2px 8px rgba(107,76,59,0.06);
+      transform: translateY(-4px);
+      background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(240,235,228,0.7) 100%);
+    }
+
+    .pub-card .pub-title {
+      font-weight: 600; font-size: 0.92rem; color: var(--ink);
+      line-height: 1.45; margin-bottom: 0.4rem;
+    }
+    .pub-card .pub-title a {
+      color: var(--ink);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .pub-card .pub-title a:hover {
+      color: var(--accent);
+    }
+
+    .pub-abstract {
+      width: 100%;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.4s ease, opacity 0.3s ease;
+      opacity: 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.7;
+      border-top: 1px solid transparent;
+      padding: 0 0.2rem;
+    }
+    .pub-card.expanded .pub-abstract {
+      max-height: 2000px;
+      opacity: 1;
+      padding: 0.8rem 0.2rem 0;
+      border-top-color: rgba(212,205,196,0.5);
+      margin-top: 0.5rem;
+    }
+    /* Clamp abstract text to 5 lines with ellipsis; remove clamp when expanded */
+    .pub-abstract p {
+      display: -webkit-box;
+      -webkit-line-clamp: 5;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .pub-card.expanded .pub-abstract p {
+      display: block;
+      -webkit-line-clamp: unset;
+      overflow: visible;
+    }
+    .abstract-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.3rem;
+    }
+    .expand-hint {
+      font-size: 0.7rem;
+      color: var(--subtle);
+      margin-top: 0.4rem;
+      transition: color 0.2s;
+    }
+    .pub-card:hover .expand-hint { color: var(--accent-light); }
+
+    .journal-cover {
+      width: 90px; height: 120px; border-radius: 6px; object-fit: cover;
+      flex-shrink: 0; background: var(--highlight); border: 1px solid var(--subtle);
+    }
+
+    /* SVG placeholder covers */
+    .cover-placeholder {
+      width: 90px; height: 120px; border-radius: 6px; flex-shrink: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 0.5rem; font-size: 0.65rem; font-weight: 600;
+      line-height: 1.3; border: 1px solid var(--subtle);
+    }
+    .cover-tree { background: linear-gradient(135deg, #1a3a2a, #2d5a3f); color: #c8e6c9; }
+    .cover-ppg { background: linear-gradient(135deg, #1a237e, #3949ab); color: #c5cae9; }
+    .cover-ldd { background: linear-gradient(135deg, #4e342e, #795548); color: #d7ccc8; }
+    .cover-gec { background: linear-gradient(135deg, #1b5e20, #388e3c); color: #c8e6c9; }
+    .cover-lup { background: linear-gradient(135deg, #263238, #455a64); color: #b0bec5; }
+    .cover-gs { background: linear-gradient(135deg, #004d40, #00796b); color: #b2dfdb; }
+    .cover-le { background: linear-gradient(135deg, #33691e, #558b2f); color: #dcedc8; }
+    .cover-jem { background: linear-gradient(135deg, #0d47a1, #1976d2); color: #bbdefb; }
+    .cover-book { background: linear-gradient(135deg, #b71c1c, #d32f2f); color: #ffcdd2; }
+    .cover-inprep {
+      background: linear-gradient(135deg, var(--highlight), var(--subtle));
+      color: var(--accent); border: 2px dashed var(--subtle);
+    }
+
+    .pub-info { flex: 1; min-width: 0; }
+    .pub-card .pub-title { font-weight: 600; font-size: 0.92rem; color: var(--ink); line-height: 1.45; margin-bottom: 0.4rem; }
+    .pub-card .pub-authors { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.25rem; }
+    .pub-card .pub-authors strong { color: var(--accent); font-weight: 600; }
+    .pub-card .pub-venue { font-size: 0.8rem; font-style: italic; color: var(--accent-light); margin-bottom: 0.5rem; }
+    .pub-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+    .pub-badge { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 0.12rem 0.5rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .badge-first { background: #fef3c7; color: #92400e; }
+    .badge-review { background: #e0e7ff; color: #3730a3; }
+    .pub-link-btn {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.75rem; font-weight: 500; padding: 0.25rem 0.65rem;
+      border: 1px solid var(--subtle); border-radius: 4px; text-decoration: none;
+      color: var(--muted); transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .pub-link-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+    .cite-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--highlight);
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+    }
+    .cite-badge svg { width: 11px; height: 11px; opacity: 0.7; }
+
+    footer {
+      max-width: 1100px; margin: 3rem auto 0; padding: 2rem;
+      border-top: 1px solid var(--subtle); text-align: center;
+      font-size: 0.82rem; color: var(--muted);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .pub-card { animation: fadeUp 0.5s ease both; }
+    .pub-grid .pub-card:nth-child(1) { animation-delay: 0s; }
+    .pub-grid .pub-card:nth-child(2) { animation-delay: 0.05s; }
+    .pub-grid .pub-card:nth-child(3) { animation-delay: 0.1s; }
+    .pub-grid .pub-card:nth-child(4) { animation-delay: 0.15s; }
+    .pub-grid .pub-card:nth-child(5) { animation-delay: 0.2s; }
+    .pub-grid .pub-card:nth-child(6) { animation-delay: 0.25s; }
+    .pub-grid .pub-card:nth-child(7) { animation-delay: 0.3s; }
+
+    @media (max-width: 580px) {
+      .pub-grid { grid-template-columns: 1fr; }
+      .page-header h1 { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-inner">
+    <a href="index.html" class="back-link"><span class="back-arrow">←</span> Hui Tang</a>
+    <div class="lang-toggle" id="lang-toggle">
+      <button class="lang-btn active" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="zh">中</button>
+    </div>
+  </div>
+</div>
+
+<div class="page-header">
+  <h1 data-en="Publications" data-zh="学术论文">Publications</h1>
+  <p class="subtitle" data-en="Peer-reviewed journal articles and books" data-zh="同行评审期刊论文与著作">Peer-reviewed journal articles and books</p>
+  <div class="stats-row">
+    <div class="stat"><span class="stat-num">14</span><span class="stat-label" data-en="Publications" data-zh="篇论文">Publications</span></div>
+    <div class="stat"><span class="stat-num">4</span><span class="stat-label" data-en="First Author" data-zh="篇第一作者">First Author</span></div>
+    <div class="stat"><span class="stat-num">1</span><span class="stat-label" data-en="Book" data-zh="部著作">Book</span></div>
+  </div>
+</div>
+
+<!-- ═══ 2026 ═══ -->
+<div class="year-section"><div class="year-label">2026</div></div>
+<div class="pub-grid">
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-lup.png" alt="Landscape and Urban Planning">
+    <div class="pub-info">
+      <div class="pub-title">Inequality reduction of conservation responsibility: An unexpected outcome of achieving the 30×30 biodiversity target in China</div>
+      <div class="pub-authors"><strong>Tang H.</strong>, Hu T., Lin Y., Li X., Xu D., Chen Y., Xia P., Peng J.*</div>
+      <div class="pub-venue">Landscape and Urban Planning</div>
+      <div class="pub-badges">
+        <span class="pub-badge badge-first">First Author</span>
+        <span class="pub-badge badge-review">Under Review</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>Coming soon.</p>
+    </div>
+  </div>
+  <div class="pub-card">
+    <div class="cover-placeholder cover-inprep">📝<br><br>In<br>Preparation</div>
+    <div class="pub-info">
+      <div class="pub-title">China's grain production increase has benefited half of global terrestrial vertebrates</div>
+      <div class="pub-authors"><strong>Tang H.</strong>, Hubacek K., Hu T., Xu D., Liu Y., Peng J.*</div>
+      <div class="pub-venue">Ready for submission</div>
+      <div class="pub-badges">
+        <span class="pub-badge badge-first">First Author</span>
+        <span class="pub-badge badge-review">In Prep</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>Coming soon.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 2025 ═══ -->
+<div class="year-section"><div class="year-label">2025</div></div>
+<div class="pub-grid">
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-tee.png" alt="Trends in Ecology &amp; Evolution">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://www.sciencedirect.com/science/article/abs/pii/S0169534725002150" target="_blank" onclick="event.stopPropagation()">A landscape ecological approach to spatial conservation planning – ecological security pattern</a> </div>
+      <div class="pub-authors">Peng J.*, Xu D., <strong>Tang H.</strong>, Jiang H., Dong J., Wu J.</div>
+      <div class="pub-venue">Trends in Ecology & Evolution, 40(10), 1010–1022</div>
+      <div class="pub-badges">
+        <a class="pub-link-btn" href="https://www.sciencedirect.com/science/article/abs/pii/S0169534725002150" target="_blank" data-en="Read" data-zh="原文">Read</a>
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 7</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>Addressing practical challenges in ecological conservation and restoration planning, ecological security pattern (ESP) – spatial networks composed of ecological sources and connecting corridors – offers an actionable and nature-based framework. Rooted in landscape ecology, the ESP approach integrates ecological thresholds and connectivity to ensure ecosystem integrity and landscape sustainability. Although ESP-related research has proliferated – particularly in China – critical dimensions, such as underlying ecological mechanisms, spatiotemporal dynamics, and spillover effects, have received less attention. Consequently, the foundational scientific concepts and research priorities remain insufficiently articulated, hindering ESP’s further development and broader international acceptance. To fill this knowledge gap, we identify key research issues for ESP to tackle the main challenges in its construction, optimization, and evaluation, highlighting future directions as a landscape ecological approach to spatial conservation and restoration planning.</p>
+    </div>
+  </div>
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-ppg.png" alt="Progress in Physical Geography">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://journals.sagepub.com/doi/10.1177/03091333251391061" target="_blank" onclick="event.stopPropagation()">Considering dynamic landscape ecological risk to identify ecological security patterns in urban agglomeration</a></div>
+      <div class="pub-authors">Li X., <strong>Tang H.</strong>, Peng J.*</div>
+      <div class="pub-venue">Progress in Physical Geography, 50(1), 37–53</div>
+      <div class="pub-badges">
+        <a class="pub-link-btn" href="https://journals.sagepub.com/doi/10.1177/03091333251391061" target="_blank" data-en="Read" data-zh="原文">Read</a>
+      
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 0</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>Identifying priority areas for conservation and developing strategies to minimize the potential risks arising from urban development is crucial to achieving ecosystem sustainability. The construction and maintenance of ecological security patterns are essential for ensuring regional ecological security, especially in rapidly expanding urban agglomerations. In this study, ecological security patterns were identified for the Changsha–Zhuzhou–Xiangtan (CZT) urban agglomeration, China. Ecological sources were selected by integrating ecosystem services and landscape ecological risk and ecological corridors were identified using the minimum cumulative resistance model. Our findings indicated that areas with high landscape ecological risk accounted for 33.09% of the total area, primarily concentrated in the northern and central-western plains. Approximately 45% of the CZT urban agglomeration provided a high level of ecosystem services; however, 16.6% of these areas were exposed to high landscape ecological risk. The ecological security patterns consisted of 58 ecological sources and 137 ecological corridors, and ecological sources were mainly distributed in the northeastern and southern parts of the study area and exhibited significant fragmentation in the western CZT urban agglomeration. The framework proposed in this study, which simultaneously considers dynamic landscape ecological risk and ecosystem services importance, provides an effective approach for identifying ecological security patterns.</p>
+    </div>
+  </div>
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-ldd.png" alt="Land Degradation &amp; Development">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://onlinelibrary.wiley.com/doi/10.1002/ldr.70135" target="_blank" onclick="event.stopPropagation()">Optimization of ecological security pattern in a mining city: Multi-scenario comparison of ecological restoration</a></div>
+      <div class="pub-authors">Zhong D., Peng J., Xu D., <strong>Tang H.</strong>, Jiang H., Hu T., Yang Y., Wu J.</div>
+      <div class="pub-venue">Land Degradation & Development, 37(2), 689–703</div>
+      <div class="pub-badges">
+        <a class="pub-link-btn" href="https://onlinelibrary.wiley.com/doi/10.1002/ldr.70135" target="_blank" data-en="Read" data-zh="原文">Read</a>
+      
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 0</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>During the United Nations Decade on Ecosystem Restoration, the rapid emergence of the post-mining era has enhanced the urgency of ecological restoration in mining areas, making it a critical global priority. Ecological security pattern (ESP), a cost-effective approach for ecological restoration, has seen limited comparative studies on multi-scenario ecological restoration strategies across its optimization. To fill this gap, Datong, a typical mineral resource-intensive city in China, was selected as the study area for conducting multi-scenario ecological restoration simulations. Based on ESP construction and optimization, we adopted four scenarios: large-area, high-density, near-source, and near-corridor priority scenarios for restoring the mining areas, and compared the restoration effects by examining landscape components, ecosystem services, and landscape connectivity to identify the most cost-effective strategy. The results demonstrated that the ESP consisted of 43 ecological sources and 41 ecological corridors, with a total area of 4,663.04 km² in total, accounting for 33.09% of the study area. Notably, 44.25% of the mining areas existed within the ESP 100 m buffer zone, posing a serious threat to regional ecological security. Among these scenarios, the near-source priority scenario was the optimal restoration scenario, demonstrating superior results in decreasing ESP fragmentation (15.29%), enhancing ecosystem services (232.40%), and improving landscape connectivity (79.22%). This study presents a multi-scenario ESP optimization approach for ecological restoration in mining areas, which supports the assurance of ecological security and sustainable development in mineral resource-intensive cities.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 2024 ═══ -->
+<div class="year-section"><div class="year-label">2024</div></div>
+<div class="pub-grid">
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-gec.png" alt="Global Ecology &amp; Conservation">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://www.sciencedirect.com/science/article/pii/S2351989423004110" target="_blank" onclick="event.stopPropagation()">Trade-off between comprehensive and specific ecosystem characteristics conservation in ecological security pattern construction</a></div>
+      <div class="pub-authors"><strong>Tang H.</strong>, Peng J.*, Jiang H., Lin Y., Xu D.</div>
+      <div class="pub-venue">Global Ecology and Conservation, 49, e02776</div>
+      <div class="pub-badges">
+        <span class="pub-badge badge-first">First Author</span>
+        <a class="pub-link-btn" href="https://www.sciencedirect.com/science/article/pii/S2351989423004110" target="_blank" data-en="Read" data-zh="原文">Read</a>
+      
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 18</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>Since the Anthropocene, global natural ecosystems have suffered more severe and accelerating harm than at any other period in history. The growing conflict between urban expansion and ecological conservation highlights the importance of finding a balance. Ecological security pattern (ESP) focuses on minimizing the cost-benefit ratio of ecological conservation while maintaining a minimum level of land use demand. It is an effective spatial tool for balancing urban sprawl and ecological conservation, sustaining regional ecological security and safeguarding human well-being, and thus fostering sustainable development. However, when identifying ESP, it is still unclear whether core areas of specific or comprehensive ecosystem characteristics should be highlighted. In this study we established three ESP construction scenarios to explore the trade-off between the conservations of comprehensive and specific ecosystem characteristics. Scenario 1 and Scenario 3 respectively tended to prioritize the conservation of comprehensive and specific ecosystem characteristics respectively, while Scenario 2 represented an intermediate approach. Furthermore, conservation effectiveness of the three scenarios were assessed to choose the best solution under the objectives of ecosystem health, landscape connectivity and integrated conservation. The results showed that Scenario 3 had the largest number of ecological sources and ecological corridors, being 5.82 times and 7.48 times of that in Scenario 1, respectively. The total area of ecological sources in each scenario was 1626 km², accounting for 24% of the study area. Besides, Scenario 3 had the largest area of ecological corridors, with a total area of 705 km². Natural reserves of Helan Mountain, Sha Lake, and Baijitan were identified as ecological sources in all the three scenarios, emphasizing their conservation importance. The ESP identified in Scenario 1 exhibited better representativeness of ecosystem health, while the ESP identified in Scenario 3 demonstrated the highest level of landscape connectivity and integrated conservation. Scenario 2 was not the optimal solution under all conservation objectives. The results suggested that the scenario for the conservation of specific ecosystem characteristic had better conservation benefits. This study highlights the conservation trade-off between comprehensive and specific ecosystem characteristics, which will help to identify optimal ESP construction solution.</p>
+    </div>
+  </div>
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-jnr.png" alt="自然资源学报">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://www.jnr.ac.cn/EN/10.31497/zrzyxb.20241202" target="_blank" onclick="event.stopPropagation()">Ecological restoration reference of terrestrial space: Theoretical recognition, identification framework and key issues</a></div>
+      <div class="pub-authors"><strong>Tang H.</strong>, Peng J.*, Xu D., Wu J.</div>
+      <div class="pub-venue">Journal of Natural Resources (in Chinese), 39(12), 2768–2782</div>
+      <div class="pub-badges">
+        <span class="pub-badge badge-first">First Author</span>
+        <a class="pub-link-btn" href="https://www.jnr.ac.cn/EN/10.31497/zrzyxb.20241202" target="_blank" data-en="Read" data-zh="原文">Read</a>
+      
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 18</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>Implementing large-scale ecological restoration of territorial space is a key strategy for China to halt ecosystem degradation and promote ecological civilization. As a reference benchmark and target guide for ecological restoration, the reference of ecological restoration is a necessary basis for the smooth implementation of ecological restoration projects. However, there is little research focusing on the ecological restoration reference of terrestrial space. Aiming to know what is ecological restoration reference, what are its characteristics, and how to identify it, in this study we discussed the definition, the identification approach framework, and the directions of future research of ecological restoration reference of territorial space. This study suggested that the reference of ecological restoration of territorial space had three basic characteristics: comprehensiveness of indicators, two-dimensionality of space and time, and dynamic adaptability. The identification framework of ecological restoration reference of territorial space includes three major steps: comprehensive ecosystem assessment, reference ecosystem selection, and reference identification under integrated spatial and temporal dimensions. With the focus on the key issues of Nature-based Solutions, integrated protection and restoration of mountains, water, forests, lakes, grasses and sands, and social-ecological system sustainability, we highlighted that ecological restoration reference identification should place great emphasis on systemic thinking, take sustainability as the core orientation for the selection of reference indicators, and pay attention to the social-ecological system integrated perspective, so as to identify ecological restoration reference based on the social-ecological process and oriented to the comprehensive enhancement of social-ecological system sustainability. This study clearly defined the conceptual connotation and identification framework of ecological restoration reference in terrestrial space, and provided theoretical and methodological support for the orderly promotion of ecological restoration projects.</p>
+    </div>
+  </div>
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-nsr.png" alt="National Science Review">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://academic.oup.com/nsr/article/11/7/nwae176/7676199" target="_blank" onclick="event.stopPropagation()">Ten key issues for ecological restoration of territorial space</a></div>
+      <div class="pub-authors">Peng J.*, Xu D., Xu Z., <strong>Tang H.</strong>, Jiang H., Dong J., Liu Y.</div>
+      <div class="pub-venue">National Science Review, doi:10.1093/nsr/nwae176</div>
+      <div class="pub-badges">
+        <a class="pub-link-btn" href="https://academic.oup.com/nsr/article/11/7/nwae176/7676199" target="_blank" data-en="Read" data-zh="原文">Read</a>
+      
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 61</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>This study innovatively puts forward the three-stage restoration goals and cutting-edge key scientific issues of ecological restoration, as well as their relationships.</p>
+    </div>
+  </div>
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-gec.png" alt="Global Ecology &amp; Conservation">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://www.sciencedirect.com/science/article/pii/S2351989424000660" target="_blank" onclick="event.stopPropagation()">Constructing ecological security patterns with differentiated management intensity based on multifunctional landscape identification and multi-criteria decision-making</a></div>
+      <div class="pub-authors">Jiang H., Peng J.*, Xu D., <strong>Tang H.</strong></div>
+      <div class="pub-venue">Global Ecology and Conservation, 50, e02862</div>
+      <div class="pub-badges">
+        <a class="pub-link-btn" href="https://www.sciencedirect.com/science/article/pii/S2351989424000660" target="_blank" data-en="Read" data-zh="原文">Read</a>
+      
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 20</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>The trade-off of ecosystem services should be considered in ecological security pattern (ESP) construction, which can be reflected in landscape multifunctionality and comprehensive importance. Multi-intensity ESPs management is also required to achieve effective ecological planning. In this study, we proposed an approach of multi-intensity ESPs construction that integrated multifunctional landscape identification and multi-criteria decision-making into ecological source identification, and categorized ecological sources based on the "trend-status-risk" framework, with a case study in the city belt along the Yellow River in Ningxia. The results showed that the optimal weights of the four ecosystem services of habitat maintenance, water conservation, carbon sequestration and soil retention based on multi-criteria decision making were 0.5000, 0.2071, 0.1589 and 0.1340, respectively. The trade-off degree of the ecosystem services was 0.6612, and the overall conservation efficiency was 1.5212. Conservation priority areas based on multifunctional landscape identification and multi-criteria decision-making had an overlapping area of 2189.38 km², accounting for 84.86% of that identified through landscape multi-functionality. The comprehensive ESP of the study area included 45 ecological sources covering a total area of 6067.14 km² and 91 ecological corridors with a total area of 3331.62 km². Multi-intensity ESPs aiming at conservation, prevention, restoration and reconstruction were established with corresponding management suggestions. The approach to constructing multi-intensity ESPs proposed in this study has application potential in ecological planning of ecologically vulnerable regions, facilitating differentiated ESP management.</p>
+    </div>
+  </div>
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-earths-future.png" alt="Earth's Future">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://doi.org/10.1029/2024EF004994" target="_blank" onclick="event.stopPropagation()">Unveiling decoupled social-ecological network of great lake basin: An ecosystem services approach</a></div>
+      <div class="pub-authors">Peng J.*, Zhang Z., Lin Y., <strong>Tang H.</strong>, Xu Z., Zheng H.</div>
+      <div class="pub-venue">Earth's Future, 12(11), E2024EF004994</div>
+      <div class="pub-badges">
+        <a class="pub-link-btn" href="https://doi.org/10.1029/2024EF004994" target="_blank" data-en="Read" data-zh="原文">Read</a>
+      
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 17</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>With the backdrop of climate change and human activities, the complex interactions within the social-ecological system have brought unprecedented challenges to sustainable development. However, there is still a lack of quantitative methods for analyzing the dynamics of the social-ecological system. Here, we introduced a social-ecological network approach incorporating supply and demand of ecosystem services (ESs) as bridges and took the Dongting Lake basin in China as the research area. From 2000 to 2020, we discovered that the number of linkages among meteorological elements and ESs supply decreased from 5 to 0. Along with this, the network density (from 26 to 22) and network connectivity (from 43 to 28) showed the decoupling trends of the social-ecological networks. These results implied the decreasing impacts of meteorological elements and the importance of considering human activities impacts. Based on the average degree analysis of the networks, proportions of cultivated land and forest land were key for ESs supply (both around 0.900), while population density and artificial land proportion were important for the ESs demand (around 0.850 and 0.800, respectively). More management practices are required because these elements have significant impacts on the supply-demand alignments of multiple ESs. We further illustrated the spatial supply-demand mismatches of ESs, along with the negative effects of urbanization. This study highlighted the advantage of integrating the ecosystems services approach into the social-ecological network analysis, and provided policy insights serving for sustainable development of the typical great lake basins.</p>
+    </div>
+  </div>
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-geosus.png" alt="Geography and Sustainability">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://www.sciencedirect.com/science/article/pii/S2666683924000889" target="_blank" onclick="event.stopPropagation()">Bridging climate refuges for climate change adaptation: A spatio-temporal connectivity network approach</a></div>
+      <div class="pub-authors">Xu D., Peng J.*, Liu M., Jiang H., <strong>Tang H.</strong>, Dong J., Meersmans J.</div>
+      <div class="pub-venue">Geography and Sustainability, 6(2), 100235</div>
+      <div class="pub-badges">
+        <a class="pub-link-btn" href="https://www.sciencedirect.com/science/article/pii/S2666683924000889" target="_blank" data-en="Read" data-zh="原文">Read</a>
+      
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 12</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>Enhancing the spatio-temporal connectivity of dynamic landscapes is crucial for species to adapt to climate change. However, the spatio-temporal connectivity network approach considering climate change and species movement is often overlooked. Taking Tibetan wild ass on the Qinghai-Xizang Plateau as an example, we simulated species distribution under current (2019) and future scenarios (2100), constructed spatio-temporal connectivity networks, and assessed the spatio-temporal connectivity. The results show that under the current, SSP2–4.5 and SSP3–7.0 scenarios, suitable habitats for the Tibetan wild ass account for 21.11%, 21.34%, and 20.95% of the total area, respectively, with increased fragmentation projected by 2100. 78.35% of the habitats which are predicted to be suitable under current conditions will remain suitable in the future, which can be regarded as stable climate refuges. With the increase in future emission intensity, the percentage of auxiliary connectivity corridors increases from 27.65% to 33.57%. This indicates that more patches will function as temporary refuges and the auxiliary connectivity corridors will gradually weaken the dominance of direct connectivity corridors. Under different SSP-RCP scenarios, the internal spatio-temporal connectivity is always higher than direct connectivity and auxiliary connectivity, accounting for 42%–43%. Compared with the spatio-temporal perspective, the purely spatial perspective overestimates network connectivity by about 28% considering all current and future patches, and underestimates network connectivity by 16%–21% when only considering all current or future patches. In this study, a new approach of spatio-temporal connectivity network is proposed to bridge climate refuges, which contributes to the long-term effectiveness of conservation networks for species' adaptation to climate change.</p>
+    </div>
+  </div>
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-le.png" alt="Landscape Ecology">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://link.springer.com/article/10.1007/s10980-024-02010-y" target="_blank" onclick="event.stopPropagation()">Constructing ecological network based on multi-objective genetic algorithm: A case study of Changsha City, China</a></div>
+      <div class="pub-authors">Xiao S., Peng J.*, Hu T., <strong>Tang H.</strong></div>
+      <div class="pub-venue">Landscape Ecology, 39, 212</div>
+      <div class="pub-badges">
+        <a class="pub-link-btn" href="https://link.springer.com/article/10.1007/s10980-024-02010-y" target="_blank" data-en="Read" data-zh="原文">Read</a>
+      
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 6</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>Regional ecological security faces serious threats in a changing world. Ecological network (EN) provides decision-makers with spatial strategies for maintaining ecological security and landscape sustainability via alleviating the contradiction between ecological conservation and economic growth. Despite years of intense and fruitful studies, accurately identifying ecological source patches when facing multiple conflicting objectives still remains a challenge. This study aimed to propose an advanced framework for recognizing ecological source patches with consideration of multiple objectives and further constructing EN, which would promote a more profound understanding of local ecological condition and provide spatial guidance for ecological conservation planning. Taking Changsha City as the study area, we evaluated the ecological condition by considering three key ecosystem services, i.e., habitat maintenance, carbon sequestration and water yield using the InVEST model. Ecological source patches were identified using multi-objective genetic algorithms (MOGA) in view of ecosystem services, landscape connectivity and the total area of ecological source patches. Ecological corridors were extracted by applying Minimum Cumulative Resistance (MCR) model based on modified ecological resistance surface. The EN was established by combining these ecological source patches with ecological corridors. The EN in Changsha City was comprised of 51 ecological source patches and 50 ecological corridors. The ecological source patches were primarily distributed across the eastern and western mountainous areas with the total area of 2842 km², occupying 24.05% of the study area. There was a clear lack of ecological source patches along the Xiangjiang River owing to the high level of urbanization, which deserved particular attention for ecological restoration. Overall, the identified ecological source patches provided 87.31% of ecosystem service supply and 82.49% of the whole landscape connectivity by occupying 67.09% of the dominant patch area. The depicted ecological corridors formed two clusters in the central and northeastern parts of the study area. This study offered new insights into accurately identifying ecological source patches by coordinating various conservation objectives. With the application of MOGA, the proposed framework consolidated ecosystem services, landscape connectivity and patch area to effectively delineate core ecological patches.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 2023 ═══ -->
+<div class="year-section"><div class="year-label">2023</div></div>
+<div class="pub-grid">
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-jem.png" alt="Journal of Environmental Management">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://www.sciencedirect.com/science/article/abs/pii/S0301479723016766" target="_blank" onclick="event.stopPropagation()">Spatial analysis enables priority selection in conservation practices for landscapes that need ecological security</a></div>
+      <div class="pub-authors"><strong>Tang H.</strong>, Peng J.*, Jiang H., Lin Y., Dong J., Liu M., Meersmans J.</div>
+      <div class="pub-venue">Journal of Environmental Management, 345, 118888</div>
+      <div class="pub-badges">
+        <span class="pub-badge badge-first">First Author</span>
+        <a class="pub-link-btn" href="https://www.sciencedirect.com/science/article/abs/pii/S0301479723016766" target="_blank" data-en="Read" data-zh="原文">Read</a>
+      
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 50</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>Global urbanization has not only promoted social and economic development, but also contributed to seriously ecological challenges. As a type of sustainable landscape patterns, ecological security pattern is considered as an effective spatial pathway to simultaneously conserve ecological security and maintain social-economic development. However, the fragmentation issue of ecological sources of ecological security pattern has not been effectively addressed, although many case studies have been conducted to identify ecological security pattern. In this study, we used spatial conservation prioritization to identify the ecological security pattern of the city belt along the Yellow River in Ningxia, China. Ecological sources were selected using Zonation model while ecological corridors and key ecological nodes were identified with circuit model. The results showed that the ecological security pattern was composed of 97 ecological sources, 226 ecological corridors, 267 pinch points and 22 barriers, covering a total area of 7713.1 km² and accounting for 34% of the study area. Ecological sources were concentrated in the Helan Mountain, Xiang Mountain and along the Yellow River. Besides, ecological corridors were dense in the southern and eastern part of the study area. Both indicated that the Yellow River and Helan Mountain were the conservation hotspots. Landscape connectivity of ecological sources identified through Zonation-based spatial conservation prioritization was better than that with the scoring approach based on ecosystem service importance. Particularly, in the Zonation approach the landscape connectivity increased with 44% while the average patch area increased with 28% when comparing with the scoring approach. The spatial conservation prioritization approach proposed in this study provides a new effective tool to construct ecological security pattern, which is conducive to the synergic enhancement of landscape connectivity and ecosystem services conservation.</p>
+    </div>
+  </div>
+  <div class="pub-card">
+    <img class="journal-cover" src="cover-jem.png" alt="Journal of Environmental Management">
+    <div class="pub-info">
+      <div class="pub-title"><a href="https://www.sciencedirect.com/science/article/abs/pii/S0301479723020029" target="_blank" onclick="event.stopPropagation()">Regarding reference state to identify priority areas for ecological restoration in a karst region</a></div>
+      <div class="pub-authors">Peng J.*, <strong>Tang H.</strong>, Su C., Jiang H., Dong J., Xu D.</div>
+      <div class="pub-venue">Journal of Environmental Management, 348, 119214</div>
+      <div class="pub-badges">
+        <a class="pub-link-btn" href="https://www.sciencedirect.com/science/article/abs/pii/S0301479723020029" target="_blank" data-en="Read" data-zh="原文">Read</a>
+      
+        <span class="cite-badge"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Cited: 32</span>
+      </div>
+      <div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>
+    </div>
+    <div class="pub-abstract">
+      <div class="abstract-label">Abstract</div>
+      <p>Widespread degradation of natural ecosystems around the globe has resulted in several ecological problems. Ecological restoration is considered a global priority as an important means of mitigating ecosystem degradation and enhancing ecosystem services provision. Regarding ecosystem reference state is a prerequisite for ecological restoration. However, there were few studies focusing on how to regard reference state for ecological restoration, especially under a changing climate. Taking Guizhou Province, a typical karst region in China, as a case study area, in this study we firstly assessed ecosystem services under homogeneous climate conditions. Secondly, we defined the optimal ecosystem services as ecosystem reference state, and then evaluated restoration suitability under a comprehensive framework. Finally, ecological restoration priority areas (EPRAs), which included ecological reconstruction areas, assisted regeneration areas and conservation priority areas needing restoration, were identified by integrating restoration suitability and conservation priority areas. The results showed that the services of water conservation and habitat maintenance only increased less than 10% from 2001 to 2018. Identified ecological reconstruction areas and assisted regeneration areas covered 1078 km 2 and 1159 km 2 respectively. Additionally, 15 conservation priority areas with the total area of 18,507 km 2 were identified as conservation priority areas needing restoration. Accounting for 11.78% of the total area, ERPAs were mostly located in the eastern part of Guizhou, including Qiandongnan, Tongren, and Zunyi. The approach proposed here for regarding ecosystem reference state after controlling climate variables and the framework for identifying ERPAs can provide a scientific reference for large-scale ecological restoration planning.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Book ═══ -->
+<div class="year-section"><div class="year-label" data-en="Book" data-zh="著作">Book</div></div>
+<div class="pub-grid">
+  <div class="pub-card" style="background: linear-gradient(135deg, var(--highlight) 0%, var(--card-bg) 100%); border: 1px solid var(--subtle);">
+    <img class="journal-cover" src="cover-book.png" alt="区域生态安全格局构建与优化">
+    <div class="pub-info">
+      <div class="pub-title">Construction and Optimization of Regional Ecological Security Pattern</div>
+      <div class="pub-authors">Peng J., Jiang H., Xu D., <strong>Tang H.</strong>, Liu M., Dong J.</div>
+      <div class="pub-venue">Beijing: China Science Press, 2024 (in Chinese)</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p><a href="index.html" data-en="← Back to Homepage" data-zh="← 返回主页">← Back to Homepage</a> &nbsp;&middot;&nbsp; &copy; 2026 Hui Tang</p>
+</footer>
+
+<script>
+  let currentLang = 'en';
+  const langToggle = document.getElementById('lang-toggle');
+  langToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.lang-btn');
+    if (!btn || btn.dataset.lang === currentLang) return;
+    currentLang = btn.dataset.lang;
+    langToggle.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.body.classList.toggle('zh', currentLang === 'zh');
+    document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+    document.querySelectorAll('[data-en][data-zh]').forEach(el => {
+      const badges = el.querySelectorAll('.pub-badge, .pub-link-btn');
+      let preserved = '';
+      badges.forEach(n => { preserved += ' ' + n.outerHTML; });
+      el.innerHTML = el.getAttribute('data-' + currentLang) + preserved;
+    });
+    document.title = currentLang === 'zh' ? '学术论文 | 唐辉' : 'Publications | Hui Tang';
+  });
+
+  // ── Click to expand abstract ──
+  document.querySelectorAll('.pub-card').forEach(card => {
+    if (!card.querySelector('.pub-abstract')) return;
+    card.addEventListener('click', function(e) {
+      // Don't toggle if clicking a link
+      if (e.target.closest('a')) return;
+      this.classList.toggle('expanded');
+      const hint = this.querySelector('.expand-hint');
+      if (hint) {
+        const isOpen = this.classList.contains('expanded');
+        hint.textContent = isOpen
+          ? (currentLang === 'zh' ? '点击收起' : 'Click to collapse')
+          : (currentLang === 'zh' ? '点击查看摘要' : 'Click to view abstract');
+      }
+    });
+  });
+</script>
+</body>
+</html>
