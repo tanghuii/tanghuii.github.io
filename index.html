@@ -367,6 +367,23 @@
       font-style: italic;
     }
 
+    .timeline-item-inner {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .school-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      object-fit: contain;
+      flex-shrink: 0;
+      background: #fff;
+      border: 1px solid var(--subtle);
+      padding: 3px;
+      margin-top: 2px;
+    }
+
     .pub-year {
       font-family: 'Crimson Pro', serif;
       font-size: 1.15rem;
@@ -917,21 +934,36 @@
   </div>
   <div class="timeline">
     <div class="timeline-item">
-      <div class="timeline-period">2025.10 &ndash; Present</div>
-      <div class="timeline-degree" data-en="Ph.D. Student in Ecological Economics" data-zh="博士研究生">Ph.D. Student in Ecological Economics</div>
-      <div class="timeline-school" data-en="University of Groningen, the Netherlands" data-zh="生态经济学 · 格罗宁根大学，荷兰">University of Groningen, the Netherlands</div>
-      <div class="timeline-detail" data-en="Supervised by Prof. <a href='https://www.rug.nl/staff/k.hubacek/?lang=en' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Klaus Hubacek</a> &amp; Prof. <a href='https://www.shanyuli.com/' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Yuli Shan</a>" data-zh="导师：<a href='https://www.rug.nl/staff/k.hubacek/?lang=en' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Klaus Hubacek</a> 教授、<a href='https://www.shanyuli.com/' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>单钰锂</a> 教授">Supervised by Prof. <a href="https://www.rug.nl/staff/k.hubacek/?lang=en" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)">Klaus Hubacek</a> &amp; Prof. <a href="https://www.shanyuli.com/" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)">Yuli Shan</a></div>
+      <div class="timeline-item-inner">
+        <img class="school-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/d/d5/University_of_Groningen_coat_of_arms.svg/120px-University_of_Groningen_coat_of_arms.svg.png" alt="University of Groningen">
+        <div>
+          <div class="timeline-period">2025.10 &ndash; Present</div>
+          <div class="timeline-degree" data-en="Ph.D. Student in Ecological Economics" data-zh="博士研究生">Ph.D. Student in Ecological Economics</div>
+          <div class="timeline-school" data-en="University of Groningen, the Netherlands" data-zh="生态经济学 · 格罗宁根大学，荷兰">University of Groningen, the Netherlands</div>
+          <div class="timeline-detail" data-en="Supervised by Prof. <a href='https://www.rug.nl/staff/k.hubacek/?lang=en' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Klaus Hubacek</a> &amp; Prof. <a href='https://www.shanyuli.com/' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Yuli Shan</a>" data-zh="导师：<a href='https://www.rug.nl/staff/k.hubacek/?lang=en' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Klaus Hubacek</a> 教授、<a href='https://www.shanyuli.com/' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>单钰锂</a> 教授">Supervised by Prof. <a href="https://www.rug.nl/staff/k.hubacek/?lang=en" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)">Klaus Hubacek</a> &amp; Prof. <a href="https://www.shanyuli.com/" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)">Yuli Shan</a></div>
+        </div>
+      </div>
     </div>
     <div class="timeline-item">
-      <div class="timeline-period">2022.9 &ndash; 2025.7</div>
-      <div class="timeline-degree" data-en="M.S. in Geography (Urban and Regional Planning)" data-zh="理学硕士">M.S. in Geography (Urban and Regional Planning)</div>
-      <div class="timeline-school" data-en="Peking University, China" data-zh="地理学（城市与区域规划） · 北京大学">Peking University, China</div>
-      <div class="timeline-detail" data-en="Supervised by Prof. <a href='https://ues.pku.edu.cn/jszy/pj/pjgrjl/47d5081a72b1402693d0ef0eac835be3.htm' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Jian Peng</a>" data-zh="导师：<a href='https://ues.pku.edu.cn/jszy/pj/pjgrjl/47d5081a72b1402693d0ef0eac835be3.htm' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>彭建</a> 教授">Supervised by Prof. <a href="https://ues.pku.edu.cn/jszy/pj/pjgrjl/47d5081a72b1402693d0ef0eac835be3.htm" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)">Jian Peng</a></div>
+      <div class="timeline-item-inner">
+        <img class="school-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8a/PKU_seal.svg/120px-PKU_seal.svg.png" alt="Peking University">
+        <div>
+          <div class="timeline-period">2022.9 &ndash; 2025.7</div>
+          <div class="timeline-degree" data-en="M.S. in Geography (Urban and Regional Planning)" data-zh="理学硕士">M.S. in Geography (Urban and Regional Planning)</div>
+          <div class="timeline-school" data-en="Peking University, China" data-zh="地理学（城市与区域规划） · 北京大学">Peking University, China</div>
+          <div class="timeline-detail" data-en="Supervised by Prof. <a href='https://ues.pku.edu.cn/jszy/pj/pjgrjl/47d5081a72b1402693d0ef0eac835be3.htm' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>Jian Peng</a>" data-zh="导师：<a href='https://ues.pku.edu.cn/jszy/pj/pjgrjl/47d5081a72b1402693d0ef0eac835be3.htm' target='_blank' style='color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)'>彭建</a> 教授">Supervised by Prof. <a href="https://ues.pku.edu.cn/jszy/pj/pjgrjl/47d5081a72b1402693d0ef0eac835be3.htm" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--subtle)">Jian Peng</a></div>
+        </div>
+      </div>
     </div>
     <div class="timeline-item">
-      <div class="timeline-period">2018.9 &ndash; 2022.6</div>
-      <div class="timeline-degree" data-en="B.M. in Land Resource Management" data-zh="管理学学士">B.M. in Land Resource Management</div>
-      <div class="timeline-school" data-en="China Agricultural University, China" data-zh="土地资源管理 · 中国农业大学">China Agricultural University, China</div>
+      <div class="timeline-item-inner">
+        <img class="school-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/11/China_Agricultural_University_logo.svg/120px-China_Agricultural_University_logo.svg.png" alt="China Agricultural University">
+        <div>
+          <div class="timeline-period">2018.9 &ndash; 2022.6</div>
+          <div class="timeline-degree" data-en="B.M. in Land Resource Management" data-zh="管理学学士">B.M. in Land Resource Management</div>
+          <div class="timeline-school" data-en="China Agricultural University, China" data-zh="土地资源管理 · 中国农业大学">China Agricultural University, China</div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
