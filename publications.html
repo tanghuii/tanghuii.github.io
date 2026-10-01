@@ -206,6 +206,11 @@
     .cover-le { background: linear-gradient(135deg, #33691e, #558b2f); color: #dcedc8; }
     .cover-jem { background: linear-gradient(135deg, #0d47a1, #1976d2); color: #bbdefb; }
     .cover-book { background: linear-gradient(135deg, #b71c1c, #d32f2f); color: #ffcdd2; }
+    .cover-journal {
+      background: linear-gradient(160deg, var(--accent) 0%, #4a3428 100%);
+      color: #f5efe8; border: none; font-family: 'Crimson Pro', serif; font-size: 0.78rem;
+      font-weight: 600; line-height: 1.25; padding: 0.6rem; letter-spacing: 0.01em;
+    }
     .cover-inprep {
       background: linear-gradient(135deg, var(--highlight), var(--subtle));
       color: var(--accent); border: 2px dashed var(--subtle);
@@ -305,7 +310,9 @@
     const isBook = p.year === 'book';
     const cover = p.cover
       ? `<img class="journal-cover" src="${attr(p.cover)}" alt="${attr(p.venue)}" loading="lazy">`
-      : `<div class="cover-placeholder cover-inprep">📝<br><br>${esc(p.status === 'In Prep' ? 'In Preparation' : (p.status || 'In Preparation')).replace(' ', '<br>')}</div>`;
+      : (p.status || !p.url)
+        ? `<div class="cover-placeholder cover-inprep">📝<br><br>${esc(p.status === 'In Prep' ? 'In Preparation' : (p.status || 'In Preparation')).replace(' ', '<br>')}</div>`
+        : `<div class="cover-placeholder cover-journal"><span>${esc((p.venue || '').split(',')[0])}</span></div>`;
     const title = p.url
       ? `<a href="${attr(p.url)}" target="_blank" onclick="event.stopPropagation()">${esc(p.title)}</a>`
       : esc(p.title);

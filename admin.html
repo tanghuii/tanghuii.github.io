@@ -82,6 +82,11 @@
   .pub-row .m { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
   .pub-row .m span { margin-right: 0.5rem; }
   .pub-edit { border-top: 1px dashed var(--subtle); margin-top: 0.9rem; padding-top: 0.9rem; }
+  .cover-pick { display: flex; gap: 0.8rem; align-items: flex-start; }
+  .cover-prev { width: 72px; height: 96px; flex-shrink: 0; border: 1px dashed var(--accent-light); border-radius: 6px; background: var(--highlight); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 11px; line-height: 1.3; color: var(--muted); cursor: pointer; overflow: hidden; }
+  .cover-prev:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .cover-prev img { width: 100%; height: 100%; object-fit: cover; }
+  .cover-status { background: var(--highlight); border-radius: 6px; padding: 0.5rem 0.8rem; margin-bottom: 0.8rem; color: var(--accent); }
   .yearhead { font-family: var(--serif); font-weight: 600; color: var(--accent); margin: 1.1rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px dashed var(--subtle); }
   .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.8rem; }
   .thumb { border: 1px solid var(--subtle); border-radius: 8px; overflow: hidden; background: var(--card); }
@@ -258,6 +263,23 @@ async function fileToBase64(file) {
   for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   return btoa(bin);
 }
+// Admin previews: if an image is not on GitHub Pages yet, load it straight from the repository
+function imgFallback(el) {
+  if (el.dataset.fb || /^https?:/.test(el.getAttribute('src') || '')) return;
+  el.dataset.fb = '1';
+  el.src = `https://raw.githubusercontent.com/${REPO.owner}/${REPO.name}/${REPO.branch}/${encodeURI(el.getAttribute('src'))}?t=${Date.now()}`;
+}
+// Downscale an image file to at most 240px wide; returns a Blob/File with a name
+async function shrinkImage(file, maxW = 240) {
+  try {
+    const bmp = await createImageBitmap(file);
+    if (bmp.width <= maxW) return file;
+    const c = document.createElement('canvas'); c.width = maxW; c.height = Math.round(bmp.height * maxW / bmp.width);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.88));
+    return new File([blob], 'cover.jpg', { type: 'image/jpeg' });
+  } catch (e) { return file; }
+}
 // Upload a file to the repo root (creates or replaces). Returns the final filename.
 async function uploadToRepo(file, targetName) {
   const name = (targetName || file.name).replace(/[^\w.\- ]+/g, '_');
@@ -315,15 +337,64 @@ async function saveContent() {
   if (!TOKEN) return toast('Sign in with a GitHub token to publish.', true);
   const btn = $('#btn-save'); btn.disabled = true; btn.textContent = 'Publishing…';
   try {
-    // Re-read sha in case the file changed elsewhere since load
-    try { SHA = (await ghGetFile(CONTENT_PATH)).sha; } catch (e) { SHA = null; }
+    // Re-read the file: if the cover workflow (or another device) changed it, keep the covers it added
+    try {
+      const remote = await ghGetFile(CONTENT_PATH);
+      if (remote.sha !== SHA) mergeRemoteCovers(JSON.parse(b64dec(remote.content)));
+      SHA = remote.sha;
+    } catch (e) { SHA = null; }
     const json = JSON.stringify(C, null, 2) + '\n';
     const r = await ghPutFile(CONTENT_PATH, b64enc(json), `Update site content via Site Manager (${new Date().toISOString().slice(0, 16).replace('T', ' ')})`, SHA);
     SHA = r.content.sha; C_ORIG = JSON.stringify(C);
-    setStatus(); toast('Published. GitHub Pages usually updates within a minute.');
+    setStatus();
+    const missing = coverlessWithDoi();
+    toast(missing.length ? `Published. Looking for ${missing.length} journal cover${missing.length > 1 ? 's' : ''} on GitHub…` : 'Published. GitHub Pages usually updates within a minute.');
+    if (missing.length) watchForCovers(SHA);
   } catch (e) { toast(e.message, true); setStatus(); }
   btn.textContent = 'Publish changes';
 }
+
+// ── Journal covers fetched by the GitHub Actions workflow (.github/workflows/fetch-covers.yml) ──
+function coverlessWithDoi(pubs = C?.publications || []) {
+  return pubs.filter(p => !p.cover && p.year !== 'book' && (p.doi || parseDoi(p.url)));
+}
+// Copy cover values from a remote content.json into the working copy (and the saved baseline)
+function mergeRemoteCovers(remote) {
+  const rmap = new Map((remote.publications || []).map(p => [p.id, p.cover]));
+  const apply = obj => { let n = 0; (obj.publications || []).forEach(p => { const rc = rmap.get(p.id); if (!p.cover && rc) { p.cover = rc; n++; } }); return n; };
+  const added = apply(C);
+  try { const base = JSON.parse(C_ORIG); apply(base); C_ORIG = JSON.stringify(base); } catch (e) {}
+  return added;
+}
+let COVER_WATCH = 0;
+async function watchForCovers(fromSha) {
+  const run = ++COVER_WATCH;
+  const deadline = Date.now() + 4 * 60 * 1000;
+  setCoverStatus('Looking for journal covers on GitHub… (about 1 minute)');
+  await sleep(25000);
+  while (run === COVER_WATCH && Date.now() < deadline) {
+    try {
+      const f = await ghGetFile(CONTENT_PATH);
+      if (f.sha !== fromSha) {
+        const remote = JSON.parse(b64dec(f.content));
+        const wasDirty = isDirty();
+        const added = mergeRemoteCovers(remote);
+        if (!wasDirty) { SHA = f.sha; C_ORIG = JSON.stringify(C); }
+        else SHA = f.sha; // working copy already contains everything else we will publish
+        REPO_FILES = null; setStatus();
+        if (TAB === 'publications') render();
+        const still = coverlessWithDoi().length;
+        setCoverStatus(added ? `Added ${added} journal cover${added > 1 ? 's' : ''}.` + (still ? ` ${still} could not be found automatically: open the paper and paste or upload a cover.` : '') : 'No new covers were found. Open the paper and paste or upload a cover.');
+        toast(added ? `Added ${added} journal cover${added > 1 ? 's' : ''}.` : 'No journal cover found automatically.');
+        return;
+      }
+    } catch (e) {}
+    await sleep(15000);
+  }
+  if (run === COVER_WATCH) setCoverStatus('The cover search has not finished. Check the Actions tab on GitHub, or click “Reload from GitHub” in a minute.');
+}
+let COVER_STATUS = '';
+function setCoverStatus(msg) { COVER_STATUS = msg; const el = $('#cover-status'); if (el) { el.textContent = msg; el.hidden = !msg; } }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Login: the GitHub token (and GoatCounter token) are encrypted with the admin
@@ -829,6 +900,7 @@ function viewPublications(v) {
     <div class="toolbar"><button class="btn sm" id="add-pub">+ Add manually</button>
       <input type="file" id="up-cover" accept="image/*" style="display:none"><button class="btn sm" id="btn-up-cover">Upload journal cover…</button>
       <button class="btn sm" id="btn-cites">Update citation counts</button><span class="hint" id="up-cover-msg"></span></div>
+    <p class="hint cover-status" id="cover-status" ${COVER_STATUS ? '' : 'hidden'}>${esc(COVER_STATUS)}</p>
     <div id="pubs"></div>`;
   $('#doi-go').onclick = async () => {
     const val = $('#doi-in').value.trim(); if (!val) return;
@@ -855,7 +927,7 @@ function viewPublications(v) {
       const open = openPub === p.id;
       return `<div class="item" data-i="${i}" data-id="${esc(p.id)}">
         <div class="pub-row" data-toggle>
-          ${p.cover ? `<img src="${esc(p.cover)}" alt="">` : `<div class="nocover">📝</div>`}
+          ${p.cover ? `<img src="${esc(p.cover)}" alt="" onerror="imgFallback(this)">` : `<div class="nocover">📝</div>`}
           <div><div class="t">${esc(p.title_short || p.title || 'Untitled')}</div>
             <div class="m">${p.first_author ? '<span class="pill warn">First author</span>' : ''}${p.status ? `<span class="pill muted">${esc(p.status)}</span>` : ''}${p.featured ? '<span class="pill ok">Featured</span>' : ''}<span>${esc(p.venue)}</span>${p.cited != null && p.cited !== '' ? `<span>· Cited ${esc(p.cited)}</span>` : ''}</div></div>
           ${itemTools(pubs, i)}
@@ -876,7 +948,14 @@ function viewPublications(v) {
             <div class="field" style="margin-bottom:0.9rem"><label>DOI</label>${bind(p, 'doi', 'text', 'class="mono" placeholder="10.xxxx/…"')}</div>
             <div class="field"><button class="btn sm" data-refill>Refill from DOI</button></div></div>
           <div class="hint" style="margin:-0.4rem 0 0.9rem" data-refill-msg>Refill replaces title, authors, venue, link, year, abstract and citation count; flags, status and cover are kept.</div>
-          <div class="field"><label>Journal cover</label>${bind(p, 'cover', 'select')}<div class="hint">Images in the repository root. Use “Upload journal cover…” above to add one.</div></div>
+          <div class="field"><label>Journal cover</label>
+            <div class="cover-pick">
+              <div class="cover-prev" data-paste tabindex="0" title="Click, then press Ctrl+V / ⌘V to paste an image">${p.cover ? `<img src="${esc(p.cover)}" alt="" onerror="imgFallback(this)">` : '<span>Paste<br>image<br>here</span>'}</div>
+              <div style="flex:1;min-width:0">
+                ${bind(p, 'cover', 'select')}
+                <input type="url" class="mono" data-cover-url placeholder="…or paste an image URL (https://…/cover.jpg)" style="margin-top:0.4rem" value="${/^https?:/.test(p.cover || '') ? esc(p.cover) : ''}">
+                <div class="hint">${p.cover ? '' : (p.doi || parseDoi(p.url) ? 'Left empty, a cover is searched for automatically after you publish. ' : '')}Or copy a cover image (right-click → Copy image on the journal page, or a screenshot), click the box on the left and press Ctrl+V / ⌘V.</div>
+              </div></div></div>
           ${field('Abstract', p, 'abstract', 'textarea', '', 'style="min-height:120px"')}
         </div>` : ''}</div>`;
     }).join('')).join('');
@@ -907,6 +986,32 @@ function viewPublications(v) {
         markDirty(); rr(); toast('Refilled from DOI. Review, then publish.');
       } catch (e) { msg.textContent = e.message; btn.disabled = false; }
     });
+    // Cover: paste an image from the clipboard, or point to an image URL
+    box.querySelectorAll('[data-paste]').forEach(el => {
+      const item = el.closest('.item'); const p = pubs.find(x => x.id === item.dataset.id);
+      el.addEventListener('click', () => el.focus());
+      el.addEventListener('paste', async e => {
+        const file = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'))?.getAsFile();
+        if (!file) { toast('The clipboard has no image. Copy the cover image first.', true); return; }
+        e.preventDefault();
+        if (!TOKEN) return toast('Sign in to upload images.', true);
+        el.innerHTML = '<span>Uploading…</span>';
+        try {
+          const journal = (p.venue || '').split(',')[0];
+          const base = 'cover-' + (journal.match(/[A-Za-z]+/g) || ['journal']).filter(w => !/^(of|and|the|in|for|on|a|an)$/i.test(w)).map(w => w[0]).join('').toLowerCase();
+          const small = await shrinkImage(file);
+          const ext = small.type === 'image/png' ? 'png' : small.type === 'image/webp' ? 'webp' : 'jpg';
+          const name = await uploadToRepo(small, base + '-' + Date.now().toString(36).slice(-4) + '.' + ext);
+          C.publications.filter(x => !x.cover && (x.venue || '').split(',')[0] === journal).forEach(x => { x.cover = name; });
+          p.cover = name; markDirty(); rr(); toast('Cover uploaded. Publish to save.');
+        } catch (err) { toast(err.message, true); rr(); }
+      });
+    });
+    box.querySelectorAll('[data-cover-url]').forEach(inp => inp.addEventListener('change', () => {
+      const item = inp.closest('.item'); const p = pubs.find(x => x.id === item.dataset.id);
+      const v = inp.value.trim(); if (v && !/^https?:\/\//.test(v)) return toast('Enter a full image URL starting with https://', true);
+      p.cover = v; markDirty(); rr();
+    }));
     // Keep header text live while typing
     box.querySelectorAll('.pub-edit [data-bind]').forEach(el => { const b = BIND.get(el.dataset.bind); if (['title', 'title_short', 'venue'].includes(b.key)) b.onChange = () => { const it = el.closest('.item'); it.querySelector('.t').textContent = b.obj.title_short || b.obj.title || 'Untitled'; }; });
   };
@@ -955,7 +1060,7 @@ function viewPhotos(v) {
     const list = C.carousels[k];
     const rr = () => {
       const box = $('#car' + k);
-      box.innerHTML = list.map((s, i) => `<div class="thumb" data-i="${i}"><img src="${esc(s.src)}" alt="" loading="lazy">
+      box.innerHTML = list.map((s, i) => `<div class="thumb" data-i="${i}"><img src="${esc(s.src)}" alt="" loading="lazy" onerror="imgFallback(this)">
         <div class="cap">${bind(s, 'src', 'text', 'placeholder="file.jpg"')}${bind(s.caption ||= { en: '', zh: '' }, 'en', 'text', 'placeholder="Caption (EN)"')}${bind(s.caption, 'zh', 'text', 'placeholder="说明（中文）"')}</div>
         ${itemTools(list, i)}</div>`).join('') || '<p class="hint">No photos yet.</p>';
       wireBindings(box); wireItemTools(box, list, rr);
