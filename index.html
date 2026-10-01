@@ -22,7 +22,7 @@
       --accent-light: #3b7dd8;
       --subtle: #d3dce7;
       --muted: #647387;
-      --highlight: #e8eef7;
+      --highlight: #d6e3f5;
       --card-bg: #ffffff;
       --shadow: rgba(13, 27, 42, 0.06);
     }
@@ -471,7 +471,7 @@
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
-    .badge-first { background: #dcebfb; color: #174a85; }
+    .badge-first { background: #c8dbf5; color: #174a85; }
     .badge-review { background: #fcefd6; color: #8a5300; }
 
     .pub-links {
@@ -679,13 +679,13 @@
       font-weight: 600;
       padding: 0.1rem 0.5rem;
       border-radius: 4px;
-      background: #dcebfb;
+      background: #c8dbf5;
       color: #174a85;
       margin-left: 0.5rem;
       vertical-align: middle;
     }
     .highlight-award {
-      background: linear-gradient(90deg, rgba(59, 125, 216, 0.06) 0%, transparent 100%);
+      background: linear-gradient(90deg, rgba(59, 125, 216, 0.2) 0%, rgba(59, 125, 216, 0.08) 100%);
     }
     .highlight-award .award-text { font-weight: 600; }
 
@@ -1132,7 +1132,7 @@
     const featured = pubs.filter(p => p.featured);
     document.getElementById('pub-featured').innerHTML = featured.length ? `<div style="margin-bottom:1.5rem;">
       ${bi('div', '⭐ Featured', '⭐ 代表性成果', '', '', 'font-size:1.025rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent);margin-bottom:0.8rem;')}
-      ${featured.map(p => pubItem(p, 'border:1px solid var(--accent-light);background:linear-gradient(135deg, var(--highlight) 0%, var(--card-bg) 100%);')).join('')}</div>` : '';
+      ${featured.map(p => pubItem(p, 'border:1px solid var(--accent-light);background:linear-gradient(135deg, var(--highlight) 0%, #eaf1fb 100%);')).join('')}</div>` : '';
     // Group by year, newest first, books last
     const groups = {};
     pubs.forEach(p => { (groups[p.year] = groups[p.year] || []).push(p); });

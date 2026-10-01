@@ -22,7 +22,7 @@
       --accent-light: #3b7dd8;
       --subtle: #d3dce7;
       --muted: #647387;
-      --highlight: #e8eef7;
+      --highlight: #d6e3f5;
       --card-bg: #ffffff;
       --shadow: rgba(13, 27, 42, 0.06);
     }
@@ -99,7 +99,7 @@
 
     .pub-card {
       display: flex; gap: 1.2rem;
-      background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(232, 238, 247, 0.5) 100%);
+      background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(214, 227, 245, 0.65) 100%);
       backdrop-filter: blur(6px);
       border: 1px solid rgba(211, 220, 231, 0.4);
       border-radius: 12px; padding: 1.4rem;
@@ -122,7 +122,7 @@
       border-color: rgba(59, 125, 216, 0.3);
       box-shadow: 0 12px 36px rgba(13, 27, 42, 0.1), 0 2px 8px rgba(27, 79, 138, 0.06);
       transform: translateY(-4px);
-      background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(232, 238, 247, 0.7) 100%);
+      background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(214, 227, 245, 0.9) 100%);
     }
 
     .pub-card .pub-title {
@@ -223,7 +223,7 @@
     .pub-card .pub-venue { font-size: 1rem; font-style: italic; color: var(--accent-light); margin-bottom: 0.5rem; }
     .pub-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
     .pub-badge { display: inline-block; font-size: 0.85rem; font-weight: 600; padding: 0.12rem 0.5rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
-    .badge-first { background: #dcebfb; color: #174a85; }
+    .badge-first { background: #c8dbf5; color: #174a85; }
     .badge-review { background: #fcefd6; color: #8a5300; }
     .pub-link-btn {
       display: inline-flex; align-items: center; gap: 0.3rem;
@@ -349,7 +349,7 @@
     const hasAbstract = !isBook;
     const abstract = hasAbstract ? `<div class="pub-abstract"><div class="abstract-label">Abstract</div><p>${esc(p.abstract || 'Coming soon.')}</p></div>` : '';
     const hint = hasAbstract ? '<div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>' : '';
-    const style = isBook ? ' style="background: linear-gradient(135deg, var(--highlight) 0%, var(--card-bg) 100%); border: 1px solid var(--subtle);"' : '';
+    const style = isBook ? ' style="background: linear-gradient(135deg, var(--highlight) 0%, #eaf1fb 100%); border: 1px solid var(--subtle);"' : '';
     return `<div class="pub-card"${style}>${cover}
       <div class="pub-info">
         <div class="pub-title">${title}</div>
