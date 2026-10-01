@@ -79,7 +79,7 @@
       },
       "school": {
         "en": "University of Groningen, the Netherlands",
-        "zh": "生态经济学 · 格罗宁根大学，荷兰"
+        "zh": "生态经济学 · 荷兰格罗宁根大学"
       },
       "logo": "logo-rug.png",
       "logo_title": "University of Groningen",
@@ -107,7 +107,7 @@
         "zh": "地理学（城市与区域规划） · 北京大学"
       },
       "logo": "logo-pku.png",
-      "logo_title": "Peking University",
+      "logo_title": "Peking University, China",
       "supervisors": [
         {
           "en": "Jian Peng",
