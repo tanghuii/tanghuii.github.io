@@ -756,6 +756,8 @@
       color: var(--muted);
     }
     footer a { color: var(--accent); text-decoration: none; }
+    footer a.admin-link { color: var(--muted); }
+    footer a.admin-link:hover { color: var(--accent); }
 
     /* ── Like Button ── */
     .like-btn {
@@ -1092,7 +1094,7 @@
   }
 
   function renderFooter(site) {
-    document.getElementById('footer').innerHTML = `<p>&copy; ${esc(site.footer_year)} ${esc(CONTENT.profile.name_en)} &nbsp;&middot;&nbsp; Hosted on <a href="https://pages.github.com/" target="_blank">GitHub Pages</a></p>`;
+    document.getElementById('footer').innerHTML = `<p>&copy; ${esc(site.footer_year)} ${esc(CONTENT.profile.name_en)} &nbsp;&middot;&nbsp; Hosted on <a href="https://pages.github.com/" target="_blank">GitHub Pages</a> &nbsp;&middot;&nbsp; <a href="admin.html" rel="nofollow" class="admin-link" title="Site Manager">Admin</a></p>`;
   }
 
   // Inject GoatCounter if a site code is configured (privacy-friendly analytics)

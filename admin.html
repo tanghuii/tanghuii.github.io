@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Site Manager · Hui Tang</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&family=Pinyon+Script&display=swap" rel="stylesheet">
 <style>
   /* Layout: fixed left rail with sections, scrolling main pane; same palette as the public site */
   :root {
@@ -122,7 +122,33 @@
   .log { font-family: var(--mono); font-size: 12px; background: var(--highlight); border-radius: 6px; padding: 0.6rem 0.8rem; max-height: 180px; overflow: auto; white-space: pre-wrap; }
   .dirty-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); display: inline-block; }
 
+
+  /* Sign-in screen */
+  .login { position: fixed; inset: 0; z-index: 80; background: var(--paper); overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 2rem 16px; }
+  .login > .login-card { margin-top: auto; }
+  .login > .login-foot { margin-bottom: auto; }
+  .login-card { width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--subtle); border-radius: 12px; padding: 2rem 2rem 1.5rem; box-shadow: 0 12px 40px var(--shadow); }
+  .login-brand { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding-bottom: 1.2rem; margin-bottom: 1.3rem; border-bottom: 1px solid var(--subtle); }
+  .login-name { font-family: 'Pinyon Script', 'Crimson Pro', cursive; font-size: 2.1rem; color: var(--accent); line-height: 1.1; }
+  .login-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+  .login h2 { font-size: 1.35rem; margin-bottom: 0.9rem; }
+  .login .lead { margin-bottom: 1rem; }
+  .login .check { margin: 0.2rem 0 1rem; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--ink); font-size: 13px; }
+  .btn.block { width: 100%; justify-content: center; padding: 0.65rem 1rem; }
+  .login-msg { min-height: 1.3em; margin-top: 0.7rem; font-size: 13px; color: var(--err); text-align: center; }
+  .login-msg:empty { min-height: 0; margin: 0; }
+  .login-alt { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.1rem; padding-top: 0.9rem; border-top: 1px dashed var(--subtle); font-size: 12.5px; }
+  .login-alt a { text-decoration: none; }
+  .login-alt a:hover { text-decoration: underline; }
+  .login-help { margin: -0.3rem 0 0.9rem; font-size: 12.5px; color: var(--muted); }
+  .login-help summary { cursor: pointer; color: var(--accent); }
+  .login-help ol { margin: 0.5rem 0 0 1.1rem; line-height: 1.6; }
+  .login-foot { margin-top: 1.2rem; font-size: 13px; }
+  .login-foot a { color: var(--muted); text-decoration: none; }
+  .mobile-only { display: none; }
+
   @media (max-width: 760px) {
+    .mobile-only { display: inline-flex; }
     .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
     aside { border-right: none; border-bottom: 1px solid var(--subtle); padding: 0.8rem 0 0; }
     nav { flex-direction: row; overflow-x: auto; padding: 0.5rem 0.6rem; }
@@ -144,7 +170,7 @@
     <nav id="nav"></nav>
     <div class="aside-foot">
       <span id="auth-state">Not signed in</span>
-      <a href="#" id="link-signout">Change token…</a>
+      <a href="#" id="link-signout">Sign out</a>
       <a href="index.html" target="_blank">Open website ↗</a>
     </div>
   </aside>
@@ -153,6 +179,7 @@
     <div class="topbar">
       <div class="status" id="status">Loading…</div>
       <div class="actions">
+        <button class="btn mobile-only" id="btn-signout">Sign out</button>
         <button class="btn" id="btn-reload">Reload from GitHub</button>
         <button class="btn primary" id="btn-save" disabled>Publish changes</button>
       </div>
@@ -299,50 +326,238 @@ async function saveContent() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Auth modal
+// Login: the GitHub token (and GoatCounter token) are encrypted with the admin
+// password and stored in the repo as admin-auth.json, so any device can sign in
+// with the password alone. Crypto: PBKDF2-SHA256 (600k) -> AES-256-GCM.
 // ─────────────────────────────────────────────────────────────────────────────
-function showLogin(force = false) {
-  const existing = lsGet(LS.token);
-  if (existing && !force) { TOKEN = existing; $('#auth-state').textContent = 'Signed in (token saved on this device)'; return Promise.resolve(); }
-  return new Promise(resolve => {
-    $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">
-      <h2>Sign in to GitHub</h2>
-      <p class="lead" style="margin-bottom:0.4rem">This page edits <b>${REPO.owner}/${REPO.name}</b> through the GitHub API. The token stays in this browser only.</p>
-      <ol>
-        <li>GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> → Generate new token</li>
-        <li>Repository access: <b>Only select repositories</b> → ${REPO.name}</li>
-        <li>Permissions → Repository permissions → <b>Contents: Read and write</b></li>
-        <li>Copy the token and paste it below</li>
-      </ol>
-      <div class="field"><label for="tok">Personal access token</label><input id="tok" type="password" class="mono" placeholder="github_pat_…" autocomplete="off"></div>
-      <label class="check" style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink)"><input type="checkbox" id="tok-remember" checked> Remember on this device</label>
-      <div class="toolbar" style="margin-top:1rem;justify-content:flex-end">
-        <button class="btn" id="tok-skip">Continue read-only</button>
-        <button class="btn primary" id="tok-go">Sign in</button>
-      </div>
-      <div class="hint" id="tok-msg"></div>
-    </div></div>`;
-    $('#tok').focus();
-    const done = () => { $('#modal-root').innerHTML = ''; resolve(); };
-    $('#tok-skip').onclick = () => { TOKEN = null; $('#auth-state').textContent = 'Read-only (no token)'; done(); };
-    $('#tok-go').onclick = async () => {
-      const t = $('#tok').value.trim();
-      if (!t) return;
-      $('#tok-msg').textContent = 'Checking token…';
-      TOKEN = t;
-      try {
-        const repo = await gh(`/repos/${REPO.owner}/${REPO.name}`);
-        REPO.branch = repo.default_branch || REPO.branch;
-        if (!repo.permissions || !repo.permissions.push) { $('#tok-msg').textContent = 'Token works but has no write access to this repository. You can read, but publishing will fail.'; }
-        if ($('#tok-remember').checked) lsSet(LS.token, t);
-        $('#auth-state').textContent = 'Signed in' + ($('#tok-remember').checked ? ' (token saved on this device)' : '');
-        done();
-      } catch (e) { TOKEN = null; $('#tok-msg').textContent = e.message; }
+const AUTH_PATH = 'admin-auth.json';
+const AUTH_ITER = 600000;
+const MIN_PW = 10;
+const SS_SESSION = 'sm_session', LS_SESSION = 'sm_session_persist';
+let SESSION = null;      // { gh, gc } tokens in use
+let SESSION_KEY = null;  // { key, salt, iter } when unlocked with the password in this tab
+let AUTH_INFO = null;    // { exists, updated } of admin-auth.json
+
+const u8 = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
+const b64u8 = a => { let s = ''; a.forEach(x => { s += String.fromCharCode(x); }); return btoa(s); };
+async function deriveKey(password, salt, iter) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function encryptBundle(bundle, key, salt, iter) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(bundle))));
+  return { v: 1, kdf: 'PBKDF2-SHA256', iter, salt: b64u8(salt), iv: b64u8(iv), ct: b64u8(ct), updated: new Date().toISOString(),
+    note: 'Encrypted sign-in for admin.html (AES-256-GCM, key derived from the admin password). Delete this file to disable password sign-in.' };
+}
+async function decryptBundle(file, password) {
+  const salt = u8(file.salt);
+  const key = await deriveKey(password, salt, file.iter || AUTH_ITER);
+  let pt;
+  try { pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8(file.iv) }, key, u8(file.ct)); }
+  catch (e) { throw new Error('Wrong password.'); }
+  return { bundle: JSON.parse(new TextDecoder().decode(pt)), key, salt, iter: file.iter || AUTH_ITER };
+}
+// Read admin-auth.json fresh from the public GitHub API; fall back to the Pages copy
+async function fetchAuthFile() {
+  try {
+    const r = await fetch(`https://api.github.com/repos/${REPO.owner}/${REPO.name}/contents/${AUTH_PATH}?ref=${REPO.branch}`, { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store' });
+    if (r.status === 404) return null;
+    if (r.ok) { const j = await r.json(); return JSON.parse(b64dec(j.content)); }
+  } catch (e) {}
+  try { const r = await fetch(AUTH_PATH + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) return await r.json(); } catch (e) {}
+  return null;
+}
+async function writeAuthFile(file, message) {
+  let sha = null;
+  try { sha = (await ghGetFile(AUTH_PATH)).sha; } catch (e) {}
+  await ghPutFile(AUTH_PATH, b64enc(JSON.stringify(file, null, 2) + '\n'), message, sha);
+  AUTH_INFO = { exists: true, updated: file.updated };
+}
+async function deleteAuthFile() {
+  const f = await ghGetFile(AUTH_PATH);
+  await gh(`/repos/${REPO.owner}/${REPO.name}/contents/${AUTH_PATH}`, { method: 'DELETE', body: JSON.stringify({ message: 'Disable password sign-in for Site Manager', sha: f.sha, branch: REPO.branch }) });
+  AUTH_INFO = { exists: false };
+}
+// Re-encrypt the current tokens with the unlocked key (used when the GoatCounter token changes)
+async function syncAuthBundle() {
+  if (!SESSION_KEY || !TOKEN) return false;
+  const file = await encryptBundle({ gh: TOKEN, gc: SESSION?.gc || '' }, SESSION_KEY.key, SESSION_KEY.salt, SESSION_KEY.iter);
+  await writeAuthFile(file, 'Update encrypted sign-in via Site Manager');
+  return true;
+}
+
+// Session persistence: sessionStorage for this tab, localStorage only with "Keep me signed in"
+function saveSession(persist) {
+  const v = JSON.stringify(SESSION);
+  try { sessionStorage.setItem(SS_SESSION, v); } catch (e) {}
+  if (persist === true) lsSet(LS_SESSION, v);
+  else if (persist === false) lsSet(LS_SESSION, null);
+  else if (lsGet(LS_SESSION)) lsSet(LS_SESSION, v); // keep existing choice
+}
+function loadSession() {
+  let raw = null;
+  try { raw = sessionStorage.getItem(SS_SESSION); } catch (e) {}
+  raw = raw || lsGet(LS_SESSION);
+  if (!raw && lsGet(LS.token)) raw = JSON.stringify({ gh: lsGet(LS.token), gc: lsGet(LS.gcToken) || '' }); // migrate old token-only sign-in
+  try { return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+}
+function clearSession() {
+  try { sessionStorage.removeItem(SS_SESSION); } catch (e) {}
+  lsSet(LS_SESSION, null); lsSet(LS.token, null); lsSet(LS.gcToken, null);
+  SESSION = null; SESSION_KEY = null; TOKEN = null;
+}
+const gcToken = () => SESSION?.gc || lsGet(LS.gcToken) || '';
+
+// Check a GitHub token: returns repo info, throws a readable error
+async function verifyGitHubToken(t) {
+  const prev = TOKEN; TOKEN = t;
+  try {
+    const repo = await gh(`/repos/${REPO.owner}/${REPO.name}`);
+    REPO.branch = repo.default_branch || REPO.branch;
+    if (!repo.permissions || !repo.permissions.push) throw new Error('This token can read the repository but cannot write to it. In the token settings, add the permission “Contents: Read and write”.');
+    return repo;
+  } catch (e) {
+    TOKEN = prev;
+    if (/GitHub 401/.test(e.message)) throw new Error('GitHub rejected this token (expired, revoked or mistyped).');
+    if (/GitHub 404/.test(e.message)) throw new Error(`This token has no access to ${REPO.owner}/${REPO.name}. Select that repository under “Repository access”.`);
+    throw e;
+  }
+}
+function setAuthState() {
+  const el = $('#auth-state'); if (!el) return;
+  el.textContent = TOKEN ? (SESSION_KEY ? 'Signed in with password' : 'Signed in') + (lsGet(LS_SESSION) ? ' · kept on this device' : '') : 'Read-only (not signed in)';
+  $('#link-signout').textContent = TOKEN ? 'Sign out' : 'Sign in';
+}
+
+// Full-screen sign-in. Resolves once signed in or the viewer chooses read-only.
+function showLogin(opts = {}) {
+  return new Promise(async resolve => {
+    const root = $('#modal-root');
+    const done = () => { root.innerHTML = ''; setAuthState(); resolve(); };
+    const frame = inner => `<div class="login"><div class="login-card">
+      <div class="login-brand"><span class="login-name">Hui Tang</span><span class="login-sub">Site Manager · ${esc(REPO.owner)}.github.io</span></div>
+      ${inner}</div>
+      <p class="login-foot"><a href="index.html">← Back to website</a></p></div>`;
+    root.innerHTML = frame('<p class="hint" style="text-align:center;padding:1.5rem 0">Checking sign-in…</p>');
+
+    const file = await fetchAuthFile();
+    AUTH_INFO = { exists: !!file, updated: file?.updated };
+
+    const viewPassword = (msg = '') => {
+      root.innerHTML = frame(`<h2>Sign in</h2>
+        <form id="f-pw" autocomplete="on">
+          <input type="text" name="username" value="${esc(REPO.owner)}" autocomplete="username" hidden>
+          <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required></div>
+          <label class="check"><input type="checkbox" id="keep"> Keep me signed in on this device</label>
+          <button class="btn primary block" id="pw-go" type="submit">Sign in</button>
+          <p class="login-msg" id="pw-msg">${esc(msg)}</p>
+        </form>
+        <div class="login-alt"><a href="#" id="to-token">Sign in with a GitHub token</a><a href="#" id="to-ro">View read-only</a></div>`);
+      $('#pw').focus();
+      $('#f-pw').onsubmit = async e => {
+        e.preventDefault();
+        const btn = $('#pw-go'), m = $('#pw-msg'); btn.disabled = true; m.textContent = 'Unlocking…';
+        try {
+          const { bundle, key, salt, iter } = await decryptBundle(file, $('#pw').value);
+          m.textContent = 'Checking GitHub access…';
+          try { await verifyGitHubToken(bundle.gh); }
+          catch (err) { btn.disabled = false; return viewSetup('Your password is correct, but the saved GitHub token no longer works: ' + err.message + ' Create a new token and set up sign-in again.'); }
+          TOKEN = bundle.gh; SESSION = { gh: bundle.gh, gc: bundle.gc || '' }; SESSION_KEY = { key, salt, iter };
+          saveSession($('#keep').checked); done();
+        } catch (err) { m.textContent = err.message; btn.disabled = false; $('#pw').select(); }
+      };
+      $('#to-token').onclick = e => { e.preventDefault(); viewToken(); };
+      $('#to-ro').onclick = e => { e.preventDefault(); TOKEN = null; done(); };
     };
-    $('#tok').addEventListener('keydown', e => { if (e.key === 'Enter') $('#tok-go').click(); });
+
+    const tokenHelp = `<details class="login-help"><summary>How to create the GitHub token</summary><ol>
+        <li>GitHub → Settings → Developer settings → Personal access tokens → <b>Fine-grained tokens</b> → Generate new token</li>
+        <li>Repository access: <b>Only select repositories</b> → ${esc(REPO.name)}</li>
+        <li>Permissions: <b>+ Add permissions</b> → Contents → <b>Read and write</b></li>
+        <li>Generate, copy the token and paste it here</li></ol></details>`;
+
+    const viewSetup = (msg = '') => {
+      root.innerHTML = frame(`<h2>${file ? 'Reset sign-in' : 'Set up sign-in'}</h2>
+        <p class="lead">Paste your GitHub token once and choose a password. The token is encrypted with the password and saved in the repository, so you can sign in on any device with the password alone.</p>
+        <form id="f-setup" autocomplete="on">
+          <input type="text" name="username" value="${esc(REPO.owner)}" autocomplete="username" hidden>
+          <div class="field"><label for="s-tok">GitHub token</label><input id="s-tok" type="password" class="mono" placeholder="github_pat_…" autocomplete="off" required></div>
+          ${tokenHelp}
+          <div class="field"><label for="s-pw">New password</label><input id="s-pw" type="password" autocomplete="new-password" minlength="${MIN_PW}" required><div class="hint">At least ${MIN_PW} characters. Use one you do not use anywhere else.</div></div>
+          <div class="field"><label for="s-pw2">Repeat password</label><input id="s-pw2" type="password" autocomplete="new-password" required></div>
+          <label class="check"><input type="checkbox" id="s-keep"> Keep me signed in on this device</label>
+          <button class="btn primary block" id="s-go" type="submit">Create sign-in</button>
+          <p class="login-msg" id="s-msg">${esc(msg)}</p>
+        </form>
+        <div class="login-alt">${file ? '<a href="#" id="to-pw">Back to password sign-in</a>' : ''}<a href="#" id="to-ro">View read-only</a></div>`);
+      $('#s-tok').focus();
+      $('#f-setup').onsubmit = async e => {
+        e.preventDefault();
+        const t = $('#s-tok').value.trim(), p1 = $('#s-pw').value, p2 = $('#s-pw2').value, m = $('#s-msg'), btn = $('#s-go');
+        if (p1.length < MIN_PW) { m.textContent = `The password needs at least ${MIN_PW} characters.`; return; }
+        if (p1 !== p2) { m.textContent = 'The two passwords do not match.'; return; }
+        btn.disabled = true; m.textContent = 'Checking GitHub token…';
+        try {
+          await verifyGitHubToken(t);
+          TOKEN = t;
+          m.textContent = 'Encrypting and saving…';
+          const salt = crypto.getRandomValues(new Uint8Array(16));
+          const key = await deriveKey(p1, salt, AUTH_ITER);
+          SESSION = { gh: t, gc: gcToken() };
+          await writeAuthFile(await encryptBundle(SESSION, key, salt, AUTH_ITER), 'Set up encrypted sign-in for Site Manager');
+          SESSION_KEY = { key, salt, iter: AUTH_ITER };
+          saveSession($('#s-keep').checked); done();
+          toast('Sign-in created. From now on, use your password on any device.');
+        } catch (err) { m.textContent = err.message; btn.disabled = false; }
+      };
+      if ($('#to-pw')) $('#to-pw').onclick = e => { e.preventDefault(); viewPassword(); };
+      $('#to-ro').onclick = e => { e.preventDefault(); TOKEN = null; done(); };
+    };
+
+    const viewToken = () => {
+      root.innerHTML = frame(`<h2>Sign in with a token</h2>
+        <form id="f-tok">
+          <div class="field"><label for="t-tok">GitHub token</label><input id="t-tok" type="password" class="mono" placeholder="github_pat_…" autocomplete="off" required></div>
+          ${tokenHelp}
+          <label class="check"><input type="checkbox" id="t-keep"> Keep me signed in on this device</label>
+          <button class="btn primary block" id="t-go" type="submit">Sign in</button>
+          <p class="login-msg" id="t-msg"></p>
+        </form>
+        <div class="login-alt">${file ? '<a href="#" id="to-pw">Use password instead</a>' : '<a href="#" id="to-setup">Set up password sign-in</a>'}<a href="#" id="to-ro">View read-only</a></div>`);
+      $('#t-tok').focus();
+      $('#f-tok').onsubmit = async e => {
+        e.preventDefault();
+        const t = $('#t-tok').value.trim(), m = $('#t-msg'), btn = $('#t-go'); btn.disabled = true; m.textContent = 'Checking token…';
+        try { await verifyGitHubToken(t); TOKEN = t; SESSION = { gh: t, gc: gcToken() }; SESSION_KEY = null; saveSession($('#t-keep').checked); done(); }
+        catch (err) { m.textContent = err.message; btn.disabled = false; }
+      };
+      if ($('#to-pw')) $('#to-pw').onclick = e => { e.preventDefault(); viewPassword(); };
+      if ($('#to-setup')) $('#to-setup').onclick = e => { e.preventDefault(); viewSetup(); };
+      $('#to-ro').onclick = e => { e.preventDefault(); TOKEN = null; done(); };
+    };
+
+    if (opts.message && file) return viewPassword(opts.message);
+    file ? viewPassword() : viewSetup();
   });
 }
-$('#link-signout').onclick = async e => { e.preventDefault(); lsSet(LS.token, null); TOKEN = null; await showLogin(true); await loadContent(); };
+
+// Restore a session from this tab / device, otherwise show the sign-in screen
+async function ensureSignedIn() {
+  const s = loadSession();
+  if (s && s.gh) {
+    try {
+      await verifyGitHubToken(s.gh);
+      TOKEN = s.gh; SESSION = s;
+      if (lsGet(LS.token)) { lsSet(LS.token, null); lsSet(LS.gcToken, null); saveSession(true); } // finish migration
+      fetchAuthFile().then(f => { AUTH_INFO = { exists: !!f, updated: f?.updated }; });
+      setAuthState(); return;
+    } catch (e) { clearSession(); return showLogin({ message: 'Your session expired. Please sign in again.' }); }
+  }
+  return showLogin();
+}
+async function signOut() { clearSession(); setAuthState(); await showLogin(); await loadContent(); }
+$('#link-signout').onclick = async e => { e.preventDefault(); if (TOKEN) return signOut(); await showLogin(); await loadContent(); };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Navigation
@@ -756,22 +971,82 @@ function viewPhotos(v) {
 // ── CV & site settings ──
 function viewCV(v) {
   const s = C.site, cv = C.cv;
-  v.innerHTML = `<h2>CV &amp; site settings</h2><p class="lead">The CV download card, page titles, and analytics IDs.</p>
+  v.innerHTML = `<h2>CV &amp; site settings</h2><p class="lead">The CV download card, page titles, analytics IDs and your admin sign-in.</p>
   <div class="card"><h3>Curriculum vitae</h3>
     ${field('CV file name', cv, 'file', 'text', 'PDF in the repository root. Spaces are fine.')}
     <div class="toolbar"><input type="file" id="up-cv" accept="application/pdf" style="display:none"><button class="btn sm" id="btn-up-cv">Upload new CV (PDF)…</button><span class="hint" id="up-cv-msg"></span></div>
     ${biField('“Last updated” line', cv, 'updated')}</div>
   <div class="card"><h3>Site</h3>
     ${biField('Homepage title', s, 'title')}${biField('Publications page title', s, 'pub_page_title')}
-    <div class="row two">${field('Footer year', s, 'footer_year')}${field('Your author short name', s, 'me_author', 'text', 'As written in author lists, e.g. Tang H. — centres the network graph.')}</div></div>
+    <div class="row two">${field('Footer year', s, 'footer_year')}${field('Your author short name', s, 'me_author', 'text', 'As written in author lists, e.g. Tang H. This name sits at the centre of the network graph.')}</div></div>
   <div class="card"><h3>Analytics</h3>
     <div class="row two">
       ${field('GoatCounter site code', s, 'goatcounter_code', 'text', 'The <code>xxx</code> in xxx.goatcounter.com. Leave empty to disable. Pageviews only, no cookies, no personal data.')}
-      ${field('Google Analytics ID', s, 'ga_id', 'text', 'Informational: the GA tag is in the page head.')}</div></div>`;
+      ${field('Google Analytics ID', s, 'ga_id', 'text', 'Informational: the GA tag is in the page head.')}</div></div>
+  <div class="card" id="acct"></div>`;
   uploader('#btn-up-cv', '#up-cv', '#up-cv-msg', async (file) => {
     const name = await uploadToRepo(file, 'CV_Hui_Tang_' + new Date().getFullYear() + '.pdf');
     cv.file = name; markDirty(); render();
   });
+  renderAccount();
+}
+
+// ── Admin sign-in settings: set up, change password, replace token, disable ──
+function renderAccount() {
+  const box = $('#acct'); if (!box) return;
+  const exists = AUTH_INFO?.exists;
+  const when = AUTH_INFO?.updated ? new Date(AUTH_INFO.updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  if (!TOKEN) { box.innerHTML = `<h3>Admin sign-in</h3><p class="hint">Sign in to manage the password.</p>`; return; }
+  box.innerHTML = `<h3>Admin sign-in</h3>
+    <p style="margin-bottom:0.9rem">${exists ? `<span class="pill ok">Password sign-in on</span> <span class="hint">last changed ${esc(when)}</span>` : `<span class="pill warn">Password sign-in off</span> <span class="hint">You are signed in with a token. Set a password to sign in from any device.</span>`}</p>
+    <form id="f-acct" autocomplete="on">
+      <input type="text" name="username" value="${esc(REPO.owner)}" autocomplete="username" hidden>
+      <div class="row">
+        ${exists ? `<div class="field"><label for="a-cur">Current password</label><input id="a-cur" type="password" autocomplete="current-password" required></div>` : ''}
+        <div class="field"><label for="a-new">${exists ? 'New password' : 'Password'}</label><input id="a-new" type="password" autocomplete="new-password" ${exists ? '' : 'required'} placeholder="${exists ? 'leave empty to keep' : ''}"></div>
+        <div class="field"><label for="a-new2">Repeat ${exists ? 'new ' : ''}password</label><input id="a-new2" type="password" autocomplete="new-password"></div></div>
+      <div class="field"><label for="a-tok">Replace GitHub token (optional)</label><input id="a-tok" type="password" class="mono" placeholder="leave empty to keep the current token" autocomplete="off">
+        <div class="hint">Use this when the token expires. The GoatCounter token from the Visitors tab is saved along with it.</div></div>
+      <div class="toolbar"><button class="btn primary sm" type="submit" id="a-go">${exists ? 'Save sign-in' : 'Turn on password sign-in'}</button>
+        ${exists ? '<button class="btn sm danger" type="button" id="a-off">Turn off password sign-in</button>' : ''}
+        <span class="hint" id="a-msg"></span></div>
+    </form>`;
+  const msg = $('#a-msg');
+  $('#f-acct').onsubmit = async e => {
+    e.preventDefault();
+    const cur = $('#a-cur')?.value || '', p1 = $('#a-new').value, p2 = $('#a-new2').value, newTok = $('#a-tok').value.trim();
+    const btn = $('#a-go'); btn.disabled = true;
+    try {
+      let password = p1;
+      if (p1 || !exists) {
+        if (p1.length < MIN_PW) throw new Error(`The password needs at least ${MIN_PW} characters.`);
+        if (p1 !== p2) throw new Error('The two new passwords do not match.');
+      }
+      let bundle = { gh: TOKEN, gc: gcToken() };
+      if (exists) {
+        msg.textContent = 'Checking current password…';
+        const f = await fetchAuthFile(); if (!f) throw new Error('admin-auth.json was not found. Reload the page.');
+        const d = await decryptBundle(f, cur);
+        bundle = { gh: d.bundle.gh || TOKEN, gc: gcToken() || d.bundle.gc || '' };
+        if (!p1) password = cur;
+      }
+      if (newTok) { msg.textContent = 'Checking new token…'; await verifyGitHubToken(newTok); bundle.gh = newTok; }
+      msg.textContent = 'Encrypting and saving…';
+      TOKEN = bundle.gh;
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const key = await deriveKey(password, salt, AUTH_ITER);
+      await writeAuthFile(await encryptBundle(bundle, key, salt, AUTH_ITER), exists ? 'Update encrypted sign-in via Site Manager' : 'Set up encrypted sign-in for Site Manager');
+      SESSION = bundle; SESSION_KEY = { key, salt, iter: AUTH_ITER }; saveSession();
+      setAuthState(); toast(exists ? 'Sign-in updated.' : 'Password sign-in is on. Use it on any device.');
+      renderAccount();
+    } catch (err) { msg.textContent = err.message; btn.disabled = false; }
+  };
+  if ($('#a-off')) $('#a-off').onclick = async () => {
+    const b = $('#a-off');
+    if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Click again to turn off'; setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = 'Turn off password sign-in'; } }, 3000); return; }
+    try { await deleteAuthFile(); SESSION_KEY = null; setAuthState(); toast('Password sign-in turned off. Sign in with a token from now on.'); renderAccount(); }
+    catch (err) { msg.textContent = err.message; }
+  };
 }
 
 // ── Raw JSON ──
@@ -791,7 +1066,7 @@ function viewJSON(v) {
 let GC_PERIOD = 30;
 function viewOverview(v) {
   const code = C.site.goatcounter_code;
-  const gcTok = lsGet(LS.gcToken) || '';
+  const gcTok = gcToken();
   v.innerHTML = `<h2>Visitors</h2><p class="lead">Aggregate, privacy-friendly statistics from GoatCounter: page views, countries and referrers. No individual IP addresses are stored or shown.</p>
   ${!code ? `<div class="card"><h3>Set up GoatCounter (free, ~3 minutes)</h3>
     <ol style="margin:0 0 0.8rem 1.2rem;font-size:13.5px;line-height:1.8">
@@ -806,7 +1081,15 @@ function viewOverview(v) {
         ${code ? `<a class="btn sm" href="https://${esc(code)}.goatcounter.com" target="_blank">Open dashboard ↗</a>` : ''}
         ${C.site.ga_id ? `<a class="btn sm" href="https://analytics.google.com/" target="_blank">Google Analytics ↗</a>` : ''}</div></div></div>
   <div id="gc-stats"></div>`;
-  $('#gc-save').onclick = () => { lsSet(LS.gcToken, $('#gc-token').value.trim() || null); toast('Saved'); loadStats(); };
+  $('#gc-save').onclick = async () => {
+    const val = $('#gc-token').value.trim();
+    SESSION = { ...(SESSION || {}), gc: val }; if (SESSION.gh || TOKEN) { SESSION.gh ||= TOKEN; saveSession(); } else lsSet(LS.gcToken, val || null);
+    GC_CACHE.clear();
+    let synced = false;
+    try { synced = await syncAuthBundle(); } catch (e) {}
+    toast(synced ? 'Saved and synced to your encrypted sign-in (available on all devices).' : (AUTH_INFO?.exists ? 'Saved on this device. To use it on other devices, re-enter your password under CV & site settings → Admin sign-in.' : 'Saved on this device.'));
+    loadStats();
+  };
   loadStats();
 }
 // GoatCounter rate-limits the API, so requests run one at a time, retry on 429 and are cached briefly
@@ -839,7 +1122,7 @@ const fmtN = n => Number(n || 0).toLocaleString('en-US');
 const dstr = d => d.toISOString().slice(0, 10);
 async function loadStats() {
   const box = $('#gc-stats'); if (!box) return;
-  const code = C.site.goatcounter_code; const token = lsGet(LS.gcToken);
+  const code = C.site.goatcounter_code; const token = gcToken();
   if (!code) { box.innerHTML = ''; return; }
   const run = ++GC_LOADING; // ignore results of superseded loads
   box.innerHTML = `<div class="toolbar"><div class="seg" id="gc-seg">${[7, 30, 90, 365].map(d => `<button data-d="${d}" class="${GC_PERIOD === d ? 'active' : ''}">${d === 365 ? '1 year' : d + ' days'}</button>`).join('')}</div><span class="hint" id="gc-msg">Loading…</span></div><div id="gc-body"></div>`;
@@ -930,11 +1213,12 @@ function sparkline(days, vals) {
 // Boot
 // ─────────────────────────────────────────────────────────────────────────────
 $('#btn-save').onclick = saveContent;
+$('#btn-signout').onclick = () => (TOKEN ? signOut() : showLogin().then(loadContent));
 $('#btn-reload').onclick = async () => { if (isDirty() && !$('#btn-reload').dataset.confirm) { $('#btn-reload').dataset.confirm = '1'; $('#btn-reload').textContent = 'Discard changes & reload?'; setTimeout(() => { $('#btn-reload').dataset.confirm = ''; $('#btn-reload').textContent = 'Reload from GitHub'; }, 3000); return; } $('#btn-reload').dataset.confirm = ''; $('#btn-reload').textContent = 'Reload from GitHub'; await loadContent(); };
 window.addEventListener('beforeunload', e => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
 (async () => {
   TAB = lsGet(LS.tab) || 'overview';
-  await showLogin();
+  await ensureSignedIn();
   await loadContent();
 })();
 </script>
