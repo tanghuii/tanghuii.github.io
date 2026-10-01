@@ -18,7 +18,7 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
-  body { font-family: var(--sans); background: var(--paper); color: var(--ink); font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  body { font-family: var(--sans); background: var(--paper); color: var(--ink); font-size: 17.5px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
   a { color: var(--accent); }
   button, input, select, textarea { font: inherit; color: inherit; }
   input[type=text], input[type=url], input[type=password], input[type=number], select, textarea {
@@ -26,20 +26,20 @@
   }
   input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-light); outline-offset: 1px; border-color: var(--accent-light); }
   textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
-  textarea.mono, input.mono { font-family: var(--mono); font-size: 12.5px; }
-  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 0.3rem; }
+  textarea.mono, input.mono { font-family: var(--mono); font-size: 15.625px; }
+  label { display: block; font-size: 15px; font-weight: 600; color: var(--muted); letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 0.3rem; }
   .field { margin-bottom: 0.9rem; min-width: 0; }
   .row { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
   .row.two { grid-template-columns: 1fr 1fr; }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 0.3rem; }
+  .hint { font-size: 15px; color: var(--muted); margin-top: 0.3rem; }
   .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border: 1px solid var(--subtle); border-radius: 6px; background: var(--card); cursor: pointer; font-weight: 500; transition: all .2s; white-space: nowrap; }
   .btn:hover { border-color: var(--accent); color: var(--accent); }
   .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn.primary:hover { background: var(--accent-light); border-color: var(--accent-light); color: #fff; }
   .btn.danger:hover { border-color: var(--err); color: var(--err); }
-  .btn.sm { padding: 0.25rem 0.6rem; font-size: 12px; }
+  .btn.sm { padding: 0.25rem 0.6rem; font-size: 15px; }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 100px; letter-spacing: 0.03em; }
+  .pill { display: inline-block; font-size: 13.75px; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 100px; letter-spacing: 0.03em; }
   .pill.ok { background: var(--ok-bg); color: var(--ok); }
   .pill.warn { background: var(--warn-bg); color: var(--warn); }
   .pill.err { background: var(--err-bg); color: var(--err); }
@@ -48,38 +48,38 @@
   .app { display: grid; grid-template-columns: 230px 1fr; height: 100%; }
   aside { border-right: 1px solid var(--subtle); background: var(--card); padding: 1.2rem 0; display: flex; flex-direction: column; }
   .brand { padding: 0 1.2rem 1rem; border-bottom: 1px solid var(--subtle); }
-  .brand h1 { font-family: var(--serif); font-weight: 600; font-size: 1.25rem; color: var(--accent); }
-  .brand p { font-size: 12px; color: var(--muted); }
+  .brand h1 { font-family: var(--serif); font-weight: 600; font-size: 1.562rem; color: var(--accent); }
+  .brand p { font-size: 15px; color: var(--muted); }
   nav { padding: 0.8rem 0.6rem; display: flex; flex-direction: column; gap: 2px; flex: 1; }
   nav button { text-align: left; padding: 0.5rem 0.7rem; border: none; background: none; border-radius: 6px; cursor: pointer; color: var(--muted); font-weight: 500; display: flex; justify-content: space-between; align-items: center; }
   nav button:hover { background: var(--highlight); color: var(--ink); }
   nav button.active { background: var(--highlight); color: var(--accent); font-weight: 600; }
-  nav .count { font-size: 11px; color: var(--muted); font-weight: 500; }
-  .aside-foot { padding: 0.8rem 1.2rem 0; border-top: 1px solid var(--subtle); font-size: 12px; color: var(--muted); }
+  nav .count { font-size: 13.75px; color: var(--muted); font-weight: 500; }
+  .aside-foot { padding: 0.8rem 1.2rem 0; border-top: 1px solid var(--subtle); font-size: 15px; color: var(--muted); }
   .aside-foot a { display: block; margin-top: 0.3rem; text-decoration: none; }
 
   main { overflow-y: auto; min-width: 0; }
   .topbar { position: sticky; top: 0; z-index: 5; background: rgba(250,248,245,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--subtle); padding: 0.7rem 1.6rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-  .topbar .status { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .topbar .status { font-size: 15.625px; color: var(--muted); display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
   .topbar .actions { display: flex; gap: 0.5rem; }
   .content { padding: 1.6rem; max-width: 1000px; }
-  h2 { font-family: var(--serif); font-weight: 400; font-size: 1.5rem; margin-bottom: 0.3rem; }
-  .lead { color: var(--muted); margin-bottom: 1.4rem; font-size: 13.5px; }
+  h2 { font-family: var(--serif); font-weight: 400; font-size: 1.68rem; margin-bottom: 0.3rem; }
+  .lead { color: var(--muted); margin-bottom: 1.4rem; font-size: 16.875px; }
   .card { background: var(--card); border: 1px solid var(--subtle); border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1rem; }
-  .card h3 { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; margin-bottom: 0.8rem; color: var(--accent); }
+  .card h3 { font-family: var(--serif); font-weight: 600; font-size: 1.312rem; margin-bottom: 0.8rem; color: var(--accent); }
   .item { background: var(--card); border: 1px solid var(--subtle); border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 0.7rem; }
   .item-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.7rem; flex-wrap: wrap; }
   .item-head .title { font-weight: 600; flex: 1; min-width: 160px; }
   .item-head .tools { display: flex; gap: 0.3rem; }
-  .item-head .tools .btn { padding: 0.2rem 0.5rem; font-size: 12px; }
+  .item-head .tools .btn { padding: 0.2rem 0.5rem; font-size: 15px; }
   .toolbar { display: flex; gap: 0.6rem; margin: 0.5rem 0 1rem; flex-wrap: wrap; align-items: center; }
-  .check { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 13px; cursor: pointer; }
+  .check { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 16.25px; cursor: pointer; }
   .check input { width: auto; }
   .list-compact .item { padding: 0.7rem 1rem; }
   .pub-row { display: grid; grid-template-columns: 56px 1fr auto; gap: 0.9rem; align-items: center; cursor: pointer; }
   .pub-row img, .pub-row .nocover { width: 48px; height: 64px; object-fit: cover; border-radius: 4px; border: 1px solid var(--subtle); background: var(--highlight); display: flex; align-items: center; justify-content: center; font-size: 18px; }
   .pub-row .t { font-weight: 600; line-height: 1.35; }
-  .pub-row .m { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .pub-row .m { font-size: 15.625px; color: var(--muted); margin-top: 2px; }
   .pub-row .m span { margin-right: 0.5rem; }
   .pub-edit { border-top: 1px dashed var(--subtle); margin-top: 0.9rem; padding-top: 0.9rem; }
   .cover-pick { display: flex; gap: 0.8rem; align-items: flex-start; }
@@ -91,26 +91,26 @@
   .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.8rem; }
   .thumb { border: 1px solid var(--subtle); border-radius: 8px; overflow: hidden; background: var(--card); }
   .thumb img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; }
-  .thumb .cap { padding: 0.5rem 0.6rem; font-size: 12px; }
-  .thumb .cap input { padding: 0.3rem 0.4rem; font-size: 12px; margin-top: 0.25rem; }
+  .thumb .cap { padding: 0.5rem 0.6rem; font-size: 15px; }
+  .thumb .cap input { padding: 0.3rem 0.4rem; font-size: 15px; margin-top: 0.25rem; }
   .thumb .tools { display: flex; gap: 0.2rem; padding: 0 0.6rem 0.5rem; }
-  .thumb .tools .btn { padding: 0.15rem 0.45rem; font-size: 11px; }
+  .thumb .tools .btn { padding: 0.15rem 0.45rem; font-size: 13.75px; }
 
   /* Analytics */
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.8rem; margin-bottom: 1rem; }
   .tile { background: var(--card); border: 1px solid var(--subtle); border-radius: 10px; padding: 0.9rem 1.1rem; }
-  .tile .k { font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-  .tile .v { font-family: var(--serif); font-size: 1.9rem; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1.2; }
-  .tile .s { font-size: 12px; color: var(--muted); }
+  .tile .k { font-size: 14.375px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .tile .v { font-family: var(--serif); font-size: 2.128rem; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .tile .s { font-size: 15px; color: var(--muted); }
   .bars { display: grid; gap: 0.35rem; }
-  .bar { display: grid; grid-template-columns: minmax(90px, 160px) 1fr 56px; gap: 0.6rem; align-items: center; font-size: 13px; }
+  .bar { display: grid; grid-template-columns: minmax(90px, 160px) 1fr 56px; gap: 0.6rem; align-items: center; font-size: 16.25px; }
   .bar .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bar .track { height: 10px; background: var(--highlight); border-radius: 100px; overflow: hidden; }
   .bar .fill { height: 100%; background: var(--accent-light); border-radius: 100px; }
   .bar .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
   .chart { width: 100%; height: 160px; display: block; }
   .seg { display: inline-flex; border: 1px solid var(--subtle); border-radius: 6px; overflow: hidden; }
-  .seg button { border: none; background: var(--card); padding: 0.35rem 0.75rem; cursor: pointer; font-size: 12.5px; color: var(--muted); }
+  .seg button { border: none; background: var(--card); padding: 0.35rem 0.75rem; cursor: pointer; font-size: 15.625px; color: var(--muted); }
   .seg button.active { background: var(--accent); color: #fff; }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
   @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
@@ -119,12 +119,12 @@
   .overlay { position: fixed; inset: 0; background: rgba(26,26,46,0.35); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
   .modal { background: var(--card); border-radius: 12px; padding: 1.6rem 1.8rem; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
   .modal h2 { margin-bottom: 0.6rem; }
-  .modal ol { margin: 0.6rem 0 1rem 1.2rem; font-size: 13px; color: #444; }
+  .modal ol { margin: 0.6rem 0 1rem 1.2rem; font-size: 16.25px; color: #444; }
   .modal ol li { margin-bottom: 0.25rem; }
-  .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 0.7rem 1.3rem; border-radius: 8px; font-size: 13px; opacity: 0; transition: all .3s; z-index: 60; pointer-events: none; max-width: 90vw; }
+  .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 0.7rem 1.3rem; border-radius: 8px; font-size: 16.25px; opacity: 0; transition: all .3s; z-index: 60; pointer-events: none; max-width: 90vw; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.err { background: var(--err); }
-  .log { font-family: var(--mono); font-size: 12px; background: var(--highlight); border-radius: 6px; padding: 0.6rem 0.8rem; max-height: 180px; overflow: auto; white-space: pre-wrap; }
+  .log { font-family: var(--mono); font-size: 15px; background: var(--highlight); border-radius: 6px; padding: 0.6rem 0.8rem; max-height: 180px; overflow: auto; white-space: pre-wrap; }
   .dirty-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); display: inline-block; }
 
 
@@ -134,21 +134,21 @@
   .login > .login-foot { margin-bottom: auto; }
   .login-card { width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--subtle); border-radius: 12px; padding: 2rem 2rem 1.5rem; box-shadow: 0 12px 40px var(--shadow); }
   .login-brand { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding-bottom: 1.2rem; margin-bottom: 1.3rem; border-bottom: 1px solid var(--subtle); }
-  .login-name { font-family: 'Pinyon Script', 'Crimson Pro', cursive; font-size: 2.1rem; color: var(--accent); line-height: 1.1; }
-  .login-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
-  .login h2 { font-size: 1.35rem; margin-bottom: 0.9rem; }
+  .login-name { font-family: 'Pinyon Script', 'Crimson Pro', cursive; font-size: 2.352rem; color: var(--accent); line-height: 1.1; }
+  .login-sub { font-size: 15px; color: var(--muted); letter-spacing: 0.04em; }
+  .login h2 { font-size: 1.688rem; margin-bottom: 0.9rem; }
   .login .lead { margin-bottom: 1rem; }
-  .login .check { margin: 0.2rem 0 1rem; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--ink); font-size: 13px; }
+  .login .check { margin: 0.2rem 0 1rem; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--ink); font-size: 16.25px; }
   .btn.block { width: 100%; justify-content: center; padding: 0.65rem 1rem; }
-  .login-msg { min-height: 1.3em; margin-top: 0.7rem; font-size: 13px; color: var(--err); text-align: center; }
+  .login-msg { min-height: 1.3em; margin-top: 0.7rem; font-size: 16.25px; color: var(--err); text-align: center; }
   .login-msg:empty { min-height: 0; margin: 0; }
-  .login-alt { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.1rem; padding-top: 0.9rem; border-top: 1px dashed var(--subtle); font-size: 12.5px; }
+  .login-alt { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.1rem; padding-top: 0.9rem; border-top: 1px dashed var(--subtle); font-size: 15.625px; }
   .login-alt a { text-decoration: none; }
   .login-alt a:hover { text-decoration: underline; }
-  .login-help { margin: -0.3rem 0 0.9rem; font-size: 12.5px; color: var(--muted); }
+  .login-help { margin: -0.3rem 0 0.9rem; font-size: 15.625px; color: var(--muted); }
   .login-help summary { cursor: pointer; color: var(--accent); }
   .login-help ol { margin: 0.5rem 0 0 1.1rem; line-height: 1.6; }
-  .login-foot { margin-top: 1.2rem; font-size: 13px; }
+  .login-foot { margin-top: 1.2rem; font-size: 16.25px; }
   .login-foot a { color: var(--muted); text-decoration: none; }
   .mobile-only { display: none; }
 
@@ -393,8 +393,9 @@ async function watchForCovers(fromSha) {
   }
   if (run === COVER_WATCH) setCoverStatus('The cover search has not finished. Check the Actions tab on GitHub, or click “Reload from GitHub” in a minute.');
 }
-let COVER_STATUS = '';
-function setCoverStatus(msg) { COVER_STATUS = msg; const el = $('#cover-status'); if (el) { el.textContent = msg; el.hidden = !msg; } }
+let COVER_STATUS = '', CITE_SUMMARY = '';
+// Cover results are shown after the citation summary of the same refresh, if any
+function setCoverStatus(msg, keepSummary = true) { msg = keepSummary && CITE_SUMMARY && !msg.startsWith(CITE_SUMMARY) ? CITE_SUMMARY + ' ' + msg : msg; COVER_STATUS = msg; const el = $('#cover-status'); if (el) { el.textContent = msg; el.hidden = !msg; } }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Login: the GitHub token (and GoatCounter token) are encrypted with the admin
@@ -874,19 +875,61 @@ async function lookupDoi(doiInput, status = () => {}) {
   if (journal) { const same = C.publications.find(p => p.cover && normName(p.venue).startsWith(normName(journal).slice(0, 12))); if (same) out.cover = same.cover; }
   return out;
 }
-async function updateAllCitations(btn) {
-  const pubs = C.publications.filter(p => p.year !== 'book' && (p.doi || parseDoi(p.url) || parseDoi(p.venue)));
-  if (!pubs.length) return toast('No publications with a DOI yet. Add a DOI in each paper to enable this.', true);
-  btn.disabled = true; let n = 0, changed = 0;
+// Find a DOI for a paper that has none, by exact title match on OpenAlex
+async function findDoiByTitle(p) {
+  const title = stripTags(p.title || ''); if (title.length < 15) return null;
+  try {
+    const r = await fetchJson(`https://api.openalex.org/works?search=${encodeURIComponent(title)}&per-page=5&select=doi,display_name,cited_by_count,publication_year`);
+    const want = normName(title);
+    const hit = (r.results || []).find(w => {
+      const got = normName(w.display_name);
+      if (!got || !w.doi) return false;
+      if (got === want) return true;
+      const [short, long] = got.length < want.length ? [got, want] : [want, got];
+      return long.startsWith(short) && short.length / long.length > 0.6; // title vs title+subtitle
+    });
+    return hit ? { doi: hit.doi.replace(/^https?:\/\/doi\.org\//i, ''), cited: hit.cited_by_count } : null;
+  } catch (e) { return null; }
+}
+
+// One click: refresh citation counts, fill missing DOIs, publish, then let GitHub fetch missing covers
+async function refreshAll(btn) {
+  const label = btn.textContent;
+  const pubs = C.publications.filter(p => p.year !== 'book');
+  btn.disabled = true;
+  let n = 0, changed = 0, doisAdded = 0, notFound = [];
   for (const p of pubs) {
     btn.textContent = `Updating citations… ${++n}/${pubs.length}`;
-    const doi = p.doi || parseDoi(p.url) || parseDoi(p.venue);
-    try { const oa = await fetchJson(`https://api.openalex.org/works/doi:${encodeURIComponent(doi)}`); if (typeof oa.cited_by_count === 'number' && oa.cited_by_count !== p.cited) { p.cited = oa.cited_by_count; changed++; } p.doi ||= doi; }
-    catch (e) {}
-    await new Promise(r => setTimeout(r, 150));
+    let doi = p.doi || parseDoi(p.url) || parseDoi(p.venue);
+    let cited = null;
+    try {
+      if (!doi) {
+        if (p.status) continue; // unpublished manuscripts have no DOI yet
+        const f = await findDoiByTitle(p);
+        if (f) { doi = f.doi; cited = f.cited; p.doi = doi; doisAdded++; }
+      }
+      if (doi && cited == null) {
+        const oa = await fetchJson(`https://api.openalex.org/works/doi:${encodeURIComponent(doi)}?select=cited_by_count`);
+        cited = oa.cited_by_count;
+        if (!p.doi) { p.doi = doi; doisAdded++; }
+      }
+    } catch (e) {}
+    if (typeof cited === 'number') { if (cited !== p.cited) { p.cited = cited; changed++; } }
+    else if (!p.status) notFound.push(p.title_short || p.title);
+    await sleep(120);
   }
-  btn.disabled = false; btn.textContent = 'Update citation counts';
-  markDirty(); render(); toast(`Citation counts refreshed from OpenAlex (${changed} changed). Publish to save.`);
+  C.site.last_refresh = new Date().toISOString(); // always changes, so publishing always triggers the cover search
+  markDirty(); render();
+  CITE_SUMMARY = '';
+  const summary = `Citations: ${changed} updated` + (doisAdded ? `, ${doisAdded} DOI${doisAdded > 1 ? 's' : ''} filled in` : '') + (notFound.length ? `, ${notFound.length} not found on OpenAlex` : '') + '.';
+  if (!TOKEN) { toast(summary + ' Sign in to publish.'); btn.disabled = false; btn.textContent = label; return; }
+  btn.textContent = 'Publishing…';
+  CITE_SUMMARY = summary;
+  await saveContent();
+  const missing = coverlessWithDoi().length;
+  setCoverStatus((missing ? ` Looking for ${missing} missing cover${missing > 1 ? 's' : ''} on GitHub… (about 1 minute)` : ' All published papers already have a cover.'));
+  if (notFound.length) console.info('No OpenAlex record for:', notFound);
+  btn.disabled = false; btn.textContent = label;
 }
 
 // ── Publications ──
@@ -899,7 +942,8 @@ function viewPublications(v) {
       <div class="hint" id="doi-msg">Title, authors, journal, volume/pages, year, abstract and citation count are filled in from Crossref, OpenAlex and Semantic Scholar. Check the author list (corresponding author *) and the status badge afterwards.</div></div>
     <div class="toolbar"><button class="btn sm" id="add-pub">+ Add manually</button>
       <input type="file" id="up-cover" accept="image/*" style="display:none"><button class="btn sm" id="btn-up-cover">Upload journal cover…</button>
-      <button class="btn sm" id="btn-cites">Update citation counts</button><span class="hint" id="up-cover-msg"></span></div>
+      <button class="btn sm" id="btn-cites" title="Update citation counts from OpenAlex, publish, and fetch missing journal covers">↻ Refresh citations &amp; covers</button><span class="hint" id="up-cover-msg"></span></div>
+    ${C.site.last_refresh ? `<p class="hint" style="margin:-0.4rem 0 0.6rem">Citations last refreshed ${esc(new Date(C.site.last_refresh).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }))} (source: OpenAlex)</p>` : ''}
     <p class="hint cover-status" id="cover-status" ${COVER_STATUS ? '' : 'hidden'}>${esc(COVER_STATUS)}</p>
     <div id="pubs"></div>`;
   $('#doi-go').onclick = async () => {
@@ -917,7 +961,7 @@ function viewPublications(v) {
     b.disabled = false;
   };
   $('#doi-in').addEventListener('keydown', e => { if (e.key === 'Enter') $('#doi-go').click(); });
-  $('#btn-cites').onclick = () => updateAllCitations($('#btn-cites'));
+  $('#btn-cites').onclick = () => refreshAll($('#btn-cites'));
   const rr = () => {
     const box = $('#pubs'); BIND.clear();
     const groups = {}; pubs.forEach(p => (groups[p.year || '?'] ||= []).push(p));
@@ -1174,7 +1218,7 @@ function viewOverview(v) {
   const gcTok = gcToken();
   v.innerHTML = `<h2>Visitors</h2><p class="lead">Aggregate, privacy-friendly statistics from GoatCounter: page views, countries and referrers. No individual IP addresses are stored or shown.</p>
   ${!code ? `<div class="card"><h3>Set up GoatCounter (free, ~3 minutes)</h3>
-    <ol style="margin:0 0 0.8rem 1.2rem;font-size:13.5px;line-height:1.8">
+    <ol style="margin:0 0 0.8rem 1.2rem;font-size:16.875px;line-height:1.8">
       <li>Create an account at <a href="https://www.goatcounter.com/signup" target="_blank">goatcounter.com/signup</a> and pick a site code (e.g. <b>tanghuii</b>).</li>
       <li>Enter that code under <b>CV &amp; site settings → GoatCounter site code</b> and publish. Both pages then load the tracking script.</li>
       <li>For charts here: GoatCounter → Settings → <b>API</b> → new token with <b>Read statistics</b>, paste it below.</li>
@@ -1306,11 +1350,11 @@ function sparkline(days, vals) {
   const ticks = [0, Math.round(max / 2), max];
   const labelEvery = Math.ceil(n / 6);
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Daily page views">
-    ${ticks.map(t => `<line x1="${padL}" x2="${W - 8}" y1="${y(t)}" y2="${y(t)}" stroke="#d4cdc4" stroke-dasharray="2 4"/><text x="${padL - 6}" y="${y(t) + 4}" font-size="11" text-anchor="end" fill="#8a8279" font-family="DM Sans, sans-serif">${t}</text>`).join('')}
+    ${ticks.map(t => `<line x1="${padL}" x2="${W - 8}" y1="${y(t)}" y2="${y(t)}" stroke="#d4cdc4" stroke-dasharray="2 4"/><text x="${padL - 6}" y="${y(t) + 4}" font-size="13" text-anchor="end" fill="#8a8279" font-family="DM Sans, sans-serif">${t}</text>`).join('')}
     <path d="${area}" fill="#a67c52" fill-opacity="0.15"/>
     <polyline points="${pts}" fill="none" stroke="#6b4c3b" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
     <circle cx="${x(n - 1)}" cy="${y(vals[n - 1])}" r="3.5" fill="#6b4c3b"/>
-    ${days.map((d, i) => i % labelEvery === 0 || i === n - 1 ? `<text x="${x(i)}" y="${H - 6}" font-size="11" text-anchor="${i === n - 1 && n > 1 ? 'end' : i === 0 ? 'start' : 'middle'}" fill="#8a8279" font-family="DM Sans, sans-serif">${d.slice(5)}</text>` : '').join('')}
+    ${days.map((d, i) => i % labelEvery === 0 || i === n - 1 ? `<text x="${x(i)}" y="${H - 6}" font-size="13" text-anchor="${i === n - 1 && n > 1 ? 'end' : i === 0 ? 'start' : 'middle'}" fill="#8a8279" font-family="DM Sans, sans-serif">${d.slice(5)}</text>` : '').join('')}
   </svg>`;
 }
 

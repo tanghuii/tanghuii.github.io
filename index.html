@@ -68,18 +68,20 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 1.5rem;
       height: 60px;
     }
 
     .nav-name {
       font-family: 'Crimson Pro', serif;
       font-weight: 600;
-      font-size: 1.15rem;
+      font-size: 1.438rem;
       letter-spacing: 0.02em;
       color: var(--accent);
       transition: opacity 0.25s;
     }
     .nav-name:hover { opacity: 0.7; }
+    .nav-name { white-space: nowrap; flex-shrink: 0; }
 
     .nav-right {
       display: flex;
@@ -87,12 +89,12 @@
       gap: 1.5rem;
     }
 
-    .nav-links { display: flex; gap: 2rem; }
+    .nav-links { display: flex; gap: 1.35rem; }
     .hamburger { display: none; }
 
     .nav-links a {
       text-decoration: none;
-      font-size: 0.85rem;
+      font-size: 0.95rem;
       font-weight: 500;
       color: var(--muted);
       letter-spacing: 0.04em;
@@ -119,7 +121,7 @@
       padding: 0.35rem 0.9rem !important;
       border-radius: 100px;
       text-transform: uppercase;
-      font-size: 0.82rem !important;
+      font-size: 1.025rem !important;
       letter-spacing: 0.04em;
       transition: all 0.25s;
     }
@@ -142,7 +144,7 @@
     }
     .lang-btn {
       padding: 0.3rem 0.7rem;
-      font-size: 0.75rem;
+      font-size: 0.938rem;
       font-weight: 600;
       border: none;
       background: transparent;
@@ -204,7 +206,7 @@
 
     .hero-text h1 {
       font-family: 'Crimson Pro', serif;
-      font-size: 2.6rem;
+      font-size: 2.912rem;
       font-weight: 300;
       line-height: 1.2;
       margin-bottom: 0.5rem;
@@ -213,14 +215,14 @@
     }
 
     .affiliation {
-      font-size: 0.95rem;
+      font-size: 1.188rem;
       color: var(--accent);
       font-weight: 500;
       margin-bottom: 1.5rem;
     }
 
     .bio {
-      font-size: 0.98rem;
+      font-size: 1.225rem;
       color: #444;
       line-height: 1.85;
       max-width: 560px;
@@ -240,7 +242,7 @@
       padding: 0.5rem 1.1rem;
       border: 1px solid var(--subtle);
       border-radius: 6px;
-      font-size: 0.82rem;
+      font-size: 1.025rem;
       font-weight: 500;
       color: var(--ink);
       text-decoration: none;
@@ -271,7 +273,7 @@
 
     .section-header h2 {
       font-family: 'Crimson Pro', serif;
-      font-size: 1.6rem;
+      font-size: 1.792rem;
       font-weight: 400;
       color: var(--ink);
       white-space: nowrap;
@@ -295,7 +297,7 @@
       padding: 0.55rem 1.3rem;
       background: var(--highlight);
       border-radius: 100px;
-      font-size: 0.88rem;
+      font-size: 1.1rem;
       color: var(--accent);
       font-weight: 500;
       border: 1px solid transparent;
@@ -345,24 +347,24 @@
 
     .timeline-period {
       font-family: 'Crimson Pro', serif;
-      font-size: 0.88rem;
+      font-size: 1.1rem;
       font-weight: 600;
       color: var(--accent);
       margin-bottom: 0.2rem;
     }
     .timeline-degree {
-      font-size: 0.95rem;
+      font-size: 1.188rem;
       font-weight: 600;
       color: var(--ink);
       margin-bottom: 0.15rem;
     }
     .timeline-school {
-      font-size: 0.88rem;
+      font-size: 1.1rem;
       color: var(--muted);
       margin-bottom: 0.3rem;
     }
     .timeline-detail {
-      font-size: 0.83rem;
+      font-size: 1.037rem;
       color: var(--muted);
       font-style: italic;
     }
@@ -412,7 +414,7 @@
 
     .pub-year {
       font-family: 'Crimson Pro', serif;
-      font-size: 1.15rem;
+      font-size: 1.438rem;
       font-weight: 600;
       color: var(--accent);
       margin-top: 1.2rem;
@@ -438,13 +440,13 @@
 
     .pub-item .pub-title {
       font-weight: 600;
-      font-size: 0.98rem;
+      font-size: 1.225rem;
       color: var(--ink);
       margin-bottom: 0.35rem;
       line-height: 1.5;
     }
     .pub-item .pub-authors {
-      font-size: 0.87rem;
+      font-size: 1.087rem;
       color: var(--muted);
       margin-bottom: 0.25rem;
     }
@@ -453,14 +455,14 @@
       font-weight: 600;
     }
     .pub-item .pub-venue {
-      font-size: 0.85rem;
+      font-size: 1.062rem;
       font-style: italic;
       color: var(--accent-light);
     }
 
     .pub-badge {
       display: inline-block;
-      font-size: 0.72rem;
+      font-size: 0.9rem;
       font-weight: 600;
       padding: 0.15rem 0.55rem;
       border-radius: 4px;
@@ -478,7 +480,7 @@
       gap: 0.6rem;
     }
     .pub-link {
-      font-size: 0.78rem;
+      font-size: 0.975rem;
       font-weight: 500;
       padding: 0.3rem 0.75rem;
       border: 1px solid var(--subtle);
@@ -504,7 +506,7 @@
       border: 1px solid var(--subtle);
       border-radius: 8px;
       color: var(--accent);
-      font-size: 0.9rem;
+      font-size: 1.125rem;
       font-weight: 600;
       text-decoration: none;
       letter-spacing: 0.02em;
@@ -532,7 +534,7 @@
       border-radius: 8px;
       cursor: pointer;
       font-family: 'Crimson Pro', serif;
-      font-size: 1.1rem;
+      font-size: 1.375rem;
       font-weight: 600;
       color: var(--accent);
       transition: all 0.2s;
@@ -542,7 +544,7 @@
       background: var(--card-bg);
     }
     .toggle-icon {
-      font-size: 0.85rem;
+      font-size: 1.062rem;
       transition: transform 0.25s;
     }
     .year-toggle.open .toggle-icon {
@@ -585,7 +587,7 @@
       position: absolute;
       bottom: 12px;
       right: 16px;
-      font-size: 0.72rem;
+      font-size: 0.9rem;
       color: rgba(255, 255, 255, 0.75);
       font-style: italic;
       letter-spacing: 0.03em;
@@ -604,7 +606,7 @@
       background: rgba(255,255,255,0.25);
       backdrop-filter: blur(4px);
       color: #fff;
-      font-size: 1.1rem;
+      font-size: 1.375rem;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -642,7 +644,7 @@
     }
 
     @media (max-width: 720px) {
-      .carousel-nav { opacity: 1; width: 30px; height: 30px; font-size: 0.9rem; }
+      .carousel-nav { opacity: 1; width: 30px; height: 30px; font-size: 1.125rem; }
     }
 
     .awards-list {
@@ -662,18 +664,18 @@
     .award-year {
       font-family: 'Crimson Pro', serif;
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 1.125rem;
       color: var(--accent);
       min-width: 80px;
       flex-shrink: 0;
     }
     .award-text {
-      font-size: 0.93rem;
+      font-size: 1.163rem;
       color: var(--ink);
     }
     .award-note {
       display: inline-block;
-      font-size: 0.72rem;
+      font-size: 0.9rem;
       font-weight: 600;
       padding: 0.1rem 0.5rem;
       border-radius: 4px;
@@ -703,12 +705,12 @@
     }
     .cv-info h3 {
       font-family: 'Crimson Pro', serif;
-      font-size: 1.25rem;
+      font-size: 1.562rem;
       font-weight: 400;
       margin-bottom: 0.3rem;
     }
     .cv-info p {
-      font-size: 0.88rem;
+      font-size: 1.1rem;
       color: var(--muted);
     }
     .cv-download {
@@ -720,7 +722,7 @@
       color: #fff;
       border-radius: 6px;
       text-decoration: none;
-      font-size: 0.88rem;
+      font-size: 1.1rem;
       font-weight: 500;
       letter-spacing: 0.03em;
       transition: all 0.25s;
@@ -752,7 +754,7 @@
       padding: 1.5rem 2rem;
       border-top: 1px solid var(--subtle);
       text-align: center;
-      font-size: 0.82rem;
+      font-size: 1.025rem;
       color: var(--muted);
     }
     footer a { color: var(--accent); text-decoration: none; }
@@ -778,7 +780,7 @@
       border-color: transparent !important;
     }
     .like-btn .heart {
-      font-size: 1rem;
+      font-size: 1.25rem;
       transition: transform 0.3s;
     }
     .like-btn:hover .heart { transform: scale(1.2); }
@@ -797,7 +799,7 @@
       color: #fff;
       padding: 0.8rem 1.6rem;
       border-radius: 8px;
-      font-size: 0.88rem;
+      font-size: 1.1rem;
       opacity: 0;
       transition: all 0.4s ease;
       z-index: 200;
@@ -814,7 +816,8 @@
     }
     .fade-in { opacity: 1; transform: translateY(0); }
 
-    @media (max-width: 720px) {
+    /* Collapse the nav into the hamburger menu below 1000px (larger type needs the room) */
+    @media (max-width: 1000px) {
       .hamburger {
         display: flex;
         flex-direction: column;
@@ -857,7 +860,7 @@
       .nav-links.open { display: flex; }
       .nav-links a {
         padding: 1rem 2rem;
-        font-size: 0.9rem;
+        font-size: 1.125rem;
         border-bottom: 1px solid var(--highlight);
         text-transform: none;
         letter-spacing: 0.01em;
@@ -866,6 +869,9 @@
       .nav-links a::after { display: none; }
       .nav-links a:hover { background: var(--highlight); }
 
+    }
+
+    @media (max-width: 720px) {
       .hero {
         grid-template-columns: 1fr;
         padding: 80px 1.5rem 28px;
@@ -874,7 +880,7 @@
       }
       .avatar-wrapper { margin: 0 auto; }
       .avatar { width: 160px; height: 200px; font-size: 3.5rem; }
-      .hero-text h1 { font-size: 2rem; }
+      .hero-text h1 { font-size: 2.24rem; }
       .affiliation { justify-content: center; }
       .bio { margin: 0 auto; }
       .contact-row { justify-content: center; }
@@ -887,7 +893,7 @@
 <!-- Navigation -->
 <nav id="navbar">
   <div class="nav-inner">
-    <a href="#about" class="nav-name" id="nav-name" style="font-family: 'Pinyon Script', cursive; font-size: 1.5rem; text-decoration: none;">Hui Tang</a>
+    <a href="#about" class="nav-name" id="nav-name" style="font-family: 'Pinyon Script', cursive; font-size: 1.68rem; text-decoration: none;">Hui Tang</a>
     <div class="nav-right">
       <button class="hamburger" id="hamburger" aria-label="Menu">
         <span></span>
@@ -946,9 +952,9 @@
   <div class="section-header"><h2 data-en="Collaboration Network" data-zh="合作关系网络">Collaboration Network</h2></div>
   <div id="network-container" class="network-box">
     <svg id="network-svg" style="width:100%;height:100%;"></svg>
-    <div id="network-tooltip" style="position:absolute;display:none;background:var(--ink);color:#fff;padding:0.4rem 0.8rem;border-radius:6px;font-size:0.78rem;pointer-events:none;z-index:10;white-space:nowrap;"></div>
+    <div id="network-tooltip" style="position:absolute;display:none;background:var(--ink);color:#fff;padding:0.4rem 0.8rem;border-radius:6px;font-size:0.975rem;pointer-events:none;z-index:10;white-space:nowrap;"></div>
   </div>
-  <p style="text-align:center;font-size:0.78rem;color:var(--muted);margin-top:0.8rem;" data-en="Node size = number of co-authored papers · Drag to explore · Hover for details" data-zh="节点大小 = 合作论文数量 · 拖动探索 · 悬停查看详情">Node size = number of co-authored papers · Drag to explore · Hover for details</p>
+  <p style="text-align:center;font-size:0.975rem;color:var(--muted);margin-top:0.8rem;" data-en="Node size = number of co-authored papers · Drag to explore · Hover for details" data-zh="节点大小 = 合作论文数量 · 拖动探索 · 悬停查看详情">Node size = number of co-authored papers · Drag to explore · Hover for details</p>
 </section>
 
 <section id="cv" class="fade-in">
@@ -1002,7 +1008,7 @@
         <img class="avatar" src="${attr(p.photo)}" alt="${attr(p.name_en)}">
       </div>
       <div class="hero-text">
-        <h1>${esc(p.name_en)} <span style="font-family: 'Ma Shan Zheng', cursive; font-weight: 400; font-size: 2.2rem; color: var(--accent); margin-left: 0.4rem;">${esc(p.name_zh)}</span></h1>
+        <h1>${esc(p.name_en)} <span style="font-family: 'Ma Shan Zheng', cursive; font-weight: 400; font-size: 2.464rem; color: var(--accent); margin-left: 0.4rem;">${esc(p.name_zh)}</span></h1>
         ${bi('div', aff.en, aff.zh, 'affiliation')}
         ${bi('p', bio.en, bio.zh, 'bio')}
         <div class="contact-row">
@@ -1071,7 +1077,7 @@
   function renderPublications(pubs) {
     const featured = pubs.filter(p => p.featured);
     document.getElementById('pub-featured').innerHTML = featured.length ? `<div style="margin-bottom:1.5rem;">
-      ${bi('div', '⭐ Featured', '⭐ 代表性成果', '', '', 'font-size:0.82rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent);margin-bottom:0.8rem;')}
+      ${bi('div', '⭐ Featured', '⭐ 代表性成果', '', '', 'font-size:1.025rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent);margin-bottom:0.8rem;')}
       ${featured.map(p => pubItem(p, 'border:1px solid var(--accent-light);background:linear-gradient(135deg, var(--highlight) 0%, var(--card-bg) 100%);')).join('')}</div>` : '';
     // Group by year, newest first, books last
     const groups = {};
@@ -1374,10 +1380,10 @@
         tip.style.display = 'none';
       });
     node.append('text').text(d => d.id.replace('.', '')).attr('text-anchor', 'middle').attr('dy', d => nodeR(d) + 14)
-      .attr('font-size', d => d.isMe ? '11px' : '9px').attr('font-weight', d => d.isMe ? '700' : '500')
+      .attr('font-size', d => d.isMe ? '14px' : '11px').attr('font-weight', d => d.isMe ? '700' : '500')
       .attr('fill', d => d.isMe ? accent : muted).attr('font-family', "'DM Sans', sans-serif");
     node.filter(d => d.isMe || d.count >= 3).append('text').text(d => d.count).attr('text-anchor', 'middle').attr('dy', '0.35em')
-      .attr('font-size', d => d.isMe ? '12px' : '9px').attr('font-weight', '700').attr('fill', '#fff').attr('font-family', "'DM Sans', sans-serif");
+      .attr('font-size', d => d.isMe ? '15px' : '11px').attr('font-weight', '700').attr('fill', '#fff').attr('font-family', "'DM Sans', sans-serif");
     sim.on('tick', () => {
       link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
       node.attr('transform', d => `translate(${d.x},${d.y})`);
