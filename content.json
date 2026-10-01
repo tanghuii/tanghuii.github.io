@@ -41,6 +41,11 @@
         "icon": "researchgate",
         "label": "ResearchGate",
         "url": "https://www.researchgate.net/profile/Hui-Tang-35"
+      },
+      {
+        "icon": "orcid",
+        "label": "",
+        "url": ""
       }
     ]
   },
@@ -79,7 +84,7 @@
       },
       "school": {
         "en": "University of Groningen, the Netherlands",
-        "zh": "生态经济学 · 荷兰格罗宁根大学"
+        "zh": "生态经济学 · 格罗宁根大学，荷兰"
       },
       "logo": "logo-rug.png",
       "logo_title": "University of Groningen",
@@ -107,7 +112,7 @@
         "zh": "地理学（城市与区域规划） · 北京大学"
       },
       "logo": "logo-pku.png",
-      "logo_title": "Peking University, China",
+      "logo_title": "Peking University",
       "supervisors": [
         {
           "en": "Jian Peng",
@@ -202,6 +207,36 @@
   ],
   "publications": [
     {
+      "id": "pub01",
+      "year": "2026",
+      "title": "Inequality reduction of conservation responsibility: An unexpected outcome of achieving the 30×30 biodiversity target in China",
+      "title_short": "",
+      "authors": "<strong>Tang H.</strong>, Hu T., Lin Y., Li X., Xu D., Chen Y., Xia P., Peng J.*",
+      "venue": "Landscape and Urban Planning",
+      "url": "",
+      "first_author": true,
+      "status": "Under Revision",
+      "cover": "cover-lup.png",
+      "cited": null,
+      "abstract": "",
+      "featured": true
+    },
+    {
+      "id": "pub02",
+      "year": "2026",
+      "title": "China’s grain production increase has benefited half of global terrestrial vertebrates",
+      "title_short": "",
+      "authors": "<strong>Tang H.</strong>, Hubacek K., Hu T., Xu D., Liu Y., Peng J.*",
+      "venue": "Ready for submission",
+      "url": "",
+      "first_author": true,
+      "status": "Submitted to journal",
+      "cover": "",
+      "cited": null,
+      "abstract": "",
+      "featured": false
+    },
+    {
       "id": "pubmuprxgbn",
       "year": "2026",
       "title": "Six key trade-offs in ecological security pattern: reply to Harmange et al.",
@@ -247,36 +282,6 @@
       "cover": "cover-cb.jpg",
       "cited": 0,
       "abstract": "Mountain regions support rich biodiversity, yet they are increasingly threatened by climate change and human activities. Although protected areas (PAs) are important for mountain biodiversity conservation, their effectiveness has been evaluated primarily through spatial coverage, with limited attention to how conservation outcomes vary along elevational gradient. Here, we assessed the effectiveness of mountain PAs for biodiversity conservation worldwide using species distribution data for 7,739 mountain species and 2,710 threatened mountain species. Applying propensity score matching, we compared species richness inside and outside PAs while controlling for environmental differences. We found that mountain biodiversity was concentrated primarily in South America and Asia, whereas effective PAs occupied a smaller area than ineffective PAs in South America for mountain species. PA effectiveness also showed pronounced elevational variation. The percentage of effective PAs was generally low at lower elevations and increased with elevation across Africa, Asia, and Europe for mountain species, but declined above 4,000 m in South America for both mountain and threatened mountain species. These findings reveal that conservation outcomes within mountain PAs are highly uneven across elevational zones. As global biodiversity conservation targets increasingly emphasize expanding PAs, our results demonstrate that an area-based approach alone does not guarantee the effectiveness of biodiversity conservation and highlight the need to prioritize management effectiveness across elevational gradient, particularly in low-elevation areas and biodiversity hotspots of South America.",
-      "featured": false
-    },
-    {
-      "id": "pub01",
-      "year": "2026",
-      "title": "Inequality reduction of conservation responsibility: An unexpected outcome of achieving the 30×30 biodiversity target in China",
-      "title_short": "",
-      "authors": "<strong>Tang H.</strong>, Hu T., Lin Y., Li X., Xu D., Chen Y., Xia P., Peng J.*",
-      "venue": "Landscape and Urban Planning",
-      "url": "",
-      "first_author": true,
-      "status": "Under Revision",
-      "cover": "cover-lup.png",
-      "cited": null,
-      "abstract": "",
-      "featured": true
-    },
-    {
-      "id": "pub02",
-      "year": "2026",
-      "title": "China’s grain production increase has benefited half of global terrestrial vertebrates",
-      "title_short": "",
-      "authors": "<strong>Tang H.</strong>, Hubacek K., Hu T., Xu D., Liu Y., Peng J.*",
-      "venue": "Submitted to Journal",
-      "url": "",
-      "first_author": true,
-      "status": "Submitted to journal",
-      "cover": "",
-      "cited": null,
-      "abstract": "",
       "featured": false
     },
     {
