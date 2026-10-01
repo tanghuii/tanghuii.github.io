@@ -202,6 +202,22 @@
   ],
   "publications": [
     {
+      "id": "pubmuprxgbn",
+      "year": "2026",
+      "title": "Six key trade-offs in ecological security pattern: reply to Harmange et al.",
+      "title_short": "",
+      "authors": "Peng J., Xu D., <strong>Tang H.</strong>, Jiang H., Dong J., Wu J.",
+      "venue": "Trends in Ecology & Evolution, 41(5), 376–377",
+      "url": "https://doi.org/10.1016/j.tree.2026.03.008",
+      "doi": "10.1016/j.tree.2026.03.008",
+      "first_author": false,
+      "status": "",
+      "cover": "cover-tee.png",
+      "cited": 0,
+      "abstract": "We thank Harmange et al. [1] for their important contribution to the discussion, and we agree with their perspective. Ecological security pattern (ESP) represents a landscape ecological approach to spatial conservation planning. Yet its planning and implementation inevitably involve multidimensional trade-offs among competing targets. We outline six key trade-offs in ESP (Figure 1) that are involved in the three phases of ESP-informed landscape management highlighted by Harmange et al. Understanding the characteristics, causes, and strategies of these trade-offs can proactively reduce the risk of implementation failure and unnecessary costs, and is essential for improving the effectiveness and adaptability of the ESP framework.",
+      "featured": false
+    },
+    {
       "id": "pubmuprvy2m",
       "year": "2025",
       "title": "Breaking boundaries: A social–ecological network approach to collaborative governance of soil erosion risk",
