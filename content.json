@@ -44,8 +44,8 @@
       },
       {
         "icon": "orcid",
-        "label": "",
-        "url": ""
+        "label": "Orcid",
+        "url": "https://orcid.org/my-orcid?orcid=0000-0002-6039-588X"
       }
     ]
   },
