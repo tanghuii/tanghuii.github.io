@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Site Manager · Hui Tang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Layout: fixed left rail with sections, scrolling main pane; same palette as the public site */
+  :root {
+    --ink: #1a1a2e; --paper: #faf8f5; --accent: #6b4c3b; --accent-light: #a67c52;
+    --subtle: #d4cdc4; --muted: #8a8279; --highlight: #f0ebe4; --card: #ffffff;
+    --ok: #2f7a4f; --ok-bg: #e6f3ea; --warn: #92400e; --warn-bg: #fef3c7; --err: #b42318; --err-bg: #fde8e6;
+    --shadow: rgba(26,26,46,0.06);
+    --serif: 'Crimson Pro', Georgia, serif; --sans: 'DM Sans', system-ui, sans-serif; --mono: 'DM Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { font-family: var(--sans); background: var(--paper); color: var(--ink); font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  input[type=text], input[type=url], input[type=password], input[type=number], select, textarea {
+    width: 100%; padding: 0.5rem 0.65rem; border: 1px solid var(--subtle); border-radius: 6px; background: var(--card);
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-light); outline-offset: 1px; border-color: var(--accent-light); }
+  textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+  textarea.mono, input.mono { font-family: var(--mono); font-size: 12.5px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 0.3rem; }
+  .field { margin-bottom: 0.9rem; min-width: 0; }
+  .row { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .row.two { grid-template-columns: 1fr 1fr; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 0.3rem; }
+  .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border: 1px solid var(--subtle); border-radius: 6px; background: var(--card); cursor: pointer; font-weight: 500; transition: all .2s; white-space: nowrap; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: var(--accent-light); border-color: var(--accent-light); color: #fff; }
+  .btn.danger:hover { border-color: var(--err); color: var(--err); }
+  .btn.sm { padding: 0.25rem 0.6rem; font-size: 12px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 100px; letter-spacing: 0.03em; }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .pill.err { background: var(--err-bg); color: var(--err); }
+  .pill.muted { background: var(--highlight); color: var(--muted); }
+
+  .app { display: grid; grid-template-columns: 230px 1fr; height: 100%; }
+  aside { border-right: 1px solid var(--subtle); background: var(--card); padding: 1.2rem 0; display: flex; flex-direction: column; }
+  .brand { padding: 0 1.2rem 1rem; border-bottom: 1px solid var(--subtle); }
+  .brand h1 { font-family: var(--serif); font-weight: 600; font-size: 1.25rem; color: var(--accent); }
+  .brand p { font-size: 12px; color: var(--muted); }
+  nav { padding: 0.8rem 0.6rem; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  nav button { text-align: left; padding: 0.5rem 0.7rem; border: none; background: none; border-radius: 6px; cursor: pointer; color: var(--muted); font-weight: 500; display: flex; justify-content: space-between; align-items: center; }
+  nav button:hover { background: var(--highlight); color: var(--ink); }
+  nav button.active { background: var(--highlight); color: var(--accent); font-weight: 600; }
+  nav .count { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .aside-foot { padding: 0.8rem 1.2rem 0; border-top: 1px solid var(--subtle); font-size: 12px; color: var(--muted); }
+  .aside-foot a { display: block; margin-top: 0.3rem; text-decoration: none; }
+
+  main { overflow-y: auto; min-width: 0; }
+  .topbar { position: sticky; top: 0; z-index: 5; background: rgba(250,248,245,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--subtle); padding: 0.7rem 1.6rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .topbar .status { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .topbar .actions { display: flex; gap: 0.5rem; }
+  .content { padding: 1.6rem; max-width: 1000px; }
+  h2 { font-family: var(--serif); font-weight: 400; font-size: 1.5rem; margin-bottom: 0.3rem; }
+  .lead { color: var(--muted); margin-bottom: 1.4rem; font-size: 13.5px; }
+  .card { background: var(--card); border: 1px solid var(--subtle); border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1rem; }
+  .card h3 { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; margin-bottom: 0.8rem; color: var(--accent); }
+  .item { background: var(--card); border: 1px solid var(--subtle); border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 0.7rem; }
+  .item-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.7rem; flex-wrap: wrap; }
+  .item-head .title { font-weight: 600; flex: 1; min-width: 160px; }
+  .item-head .tools { display: flex; gap: 0.3rem; }
+  .item-head .tools .btn { padding: 0.2rem 0.5rem; font-size: 12px; }
+  .toolbar { display: flex; gap: 0.6rem; margin: 0.5rem 0 1rem; flex-wrap: wrap; align-items: center; }
+  .check { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 13px; cursor: pointer; }
+  .check input { width: auto; }
+  .list-compact .item { padding: 0.7rem 1rem; }
+  .pub-row { display: grid; grid-template-columns: 56px 1fr auto; gap: 0.9rem; align-items: center; cursor: pointer; }
+  .pub-row img, .pub-row .nocover { width: 48px; height: 64px; object-fit: cover; border-radius: 4px; border: 1px solid var(--subtle); background: var(--highlight); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .pub-row .t { font-weight: 600; line-height: 1.35; }
+  .pub-row .m { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .pub-row .m span { margin-right: 0.5rem; }
+  .pub-edit { border-top: 1px dashed var(--subtle); margin-top: 0.9rem; padding-top: 0.9rem; }
+  .yearhead { font-family: var(--serif); font-weight: 600; color: var(--accent); margin: 1.1rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px dashed var(--subtle); }
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.8rem; }
+  .thumb { border: 1px solid var(--subtle); border-radius: 8px; overflow: hidden; background: var(--card); }
+  .thumb img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; }
+  .thumb .cap { padding: 0.5rem 0.6rem; font-size: 12px; }
+  .thumb .cap input { padding: 0.3rem 0.4rem; font-size: 12px; margin-top: 0.25rem; }
+  .thumb .tools { display: flex; gap: 0.2rem; padding: 0 0.6rem 0.5rem; }
+  .thumb .tools .btn { padding: 0.15rem 0.45rem; font-size: 11px; }
+
+  /* Analytics */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.8rem; margin-bottom: 1rem; }
+  .tile { background: var(--card); border: 1px solid var(--subtle); border-radius: 10px; padding: 0.9rem 1.1rem; }
+  .tile .k { font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .tile .v { font-family: var(--serif); font-size: 1.9rem; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .tile .s { font-size: 12px; color: var(--muted); }
+  .bars { display: grid; gap: 0.35rem; }
+  .bar { display: grid; grid-template-columns: minmax(90px, 160px) 1fr 56px; gap: 0.6rem; align-items: center; font-size: 13px; }
+  .bar .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar .track { height: 10px; background: var(--highlight); border-radius: 100px; overflow: hidden; }
+  .bar .fill { height: 100%; background: var(--accent-light); border-radius: 100px; }
+  .bar .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .chart { width: 100%; height: 160px; display: block; }
+  .seg { display: inline-flex; border: 1px solid var(--subtle); border-radius: 6px; overflow: hidden; }
+  .seg button { border: none; background: var(--card); padding: 0.35rem 0.75rem; cursor: pointer; font-size: 12.5px; color: var(--muted); }
+  .seg button.active { background: var(--accent); color: #fff; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* Login / modal */
+  .overlay { position: fixed; inset: 0; background: rgba(26,26,46,0.35); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
+  .modal { background: var(--card); border-radius: 12px; padding: 1.6rem 1.8rem; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal h2 { margin-bottom: 0.6rem; }
+  .modal ol { margin: 0.6rem 0 1rem 1.2rem; font-size: 13px; color: #444; }
+  .modal ol li { margin-bottom: 0.25rem; }
+  .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 0.7rem 1.3rem; border-radius: 8px; font-size: 13px; opacity: 0; transition: all .3s; z-index: 60; pointer-events: none; max-width: 90vw; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.err { background: var(--err); }
+  .log { font-family: var(--mono); font-size: 12px; background: var(--highlight); border-radius: 6px; padding: 0.6rem 0.8rem; max-height: 180px; overflow: auto; white-space: pre-wrap; }
+  .dirty-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); display: inline-block; }
+
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    aside { border-right: none; border-bottom: 1px solid var(--subtle); padding: 0.8rem 0 0; }
+    nav { flex-direction: row; overflow-x: auto; padding: 0.5rem 0.6rem; }
+    nav button { white-space: nowrap; }
+    nav .count, .aside-foot { display: none; }
+    .content { padding: 1rem; }
+    .row.two { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside>
+    <div class="brand">
+      <h1>Site Manager</h1>
+      <p id="brand-sub">tanghuii.github.io</p>
+    </div>
+    <nav id="nav"></nav>
+    <div class="aside-foot">
+      <span id="auth-state">Not signed in</span>
+      <a href="#" id="link-signout">Change token…</a>
+      <a href="index.html" target="_blank">Open website ↗</a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="status" id="status">Loading…</div>
+      <div class="actions">
+        <button class="btn" id="btn-reload">Reload from GitHub</button>
+        <button class="btn primary" id="btn-save" disabled>Publish changes</button>
+      </div>
+    </div>
+    <div class="content" id="view"></div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="modal-root"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Configuration
+// ─────────────────────────────────────────────────────────────────────────────
+const REPO = { owner: 'tanghuii', name: 'tanghuii.github.io', branch: 'main' };
+const CONTENT_PATH = 'content.json';
+const SITE_URL = 'https://tanghuii.github.io/';
+const LS = { token: 'sm_gh_token', gcToken: 'sm_gc_token', tab: 'sm_tab' };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let C = null;          // working copy of content.json
+let C_ORIG = '';       // JSON string of the last loaded/saved version (for dirty check)
+let SHA = null;        // blob sha of content.json on GitHub (needed for update)
+let TOKEN = null;
+let TAB = 'overview';
+let openPub = null;    // id of publication currently expanded
+let REPO_FILES = null; // cached list of files in the repo root
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function toast(msg, isErr = false) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast show' + (isErr ? ' err' : '');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), isErr ? 5000 : 2600);
+}
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GitHub API helpers (Contents API, base64 UTF-8 safe)
+// ─────────────────────────────────────────────────────────────────────────────
+const b64enc = str => btoa(String.fromCharCode(...new TextEncoder().encode(str)));
+const b64dec = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\n/g, '')), c => c.charCodeAt(0)));
+async function gh(path, opts = {}) {
+  const res = await fetch(`https://api.github.com${path}`, {
+    ...opts,
+    headers: { 'Accept': 'application/vnd.github+json', 'Authorization': `Bearer ${TOKEN}`, 'X-GitHub-Api-Version': '2022-11-28', ...(opts.headers || {}) }
+  });
+  if (!res.ok) {
+    let msg = res.statusText;
+    try { msg = (await res.json()).message || msg; } catch (e) {}
+    throw new Error(`GitHub ${res.status}: ${msg}`);
+  }
+  return res.status === 204 ? null : res.json();
+}
+async function ghGetFile(path) {
+  return gh(`/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${REPO.branch}`);
+}
+async function ghPutFile(path, base64Content, message, sha) {
+  const body = { message, content: base64Content, branch: REPO.branch };
+  if (sha) body.sha = sha;
+  return gh(`/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`, { method: 'PUT', body: JSON.stringify(body) });
+}
+async function ghListRoot(force = false) {
+  if (REPO_FILES && !force) return REPO_FILES;
+  if (!TOKEN) return [];
+  try { REPO_FILES = (await gh(`/repos/${REPO.owner}/${REPO.name}/contents/?ref=${REPO.branch}`)).map(f => f.name); }
+  catch (e) { REPO_FILES = []; }
+  return REPO_FILES;
+}
+async function fileToBase64(file) {
+  const buf = await file.arrayBuffer();
+  let bin = ''; const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+// Upload a file to the repo root (creates or replaces). Returns the final filename.
+async function uploadToRepo(file, targetName) {
+  const name = (targetName || file.name).replace(/[^\w.\- ]+/g, '_');
+  let sha = null;
+  try { sha = (await ghGetFile(name)).sha; } catch (e) {}
+  await ghPutFile(name, await fileToBase64(file), `${sha ? 'Update' : 'Add'} ${name} via Site Manager`, sha);
+  REPO_FILES = null;
+  return name;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Load / save content.json
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadContent() {
+  setStatus('Loading content…');
+  try {
+    if (TOKEN) {
+      const f = await ghGetFile(CONTENT_PATH);
+      SHA = f.sha;
+      C = JSON.parse(b64dec(f.content));
+    } else {
+      // Read-only fallback: the published copy next to this page
+      const res = await fetch(CONTENT_PATH, { cache: 'no-cache' });
+      if (!res.ok) throw new Error('content.json not found');
+      C = await res.json(); SHA = null;
+    }
+    normalize();
+    C_ORIG = JSON.stringify(C);
+    setStatus();
+    render();
+  } catch (e) {
+    setStatus(`Could not load content: ${e.message}`, 'err');
+    $('#view').innerHTML = `<div class="card"><h3>Could not load content.json</h3><p>${esc(e.message)}</p><p class="hint">If you just set up the site, make sure content.json exists in the repository root, and that the token has <b>Contents: Read and write</b> permission for this repository.</p></div>`;
+  }
+}
+function normalize() {
+  C.site ||= {}; C.profile ||= {}; C.profile.links ||= [];
+  C.research_interests ||= []; C.education ||= []; C.carousels ||= [[], []];
+  C.publications ||= []; C.awards ||= []; C.cv ||= {};
+  C.publications.forEach((p, i) => { p.id ||= 'pub' + String(i + 1).padStart(2, '0'); });
+}
+function isDirty() { return C && JSON.stringify(C) !== C_ORIG; }
+function setStatus(msg, kind) {
+  const el = $('#status');
+  if (msg) { el.innerHTML = `<span class="pill ${kind || 'muted'}">${esc(msg)}</span>`; return; }
+  const dirty = isDirty();
+  el.innerHTML = dirty
+    ? `<span class="dirty-dot"></span> Unpublished changes`
+    : `<span class="pill ok">Up to date</span> <span>${TOKEN ? 'Connected to GitHub' : 'Read-only preview (no token)'}</span>`;
+  $('#btn-save').disabled = !dirty || !TOKEN;
+}
+function markDirty() { setStatus(); renderNavCounts(); }
+
+async function saveContent() {
+  if (!TOKEN) return toast('Sign in with a GitHub token to publish.', true);
+  const btn = $('#btn-save'); btn.disabled = true; btn.textContent = 'Publishing…';
+  try {
+    // Re-read sha in case the file changed elsewhere since load
+    try { SHA = (await ghGetFile(CONTENT_PATH)).sha; } catch (e) { SHA = null; }
+    const json = JSON.stringify(C, null, 2) + '\n';
+    const r = await ghPutFile(CONTENT_PATH, b64enc(json), `Update site content via Site Manager (${new Date().toISOString().slice(0, 16).replace('T', ' ')})`, SHA);
+    SHA = r.content.sha; C_ORIG = JSON.stringify(C);
+    setStatus(); toast('Published. GitHub Pages usually updates within a minute.');
+  } catch (e) { toast(e.message, true); setStatus(); }
+  btn.textContent = 'Publish changes';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth modal
+// ─────────────────────────────────────────────────────────────────────────────
+function showLogin(force = false) {
+  const existing = lsGet(LS.token);
+  if (existing && !force) { TOKEN = existing; $('#auth-state').textContent = 'Signed in (token saved on this device)'; return Promise.resolve(); }
+  return new Promise(resolve => {
+    $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">
+      <h2>Sign in to GitHub</h2>
+      <p class="lead" style="margin-bottom:0.4rem">This page edits <b>${REPO.owner}/${REPO.name}</b> through the GitHub API. The token stays in this browser only.</p>
+      <ol>
+        <li>GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> → Generate new token</li>
+        <li>Repository access: <b>Only select repositories</b> → ${REPO.name}</li>
+        <li>Permissions → Repository permissions → <b>Contents: Read and write</b></li>
+        <li>Copy the token and paste it below</li>
+      </ol>
+      <div class="field"><label for="tok">Personal access token</label><input id="tok" type="password" class="mono" placeholder="github_pat_…" autocomplete="off"></div>
+      <label class="check" style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink)"><input type="checkbox" id="tok-remember" checked> Remember on this device</label>
+      <div class="toolbar" style="margin-top:1rem;justify-content:flex-end">
+        <button class="btn" id="tok-skip">Continue read-only</button>
+        <button class="btn primary" id="tok-go">Sign in</button>
+      </div>
+      <div class="hint" id="tok-msg"></div>
+    </div></div>`;
+    $('#tok').focus();
+    const done = () => { $('#modal-root').innerHTML = ''; resolve(); };
+    $('#tok-skip').onclick = () => { TOKEN = null; $('#auth-state').textContent = 'Read-only (no token)'; done(); };
+    $('#tok-go').onclick = async () => {
+      const t = $('#tok').value.trim();
+      if (!t) return;
+      $('#tok-msg').textContent = 'Checking token…';
+      TOKEN = t;
+      try {
+        const repo = await gh(`/repos/${REPO.owner}/${REPO.name}`);
+        REPO.branch = repo.default_branch || REPO.branch;
+        if (!repo.permissions || !repo.permissions.push) { $('#tok-msg').textContent = 'Token works but has no write access to this repository. You can read, but publishing will fail.'; }
+        if ($('#tok-remember').checked) lsSet(LS.token, t);
+        $('#auth-state').textContent = 'Signed in' + ($('#tok-remember').checked ? ' (token saved on this device)' : '');
+        done();
+      } catch (e) { TOKEN = null; $('#tok-msg').textContent = e.message; }
+    };
+    $('#tok').addEventListener('keydown', e => { if (e.key === 'Enter') $('#tok-go').click(); });
+  });
+}
+$('#link-signout').onclick = async e => { e.preventDefault(); lsSet(LS.token, null); TOKEN = null; await showLogin(true); await loadContent(); };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Navigation
+// ─────────────────────────────────────────────────────────────────────────────
+const TABS = [
+  ['overview', 'Visitors'],
+  ['profile', 'Profile'],
+  ['research', 'Research interests'],
+  ['education', 'Education'],
+  ['publications', 'Publications'],
+  ['awards', 'Awards'],
+  ['photos', 'Photos'],
+  ['cv', 'CV & site settings'],
+  ['json', 'Raw JSON'],
+];
+function tabCount(id) {
+  if (!C) return '';
+  return { research: C.research_interests.length, education: C.education.length, publications: C.publications.length, awards: C.awards.length, photos: C.carousels.flat().length }[id] ?? '';
+}
+function renderNav() {
+  $('#nav').innerHTML = TABS.map(([id, label]) => `<button data-tab="${id}" class="${TAB === id ? 'active' : ''}">${label}<span class="count">${tabCount(id)}</span></button>`).join('');
+  $('#nav').querySelectorAll('button').forEach(b => b.onclick = () => { TAB = b.dataset.tab; lsSet(LS.tab, TAB); render(); });
+}
+function renderNavCounts() { $('#nav').querySelectorAll('button').forEach(b => b.querySelector('.count').textContent = tabCount(b.dataset.tab)); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Form helpers: bind inputs to object paths
+// ─────────────────────────────────────────────────────────────────────────────
+// bind(obj, key) returns attributes for an input; onInput writes back
+const BIND = new Map(); let bindSeq = 0;
+function bind(obj, key, type = 'text', extra = '') {
+  const id = 'b' + (++bindSeq); BIND.set(id, { obj, key, type });
+  const v = obj[key];
+  if (type === 'checkbox') return `<input type="checkbox" data-bind="${id}" ${v ? 'checked' : ''} ${extra}>`;
+  if (type === 'textarea') return `<textarea data-bind="${id}" ${extra}>${esc(v)}</textarea>`;
+  if (type === 'select') return `<select data-bind="${id}" ${extra}></select>`;
+  return `<input type="${type === 'number' ? 'number' : 'text'}" data-bind="${id}" value="${esc(v ?? '')}" ${extra}>`;
+}
+function biField(label, obj, key, type = 'text') {
+  obj[key] ||= { en: '', zh: '' };
+  return `<div class="field"><label>${label}</label><div class="row two">
+    <div>${bind(obj[key], 'en', type, 'placeholder="English"')}</div>
+    <div>${bind(obj[key], 'zh', type, 'placeholder="中文"')}</div></div></div>`;
+}
+function field(label, obj, key, type = 'text', hint = '', extra = '') {
+  return `<div class="field"><label>${label}</label>${bind(obj, key, type, extra)}${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
+}
+function wireBindings(root = document) {
+  root.querySelectorAll('[data-bind]').forEach(el => {
+    const b = BIND.get(el.dataset.bind); if (!b) return;
+    const handler = () => {
+      let v = el.type === 'checkbox' ? el.checked : el.value;
+      if (b.type === 'number') v = el.value === '' ? null : Number(el.value);
+      b.obj[b.key] = v; markDirty();
+      if (b.onChange) b.onChange(v);
+    };
+    el.addEventListener('input', handler); el.addEventListener('change', handler);
+  });
+}
+function itemTools(arr, i, onChange) {
+  return `<div class="tools">
+    <button class="btn" title="Move up" data-act="up" ${i === 0 ? 'disabled' : ''}>↑</button>
+    <button class="btn" title="Move down" data-act="down" ${i === arr.length - 1 ? 'disabled' : ''}>↓</button>
+    <button class="btn danger" title="Remove" data-act="del">✕</button></div>`;
+}
+function wireItemTools(root, arr, rerender) {
+  root.querySelectorAll('.item[data-i], .thumb[data-i]').forEach(item => {
+    const i = Number(item.dataset.i);
+    item.querySelectorAll('[data-act]').forEach(btn => btn.onclick = (e) => {
+      e.stopPropagation();
+      const act = btn.dataset.act;
+      if (act === 'up' && i > 0) [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+      if (act === 'down' && i < arr.length - 1) [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
+      if (act === 'del') {
+        if (!btn.dataset.confirm) { btn.dataset.confirm = '1'; btn.textContent = 'Remove?'; setTimeout(() => { btn.dataset.confirm = ''; btn.textContent = '✕'; }, 2500); return; }
+        arr.splice(i, 1);
+      }
+      markDirty(); rerender();
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Views
+// ─────────────────────────────────────────────────────────────────────────────
+function render() {
+  BIND.clear();
+  renderNav();
+  const v = $('#view');
+  const fn = { overview: viewOverview, profile: viewProfile, research: viewResearch, education: viewEducation, publications: viewPublications, awards: viewAwards, photos: viewPhotos, cv: viewCV, json: viewJSON }[TAB];
+  v.innerHTML = ''; fn(v); wireBindings(v);
+}
+
+// ── Profile ──
+function viewProfile(v) {
+  const p = C.profile;
+  v.innerHTML = `<h2>Profile</h2><p class="lead">The hero section at the top of the homepage.</p>
+  <div class="card">
+    <div class="row two">${field('Name (English)', p, 'name_en')}${field('Name (中文)', p, 'name_zh')}</div>
+    ${field('Photo file', p, 'photo', 'text', 'File name in the repository root, e.g. photo.jpg. Upload a new one below.')}
+    <div class="toolbar"><input type="file" id="up-photo" accept="image/*" style="display:none"><button class="btn sm" id="btn-up-photo">Upload new photo…</button><span class="hint" id="up-photo-msg"></span></div>
+    ${biField('Affiliation line', p, 'affiliation')}
+    ${biField('Short bio', p, 'bio', 'textarea')}
+    ${field('Email', p, 'email', 'text', 'Shown as an obfuscated mailto button. Leave empty to hide.')}
+  </div>
+  <div class="card"><h3>Profile links</h3><div id="links"></div>
+    <div class="toolbar"><button class="btn sm" id="add-link">+ Add link</button></div></div>`;
+  const renderLinks = () => {
+    const box = $('#links'); BIND.forEach((b, k) => { if (b.scope === 'links') BIND.delete(k); });
+    box.innerHTML = p.links.map((l, i) => `<div class="item list-compact" data-i="${i}"><div class="item-head"><div class="title">${esc(l.label || 'Link')}</div>${itemTools(p.links, i)}</div>
+      <div class="row">
+        <div class="field"><label>Label</label>${bind(l, 'label')}</div>
+        <div class="field"><label>Icon</label>${bind(l, 'icon', 'select')}</div>
+        <div class="field" style="grid-column:1/-1"><label>URL</label>${bind(l, 'url')}</div></div></div>`).join('') || '<p class="hint">No links yet.</p>';
+    box.querySelectorAll('select').forEach((s, i) => {
+      s.innerHTML = ['scholar', 'researchgate', 'orcid', 'github', 'linkedin', 'other'].map(o => `<option ${p.links[i].icon === o ? 'selected' : ''}>${o}</option>`).join('');
+    });
+    wireBindings(box); wireItemTools(box, p.links, renderLinks);
+  };
+  renderLinks();
+  $('#add-link').onclick = () => { p.links.push({ icon: 'other', label: '', url: '' }); markDirty(); renderLinks(); };
+  uploader('#btn-up-photo', '#up-photo', '#up-photo-msg', async (file) => {
+    const name = await uploadToRepo(file, 'photo.' + file.name.split('.').pop().toLowerCase());
+    p.photo = name; markDirty(); render();
+  });
+}
+function uploader(btnSel, inputSel, msgSel, handler) {
+  const input = $(inputSel), btn = $(btnSel), msg = $(msgSel);
+  btn.onclick = () => { if (!TOKEN) return toast('Sign in with a token to upload files.', true); input.click(); };
+  input.onchange = async () => {
+    const file = input.files[0]; if (!file) return;
+    if (file.size > 20 * 1024 * 1024) return toast('File is larger than 20 MB.', true);
+    msg.textContent = `Uploading ${file.name}…`;
+    try { await handler(file); toast(`Uploaded ${file.name}`); if (msg.isConnected) msg.textContent = ''; }
+    catch (e) { toast(e.message, true); msg.textContent = ''; }
+    input.value = '';
+  };
+}
+
+// ── Research ──
+function viewResearch(v) {
+  v.innerHTML = `<h2>Research interests</h2><p class="lead">Tag pills on the homepage, in display order.</p><div id="tags"></div>
+    <div class="toolbar"><button class="btn sm" id="add-tag">+ Add interest</button></div>`;
+  const list = C.research_interests;
+  const rr = () => {
+    const box = $('#tags');
+    box.innerHTML = list.map((t, i) => `<div class="item list-compact" data-i="${i}"><div class="item-head"><div class="title">${esc(t.en || 'New interest')}</div>${itemTools(list, i)}</div>
+      <div class="row two"><div>${bind(t, 'en', 'text', 'placeholder="English"')}</div><div>${bind(t, 'zh', 'text', 'placeholder="中文"')}</div></div></div>`).join('');
+    wireBindings(box); wireItemTools(box, list, rr);
+  };
+  rr();
+  $('#add-tag').onclick = () => { list.push({ en: '', zh: '' }); markDirty(); rr(); };
+}
+
+// ── Education ──
+function viewEducation(v) {
+  v.innerHTML = `<h2>Education</h2><p class="lead">Timeline entries, newest first.</p><div id="edu"></div>
+    <div class="toolbar"><button class="btn sm" id="add-edu">+ Add entry</button></div>`;
+  const list = C.education;
+  const rr = () => {
+    const box = $('#edu');
+    box.innerHTML = list.map((e, i) => {
+      e.supervisors ||= [];
+      return `<div class="item" data-i="${i}"><div class="item-head"><div class="title">${esc(e.degree?.en || 'New entry')}</div>${itemTools(list, i)}</div>
+      <div class="row"><div class="field"><label>Period</label>${bind(e, 'period', 'text', 'placeholder="2022.9 – 2025.7"')}</div>
+        <div class="field"><label>Logo file</label>${bind(e, 'logo', 'text', 'placeholder="logo-xxx.png"')}</div>
+        <div class="field"><label>Logo tooltip</label>${bind(e, 'logo_title')}</div></div>
+      ${biField('Degree', e, 'degree')}${biField('School', e, 'school')}
+      <div class="field"><label>Supervisors</label>
+        ${e.supervisors.map((s, j) => `<div class="row" style="grid-template-columns:1fr 1fr 2fr auto;margin-bottom:0.4rem;align-items:center">
+          <div>${bind(s, 'en', 'text', 'placeholder="Name (EN)"')}</div><div>${bind(s, 'zh', 'text', 'placeholder="姓名"')}</div><div>${bind(s, 'url', 'text', 'placeholder="https://…"')}</div>
+          <button class="btn sm danger" data-sup-del="${j}">✕</button></div>`).join('')}
+        <button class="btn sm" data-sup-add>+ Add supervisor</button></div></div>`;
+    }).join('');
+    wireBindings(box); wireItemTools(box, list, rr);
+    box.querySelectorAll('[data-sup-add]').forEach((b, i) => b.onclick = () => { list[i].supervisors.push({ en: '', zh: '', url: '' }); markDirty(); rr(); });
+    box.querySelectorAll('.item').forEach((item, i) => item.querySelectorAll('[data-sup-del]').forEach(b => b.onclick = () => { list[i].supervisors.splice(Number(b.dataset.supDel), 1); markDirty(); rr(); }));
+  };
+  rr();
+  $('#add-edu').onclick = () => { list.unshift({ period: '', degree: { en: '', zh: '' }, school: { en: '', zh: '' }, logo: '', logo_title: '', supervisors: [] }); markDirty(); rr(); };
+}
+
+// ── Publications ──
+function viewPublications(v) {
+  const pubs = C.publications;
+  v.innerHTML = `<h2>Publications</h2><p class="lead">Click a paper to edit. Papers are grouped by year on both pages; the collaboration network and the summary counts are computed from this list automatically.</p>
+    <div class="toolbar"><button class="btn primary sm" id="add-pub">+ Add publication</button>
+      <input type="file" id="up-cover" accept="image/*" style="display:none"><button class="btn sm" id="btn-up-cover">Upload journal cover…</button><span class="hint" id="up-cover-msg"></span></div>
+    <div id="pubs"></div>`;
+  const rr = () => {
+    const box = $('#pubs'); BIND.clear();
+    const groups = {}; pubs.forEach(p => (groups[p.year || '?'] ||= []).push(p));
+    const years = Object.keys(groups).filter(y => y !== 'book').sort((a, b) => b.localeCompare(a)); if (groups.book) years.push('book');
+    box.innerHTML = years.map(y => `<div class="yearhead">${y === 'book' ? 'Books' : esc(y)}</div>` + groups[y].map(p => {
+      const i = pubs.indexOf(p);
+      const open = openPub === p.id;
+      return `<div class="item" data-i="${i}" data-id="${esc(p.id)}">
+        <div class="pub-row" data-toggle>
+          ${p.cover ? `<img src="${esc(p.cover)}" alt="">` : `<div class="nocover">📝</div>`}
+          <div><div class="t">${esc(p.title_short || p.title || 'Untitled')}</div>
+            <div class="m">${p.first_author ? '<span class="pill warn">First author</span>' : ''}${p.status ? `<span class="pill muted">${esc(p.status)}</span>` : ''}${p.featured ? '<span class="pill ok">Featured</span>' : ''}<span>${esc(p.venue)}</span>${p.cited != null && p.cited !== '' ? `<span>· Cited ${esc(p.cited)}</span>` : ''}</div></div>
+          ${itemTools(pubs, i)}
+        </div>
+        ${open ? `<div class="pub-edit">
+          <div class="row" style="grid-template-columns:120px 1fr 1fr 1fr">
+            <div class="field"><label>Year</label>${bind(p, 'year', 'text', 'placeholder="2025 or book"')}</div>
+            <div class="field"><label>Status badge</label>${bind(p, 'status', 'text', 'placeholder="Under Review / In Prep / empty"')}</div>
+            <div class="field"><label>Citations</label>${bind(p, 'cited', 'number', 'placeholder="leave empty to hide"')}</div>
+            <div class="field"><label>Flags</label>
+              <label class="check" style="text-transform:none;letter-spacing:0;color:var(--ink);font-weight:500">${bind(p, 'first_author', 'checkbox')} First author</label>
+              <label class="check" style="text-transform:none;letter-spacing:0;color:var(--ink);font-weight:500">${bind(p, 'featured', 'checkbox')} Featured on homepage</label></div></div>
+          ${field('Title', p, 'title', 'textarea', '', 'style="min-height:52px"')}
+          ${field('Short title for homepage (optional)', p, 'title_short')}
+          ${field('Authors', p, 'authors', 'textarea', 'HTML allowed. Wrap your own name in &lt;strong&gt;…&lt;/strong&gt;; mark corresponding authors with *. Names are split on commas for the network graph.', 'class="mono" style="min-height:52px"')}
+          <div class="row two">${field('Venue', p, 'venue', 'text', 'Journal, volume, pages')}${field('Link (URL)', p, 'url')}</div>
+          <div class="field"><label>Journal cover</label>${bind(p, 'cover', 'select')}<div class="hint">Images in the repository root. Use “Upload journal cover…” above to add one.</div></div>
+          ${field('Abstract', p, 'abstract', 'textarea', '', 'style="min-height:120px"')}
+        </div>` : ''}</div>`;
+    }).join('')).join('');
+    // Cover selects
+    ghListRoot().then(files => {
+      const imgs = ['', ...files.filter(f => /\.(png|jpe?g|webp|gif)$/i.test(f)).sort()];
+      box.querySelectorAll('select[data-bind]').forEach(s => {
+        const b = BIND.get(s.dataset.bind); const cur = b.obj[b.key] || '';
+        const opts = imgs.includes(cur) ? imgs : [cur, ...imgs];
+        s.innerHTML = opts.map(f => `<option value="${esc(f)}" ${f === cur ? 'selected' : ''}>${f || '(none – in-preparation placeholder)'}</option>`).join('');
+      });
+    });
+    wireBindings(box); wireItemTools(box, pubs, rr);
+    box.querySelectorAll('[data-toggle]').forEach(row => row.onclick = (e) => {
+      if (e.target.closest('[data-act]')) return;
+      const id = row.closest('.item').dataset.id; openPub = openPub === id ? null : id; rr();
+    });
+    // Keep header text live while typing
+    box.querySelectorAll('.pub-edit [data-bind]').forEach(el => { const b = BIND.get(el.dataset.bind); if (['title', 'title_short', 'venue'].includes(b.key)) b.onChange = () => { const it = el.closest('.item'); it.querySelector('.t').textContent = b.obj.title_short || b.obj.title || 'Untitled'; }; });
+  };
+  rr();
+  $('#add-pub').onclick = () => {
+    const id = 'pub' + Date.now().toString(36);
+    pubs.unshift({ id, year: String(new Date().getFullYear()), title: '', title_short: '', authors: '<strong>Tang H.</strong>, ', venue: '', url: '', first_author: true, status: '', cover: '', cited: null, abstract: '', featured: false });
+    openPub = id; markDirty(); rr();
+  };
+  uploader('#btn-up-cover', '#up-cover', '#up-cover-msg', async (file) => {
+    const base = file.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const name = await uploadToRepo(file, (base.startsWith('cover-') ? base : 'cover-' + base) + '.' + file.name.split('.').pop().toLowerCase());
+    if (openPub) { const p = pubs.find(x => x.id === openPub); if (p) { p.cover = name; markDirty(); } }
+    rr();
+  });
+}
+
+// ── Awards ──
+function viewAwards(v) {
+  v.innerHTML = `<h2>Selected awards</h2><p class="lead">Listed in display order. “Highlight” gives the row the emphasised style; “Note” is the small tag (e.g. Top 1%).</p><div id="awards"></div>
+    <div class="toolbar"><button class="btn sm" id="add-award">+ Add award</button></div>`;
+  const list = C.awards;
+  const rr = () => {
+    const box = $('#awards');
+    box.innerHTML = list.map((a, i) => `<div class="item" data-i="${i}"><div class="item-head"><div class="title">${esc(a.year)} · ${esc(a.text?.en || 'New award')}</div>${itemTools(list, i)}</div>
+      <div class="row" style="grid-template-columns:120px 1fr 1fr 120px auto;align-items:end">
+        <div class="field"><label>Year</label>${bind(a, 'year')}</div>
+        <div class="field"><label>Award (EN)</label>${bind(a.text ||= { en: '', zh: '' }, 'en')}</div>
+        <div class="field"><label>获奖 (中文)</label>${bind(a.text, 'zh')}</div>
+        <div class="field"><label>Note</label>${bind(a, 'note', 'text', 'placeholder="Top 1%"')}</div>
+        <div class="field"><label class="check" style="text-transform:none;letter-spacing:0;color:var(--ink);font-weight:500">${bind(a, 'highlight', 'checkbox')} Highlight</label></div></div></div>`).join('');
+    wireBindings(box); wireItemTools(box, list, rr);
+  };
+  rr();
+  $('#add-award').onclick = () => { list.unshift({ year: String(new Date().getFullYear()), text: { en: '', zh: '' }, note: '', highlight: false }); markDirty(); rr(); };
+}
+
+// ── Photos ──
+function viewPhotos(v) {
+  v.innerHTML = `<h2>Photo carousels</h2><p class="lead">Two photo strips on the homepage. Captions get “${esc(C.site.photo_credit?.en || 'Photo by …')}” appended automatically.</p>
+    <div class="card">${biField('Photo credit suffix', C.site, 'photo_credit')}</div>
+    ${[0, 1].map(k => `<div class="card"><h3>Carousel ${k + 1} ${k === 0 ? '(after Education)' : '(after Publications)'}</h3><div class="thumbs" id="car${k}"></div>
+      <div class="toolbar"><input type="file" id="up-car${k}" accept="image/*" style="display:none"><button class="btn sm" id="btn-up-car${k}">Upload photo…</button><span class="hint" id="up-car${k}-msg"></span></div></div>`).join('')}`;
+  [0, 1].forEach(k => {
+    C.carousels[k] ||= [];
+    const list = C.carousels[k];
+    const rr = () => {
+      const box = $('#car' + k);
+      box.innerHTML = list.map((s, i) => `<div class="thumb" data-i="${i}"><img src="${esc(s.src)}" alt="" loading="lazy">
+        <div class="cap">${bind(s, 'src', 'text', 'placeholder="file.jpg"')}${bind(s.caption ||= { en: '', zh: '' }, 'en', 'text', 'placeholder="Caption (EN)"')}${bind(s.caption, 'zh', 'text', 'placeholder="说明（中文）"')}</div>
+        ${itemTools(list, i)}</div>`).join('') || '<p class="hint">No photos yet.</p>';
+      wireBindings(box); wireItemTools(box, list, rr);
+    };
+    rr();
+    uploader('#btn-up-car' + k, '#up-car' + k, `#up-car${k}-msg`, async (file) => {
+      const name = await uploadToRepo(file);
+      list.push({ src: name, caption: { en: '', zh: '' } }); markDirty(); rr();
+    });
+  });
+}
+
+// ── CV & site settings ──
+function viewCV(v) {
+  const s = C.site, cv = C.cv;
+  v.innerHTML = `<h2>CV &amp; site settings</h2><p class="lead">The CV download card, page titles, and analytics IDs.</p>
+  <div class="card"><h3>Curriculum vitae</h3>
+    ${field('CV file name', cv, 'file', 'text', 'PDF in the repository root. Spaces are fine.')}
+    <div class="toolbar"><input type="file" id="up-cv" accept="application/pdf" style="display:none"><button class="btn sm" id="btn-up-cv">Upload new CV (PDF)…</button><span class="hint" id="up-cv-msg"></span></div>
+    ${biField('“Last updated” line', cv, 'updated')}</div>
+  <div class="card"><h3>Site</h3>
+    ${biField('Homepage title', s, 'title')}${biField('Publications page title', s, 'pub_page_title')}
+    <div class="row two">${field('Footer year', s, 'footer_year')}${field('Your author short name', s, 'me_author', 'text', 'As written in author lists, e.g. Tang H. — centres the network graph.')}</div></div>
+  <div class="card"><h3>Analytics</h3>
+    <div class="row two">
+      ${field('GoatCounter site code', s, 'goatcounter_code', 'text', 'The <code>xxx</code> in xxx.goatcounter.com. Leave empty to disable. Pageviews only, no cookies, no personal data.')}
+      ${field('Google Analytics ID', s, 'ga_id', 'text', 'Informational: the GA tag is in the page head.')}</div></div>`;
+  uploader('#btn-up-cv', '#up-cv', '#up-cv-msg', async (file) => {
+    const name = await uploadToRepo(file, 'CV_Hui_Tang_' + new Date().getFullYear() + '.pdf');
+    cv.file = name; markDirty(); render();
+  });
+}
+
+// ── Raw JSON ──
+function viewJSON(v) {
+  v.innerHTML = `<h2>Raw JSON</h2><p class="lead">The full content.json. Edit carefully; “Apply” validates before replacing the working copy.</p>
+    <textarea id="raw" class="mono" style="min-height:60vh">${esc(JSON.stringify(C, null, 2))}</textarea>
+    <div class="toolbar"><button class="btn primary sm" id="raw-apply">Apply to working copy</button><span class="hint" id="raw-msg"></span></div>`;
+  $('#raw-apply').onclick = () => {
+    try { const obj = JSON.parse($('#raw').value); C = obj; normalize(); markDirty(); $('#raw-msg').textContent = 'Applied. Publish to save.'; }
+    catch (e) { $('#raw-msg').textContent = 'Invalid JSON: ' + e.message; }
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Visitors (GoatCounter)
+// ─────────────────────────────────────────────────────────────────────────────
+let GC_PERIOD = 30;
+function viewOverview(v) {
+  const code = C.site.goatcounter_code;
+  const gcTok = lsGet(LS.gcToken) || '';
+  v.innerHTML = `<h2>Visitors</h2><p class="lead">Aggregate, privacy-friendly statistics from GoatCounter: page views, countries and referrers. No individual IP addresses are stored or shown.</p>
+  ${!code ? `<div class="card"><h3>Set up GoatCounter (free, ~3 minutes)</h3>
+    <ol style="margin:0 0 0.8rem 1.2rem;font-size:13.5px;line-height:1.8">
+      <li>Create an account at <a href="https://www.goatcounter.com/signup" target="_blank">goatcounter.com/signup</a> and pick a site code (e.g. <b>tanghuii</b>).</li>
+      <li>Enter that code under <b>CV &amp; site settings → GoatCounter site code</b> and publish. Both pages then load the tracking script.</li>
+      <li>For charts here: GoatCounter → Settings → <b>API</b> → new token with <b>Read statistics</b>, paste it below.</li>
+    </ol></div>` : ''}
+  <div class="card">
+    <div class="row" style="grid-template-columns:1fr auto;align-items:end">
+      <div class="field" style="margin:0"><label>GoatCounter API token (read statistics)</label><input type="password" id="gc-token" class="mono" value="${esc(gcTok)}" placeholder="stored in this browser only"></div>
+      <div class="toolbar" style="margin:0"><button class="btn sm" id="gc-save">Save</button>
+        ${code ? `<a class="btn sm" href="https://${esc(code)}.goatcounter.com" target="_blank">Open dashboard ↗</a>` : ''}
+        ${C.site.ga_id ? `<a class="btn sm" href="https://analytics.google.com/" target="_blank">Google Analytics ↗</a>` : ''}</div></div></div>
+  <div id="gc-stats"></div>`;
+  $('#gc-save').onclick = () => { lsSet(LS.gcToken, $('#gc-token').value.trim() || null); toast('Saved'); loadStats(); };
+  loadStats();
+}
+async function gcApi(code, token, path) {
+  const res = await fetch(`https://${code}.goatcounter.com/api/v0${path}`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+  if (!res.ok) throw new Error(`GoatCounter ${res.status}`);
+  return res.json();
+}
+const fmtN = n => Number(n || 0).toLocaleString('en-US');
+const dstr = d => d.toISOString().slice(0, 10);
+async function loadStats() {
+  const box = $('#gc-stats'); if (!box) return;
+  const code = C.site.goatcounter_code; const token = lsGet(LS.gcToken);
+  if (!code) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="toolbar"><div class="seg" id="gc-seg">${[7, 30, 90, 365].map(d => `<button data-d="${d}" class="${GC_PERIOD === d ? 'active' : ''}">${d === 365 ? '1 year' : d + ' days'}</button>`).join('')}</div><span class="hint" id="gc-msg">Loading…</span></div><div id="gc-body"></div>`;
+  box.querySelectorAll('#gc-seg button').forEach(b => b.onclick = () => { GC_PERIOD = Number(b.dataset.d); loadStats(); });
+  const body = $('#gc-body'), msg = $('#gc-msg');
+  const end = new Date(); const start = new Date(end.getTime() - GC_PERIOD * 86400000);
+
+  // Public counters work without a token (site-wide and per page)
+  let totals = {};
+  try {
+    const q = `?start=${dstr(start)}&end=${dstr(end)}`;
+    const r = await Promise.all(['TOTAL', '/', '/publications.html'].map(p => fetch(`https://${code}.goatcounter.com/counter/${p === 'TOTAL' ? 'TOTAL' : encodeURIComponent(p)}.json${q}`).then(r => r.ok ? r.json() : null).catch(() => null)));
+    totals = { all: r[0], home: r[1], pubs: r[2] };
+  } catch (e) {}
+  const cnt = x => x ? String(x.count ?? x.count_unique ?? '–').replace(/\s/g, ',') : '–';
+  let html = `<div class="tiles">
+    <div class="tile"><div class="k">Page views</div><div class="v">${cnt(totals.all)}</div><div class="s">last ${GC_PERIOD} days, all pages</div></div>
+    <div class="tile"><div class="k">Homepage</div><div class="v">${cnt(totals.home)}</div><div class="s">index.html</div></div>
+    <div class="tile"><div class="k">Publications page</div><div class="v">${cnt(totals.pubs)}</div><div class="s">publications.html</div></div>
+  </div>`;
+  if (!totals.all) html += `<p class="hint" style="margin-bottom:1rem">Counts not available yet. If you just set GoatCounter up, enable <b>Settings → “Allow adding visitor counts on your website”</b> in GoatCounter and wait for the first visits.</p>`;
+
+  if (!token) {
+    body.innerHTML = html + `<div class="card"><p class="hint">Add a GoatCounter API token above to see daily trends, countries and referrers here.</p></div>`;
+    msg.textContent = ''; return;
+  }
+  try {
+    const q = `?start=${dstr(start)}T00:00:00Z&end=${dstr(end)}T23:59:59Z`;
+    const [hits, locs, refs] = await Promise.all([
+      gcApi(code, token, `/stats/hits${q}&limit=20&daily=true`),
+      gcApi(code, token, `/stats/locations${q}&limit=15`),
+      gcApi(code, token, `/stats/toprefs${q}&limit=15`)
+    ]);
+    // Daily series summed over pages
+    const daily = {};
+    (hits.hits || []).forEach(h => (h.stats || []).forEach(s => { const d = s.day || s.Day; daily[d] = (daily[d] || 0) + (s.daily ?? s.Daily ?? (Array.isArray(s.hourly) ? s.hourly.reduce((a, b) => a + b, 0) : 0)); }));
+    const days = Object.keys(daily).sort(); const vals = days.map(d => daily[d]);
+    const unique = (hits.hits || []).reduce((a, h) => a + (h.count_unique ?? h.count ?? 0), 0);
+    html += `<div class="card"><h3>Daily page views</h3>${sparkline(days, vals)}</div>
+      <div class="two-col">
+        <div class="card"><h3>Countries</h3>${bars((locs.stats || []).map(x => ({ name: x.name || x.id, n: x.count ?? x.count_unique })))}</div>
+        <div class="card"><h3>Referrers</h3>${bars((refs.stats || []).map(x => ({ name: x.name || x.id || '(direct)', n: x.count ?? x.count_unique })))}</div>
+      </div>
+      <div class="card"><h3>Pages</h3>${bars((hits.hits || []).map(h => ({ name: h.path, n: h.count ?? h.count_unique })))}</div>`;
+    body.innerHTML = html; msg.textContent = `Visitors (unique, approx.): ${fmtN(unique)}`;
+  } catch (e) {
+    body.innerHTML = html + `<div class="card"><p class="hint">Could not load detailed statistics (${esc(e.message)}). Check the API token has “Read statistics”, or open the GoatCounter dashboard directly.</p></div>`;
+    msg.textContent = '';
+  }
+}
+function bars(items) {
+  items = items.filter(x => x.n != null); if (!items.length) return '<p class="hint">No data in this period.</p>';
+  const max = Math.max(...items.map(x => Number(x.n) || 0), 1);
+  return `<div class="bars">${items.map(x => `<div class="bar"><div class="name" title="${esc(x.name)}">${esc(x.name)}</div><div class="track"><div class="fill" style="width:${(Number(x.n) / max * 100).toFixed(1)}%"></div></div><div class="n">${fmtN(x.n)}</div></div>`).join('')}</div>`;
+}
+function sparkline(days, vals) {
+  if (!vals.length) return '<p class="hint">No data in this period.</p>';
+  const W = 800, H = 160, padL = 36, padB = 22, padT = 8;
+  const max = Math.max(...vals, 1), n = vals.length;
+  const x = i => padL + (n === 1 ? 0 : i * (W - padL - 8) / (n - 1));
+  const y = v => padT + (H - padT - padB) * (1 - v / max);
+  const pts = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const area = `M${x(0).toFixed(1)},${y(0)} L${pts.replace(/ /g, ' L')} L${x(n - 1).toFixed(1)},${y(0)} Z`;
+  const ticks = [0, Math.round(max / 2), max];
+  const labelEvery = Math.ceil(n / 6);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Daily page views">
+    ${ticks.map(t => `<line x1="${padL}" x2="${W - 8}" y1="${y(t)}" y2="${y(t)}" stroke="#d4cdc4" stroke-dasharray="2 4"/><text x="${padL - 6}" y="${y(t) + 4}" font-size="11" text-anchor="end" fill="#8a8279" font-family="DM Sans, sans-serif">${t}</text>`).join('')}
+    <path d="${area}" fill="#a67c52" fill-opacity="0.15"/>
+    <polyline points="${pts}" fill="none" stroke="#6b4c3b" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${x(n - 1)}" cy="${y(vals[n - 1])}" r="3.5" fill="#6b4c3b"/>
+    ${days.map((d, i) => i % labelEvery === 0 || i === n - 1 ? `<text x="${x(i)}" y="${H - 6}" font-size="11" text-anchor="middle" fill="#8a8279" font-family="DM Sans, sans-serif">${d.slice(5)}</text>` : '').join('')}
+  </svg>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────────────────────────────────────
+$('#btn-save').onclick = saveContent;
+$('#btn-reload').onclick = async () => { if (isDirty() && !$('#btn-reload').dataset.confirm) { $('#btn-reload').dataset.confirm = '1'; $('#btn-reload').textContent = 'Discard changes & reload?'; setTimeout(() => { $('#btn-reload').dataset.confirm = ''; $('#btn-reload').textContent = 'Reload from GitHub'; }, 3000); return; } $('#btn-reload').dataset.confirm = ''; $('#btn-reload').textContent = 'Reload from GitHub'; await loadContent(); };
+window.addEventListener('beforeunload', e => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
+(async () => {
+  TAB = lsGet(LS.tab) || 'overview';
+  await showLogin();
+  await loadContent();
+})();
+</script>
+</body>
+</html>
