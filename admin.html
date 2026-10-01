@@ -10,10 +10,10 @@
 <style>
   /* Layout: fixed left rail with sections, scrolling main pane; same palette as the public site */
   :root {
-    --ink: #1a1a2e; --paper: #faf8f5; --accent: #6b4c3b; --accent-light: #a67c52;
-    --subtle: #d4cdc4; --muted: #8a8279; --highlight: #f0ebe4; --card: #ffffff;
-    --ok: #2f7a4f; --ok-bg: #e6f3ea; --warn: #92400e; --warn-bg: #fef3c7; --err: #b42318; --err-bg: #fde8e6;
-    --shadow: rgba(26,26,46,0.06);
+    --ink: #0d1b2a; --paper: #f5f7fa; --accent: #1b4f8a; --accent-light: #3b7dd8;
+    --subtle: #d3dce7; --muted: #647387; --highlight: #e8eef7; --card: #ffffff;
+    --ok: #2f7a4f; --ok-bg: #e6f3ea; --warn: #8a5300; --warn-bg: #fcefd6; --err: #b42318; --err-bg: #fde8e6;
+    --shadow: rgba(13, 27, 42, 0.06);
     --serif: 'Crimson Pro', Georgia, serif; --sans: 'DM Sans', system-ui, sans-serif; --mono: 'DM Mono', ui-monospace, monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,6 +44,8 @@
   .pill.warn { background: var(--warn-bg); color: var(--warn); }
   .pill.err { background: var(--err-bg); color: var(--err); }
   .pill.muted { background: var(--highlight); color: var(--muted); }
+  .pill.first { background: #dcebfb; color: #174a85; }
+  .pill.status { background: #fcefd6; color: #8a5300; }
 
   .app { display: grid; grid-template-columns: 230px 1fr; height: 100%; }
   aside { border-right: 1px solid var(--subtle); background: var(--card); padding: 1.2rem 0; display: flex; flex-direction: column; }
@@ -59,7 +61,7 @@
   .aside-foot a { display: block; margin-top: 0.3rem; text-decoration: none; }
 
   main { overflow-y: auto; min-width: 0; }
-  .topbar { position: sticky; top: 0; z-index: 5; background: rgba(250,248,245,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--subtle); padding: 0.7rem 1.6rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .topbar { position: sticky; top: 0; z-index: 5; background: rgba(245, 247, 250, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--subtle); padding: 0.7rem 1.6rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
   .topbar .status { font-size: 15.625px; color: var(--muted); display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
   .topbar .actions { display: flex; gap: 0.5rem; }
   .content { padding: 1.6rem; max-width: 1000px; }
@@ -116,10 +118,10 @@
   @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
 
   /* Login / modal */
-  .overlay { position: fixed; inset: 0; background: rgba(26,26,46,0.35); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
+  .overlay { position: fixed; inset: 0; background: rgba(13, 27, 42, 0.35); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
   .modal { background: var(--card); border-radius: 12px; padding: 1.6rem 1.8rem; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
   .modal h2 { margin-bottom: 0.6rem; }
-  .modal ol { margin: 0.6rem 0 1rem 1.2rem; font-size: 16.25px; color: #444; }
+  .modal ol { margin: 0.6rem 0 1rem 1.2rem; font-size: 16.25px; color: #334155; }
   .modal ol li { margin-bottom: 0.25rem; }
   .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 0.7rem 1.3rem; border-radius: 8px; font-size: 16.25px; opacity: 0; transition: all .3s; z-index: 60; pointer-events: none; max-width: 90vw; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -161,6 +163,53 @@
     nav .count, .aside-foot { display: none; }
     .content { padding: 1rem; }
     .row.two { grid-template-columns: 1fr; }
+  }
+
+  /* Phones: original type sizes (the larger desktop sizes were too big on small screens) */
+  @media (max-width: 720px) {
+    body { font-size: 14px !important; }
+    textarea.mono, input.mono { font-size: 12.5px !important; }
+    label { font-size: 12px !important; }
+    .hint { font-size: 12px !important; }
+    .btn.sm { font-size: 12px !important; }
+    .pill { font-size: 11px !important; }
+    .brand h1 { font-size: 1.25rem !important; }
+    .brand p { font-size: 12px !important; }
+    nav .count { font-size: 11px !important; }
+    .aside-foot { font-size: 12px !important; }
+    .topbar .status { font-size: 12.5px !important; }
+    h2 { font-size: 1.5rem !important; }
+    .lead { font-size: 13.5px !important; }
+    .card h3 { font-size: 1.05rem !important; }
+    .item-head .tools .btn { font-size: 12px !important; }
+    .check { font-size: 13px !important; }
+    .pub-row .m { font-size: 12.5px !important; }
+    .thumb .cap { font-size: 12px !important; }
+    .thumb .cap input { font-size: 12px !important; }
+    .thumb .tools .btn { font-size: 11px !important; }
+    .tile .k { font-size: 11.5px !important; }
+    .tile .v { font-size: 1.9rem !important; }
+    .tile .s { font-size: 12px !important; }
+    .bar { font-size: 13px !important; }
+    .seg button { font-size: 12.5px !important; }
+    .modal ol { font-size: 13px !important; }
+    .toast { font-size: 13px !important; }
+    .log { font-size: 12px !important; }
+    .login-name { font-size: 2.1rem !important; }
+    .login-sub { font-size: 12px !important; }
+    .login h2 { font-size: 1.35rem !important; }
+    .login .check { font-size: 13px !important; }
+    .login-msg { font-size: 13px !important; }
+    .login-alt { font-size: 12.5px !important; }
+    .login-help { font-size: 12.5px !important; }
+    .login-foot { font-size: 13px !important; }
+  }
+  @media (max-width: 720px) {
+    #view ol { font-size: 13.5px !important; }
+  }
+  /* iOS Safari zooms the page when a focused field is under 16px */
+  @media (max-width: 720px) {
+    input, select, textarea { font-size: 16px !important; }
   }
 </style>
 </head>
@@ -973,7 +1022,7 @@ function viewPublications(v) {
         <div class="pub-row" data-toggle>
           ${p.cover ? `<img src="${esc(p.cover)}" alt="" onerror="imgFallback(this)">` : `<div class="nocover">📝</div>`}
           <div><div class="t">${esc(p.title_short || p.title || 'Untitled')}</div>
-            <div class="m">${p.first_author ? '<span class="pill warn">First author</span>' : ''}${p.status ? `<span class="pill muted">${esc(p.status)}</span>` : ''}${p.featured ? '<span class="pill ok">Featured</span>' : ''}<span>${esc(p.venue)}</span>${p.cited != null && p.cited !== '' ? `<span>· Cited ${esc(p.cited)}</span>` : ''}</div></div>
+            <div class="m">${p.first_author ? '<span class="pill first">First author</span>' : ''}${p.status ? `<span class="pill status">${esc(p.status)}</span>` : ''}${p.featured ? '<span class="pill ok">Featured</span>' : ''}<span>${esc(p.venue)}</span>${p.cited != null && p.cited !== '' ? `<span>· Cited ${esc(p.cited)}</span>` : ''}</div></div>
           ${itemTools(pubs, i)}
         </div>
         ${open ? `<div class="pub-edit">
@@ -1350,11 +1399,11 @@ function sparkline(days, vals) {
   const ticks = [0, Math.round(max / 2), max];
   const labelEvery = Math.ceil(n / 6);
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Daily page views">
-    ${ticks.map(t => `<line x1="${padL}" x2="${W - 8}" y1="${y(t)}" y2="${y(t)}" stroke="#d4cdc4" stroke-dasharray="2 4"/><text x="${padL - 6}" y="${y(t) + 4}" font-size="13" text-anchor="end" fill="#8a8279" font-family="DM Sans, sans-serif">${t}</text>`).join('')}
-    <path d="${area}" fill="#a67c52" fill-opacity="0.15"/>
-    <polyline points="${pts}" fill="none" stroke="#6b4c3b" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-    <circle cx="${x(n - 1)}" cy="${y(vals[n - 1])}" r="3.5" fill="#6b4c3b"/>
-    ${days.map((d, i) => i % labelEvery === 0 || i === n - 1 ? `<text x="${x(i)}" y="${H - 6}" font-size="13" text-anchor="${i === n - 1 && n > 1 ? 'end' : i === 0 ? 'start' : 'middle'}" fill="#8a8279" font-family="DM Sans, sans-serif">${d.slice(5)}</text>` : '').join('')}
+    ${ticks.map(t => `<line x1="${padL}" x2="${W - 8}" y1="${y(t)}" y2="${y(t)}" stroke="#d3dce7" stroke-dasharray="2 4"/><text x="${padL - 6}" y="${y(t) + 4}" font-size="13" text-anchor="end" fill="#647387" font-family="DM Sans, sans-serif">${t}</text>`).join('')}
+    <path d="${area}" fill="#3b7dd8" fill-opacity="0.15"/>
+    <polyline points="${pts}" fill="none" stroke="#1b4f8a" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${x(n - 1)}" cy="${y(vals[n - 1])}" r="3.5" fill="#1b4f8a"/>
+    ${days.map((d, i) => i % labelEvery === 0 || i === n - 1 ? `<text x="${x(i)}" y="${H - 6}" font-size="13" text-anchor="${i === n - 1 && n > 1 ? 'end' : i === 0 ? 'start' : 'middle'}" fill="#647387" font-family="DM Sans, sans-serif">${d.slice(5)}</text>` : '').join('')}
   </svg>`;
 }
 

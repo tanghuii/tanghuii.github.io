@@ -16,15 +16,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@400;500;600&family=Pinyon+Script&family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --ink: #1a1a2e;
-      --paper: #faf8f5;
-      --accent: #6b4c3b;
-      --accent-light: #a67c52;
-      --subtle: #d4cdc4;
-      --muted: #8a8279;
-      --highlight: #f0ebe4;
+      --ink: #0d1b2a;
+      --paper: #f5f7fa;
+      --accent: #1b4f8a;
+      --accent-light: #3b7dd8;
+      --subtle: #d3dce7;
+      --muted: #647387;
+      --highlight: #e8eef7;
       --card-bg: #ffffff;
-      --shadow: rgba(26, 26, 46, 0.06);
+      --shadow: rgba(13, 27, 42, 0.06);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -43,7 +43,7 @@
       content: '';
       position: fixed;
       inset: 0;
-      opacity: 0.025;
+      opacity: 0;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       pointer-events: none;
       z-index: 100;
@@ -52,7 +52,7 @@
     .top-bar {
       position: fixed; top: 0; width: 100%; z-index: 50;
       backdrop-filter: blur(16px);
-      background: rgba(250, 248, 245, 0.88);
+      background: rgba(245, 247, 250, 0.88);
       border-bottom: 1px solid var(--subtle);
       height: 60px; display: flex; align-items: center;
     }
@@ -99,9 +99,9 @@
 
     .pub-card {
       display: flex; gap: 1.2rem;
-      background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,235,228,0.5) 100%);
+      background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(232, 238, 247, 0.5) 100%);
       backdrop-filter: blur(6px);
-      border: 1px solid rgba(212,205,196,0.4);
+      border: 1px solid rgba(211, 220, 231, 0.4);
       border-radius: 12px; padding: 1.4rem;
       transition: all 0.35s ease; text-decoration: none; color: inherit;
       cursor: pointer; flex-wrap: wrap;
@@ -119,10 +119,10 @@
     }
     .pub-card:hover::before { opacity: 1; }
     .pub-card:hover {
-      border-color: rgba(166,124,82,0.3);
-      box-shadow: 0 12px 36px rgba(26,26,46,0.1), 0 2px 8px rgba(107,76,59,0.06);
+      border-color: rgba(59, 125, 216, 0.3);
+      box-shadow: 0 12px 36px rgba(13, 27, 42, 0.1), 0 2px 8px rgba(27, 79, 138, 0.06);
       transform: translateY(-4px);
-      background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(240,235,228,0.7) 100%);
+      background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(232, 238, 247, 0.7) 100%);
     }
 
     .pub-card .pub-title {
@@ -154,7 +154,7 @@
       max-height: 2000px;
       opacity: 1;
       padding: 0.8rem 0.2rem 0;
-      border-top-color: rgba(212,205,196,0.5);
+      border-top-color: rgba(211, 220, 231, 0.5);
       margin-top: 0.5rem;
     }
     /* Clamp abstract text to 5 lines with ellipsis; remove clamp when expanded */
@@ -207,8 +207,8 @@
     .cover-jem { background: linear-gradient(135deg, #0d47a1, #1976d2); color: #bbdefb; }
     .cover-book { background: linear-gradient(135deg, #b71c1c, #d32f2f); color: #ffcdd2; }
     .cover-journal {
-      background: linear-gradient(160deg, var(--accent) 0%, #4a3428 100%);
-      color: #f5efe8; border: none; font-family: 'Crimson Pro', serif; font-size: 0.78rem;
+      background: linear-gradient(160deg, var(--accent) 0%, #0f3360 100%);
+      color: #eaf2fc; border: none; font-family: 'Crimson Pro', serif; font-size: 0.78rem;
       font-weight: 600; line-height: 1.25; padding: 0.6rem; letter-spacing: 0.01em;
     }
     .cover-inprep {
@@ -223,8 +223,8 @@
     .pub-card .pub-venue { font-size: 1rem; font-style: italic; color: var(--accent-light); margin-bottom: 0.5rem; }
     .pub-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
     .pub-badge { display: inline-block; font-size: 0.85rem; font-weight: 600; padding: 0.12rem 0.5rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
-    .badge-first { background: #fef3c7; color: #92400e; }
-    .badge-review { background: #e0e7ff; color: #3730a3; }
+    .badge-first { background: #dcebfb; color: #174a85; }
+    .badge-review { background: #fcefd6; color: #8a5300; }
     .pub-link-btn {
       display: inline-flex; align-items: center; gap: 0.3rem;
       font-size: 0.938rem; font-weight: 500; padding: 0.25rem 0.65rem;
@@ -271,7 +271,32 @@
       .pub-grid { grid-template-columns: 1fr; }
       .page-header h1 { font-size: 2.016rem; }
     }
-  </style>
+  
+  /* Phones: original type sizes (the larger desktop sizes were too big on small screens) */
+  @media (max-width: 720px) {
+    .back-link { font-size: 1.5rem !important; }
+    .back-arrow { font-size: 0.85rem !important; }
+    .lang-btn { font-size: 0.75rem !important; }
+    .page-header h1 { font-size: 2.4rem !important; }
+    .page-header .subtitle { font-size: 0.92rem !important; }
+    .stat-num { font-size: 1.8rem !important; }
+    .stat-label { font-size: 0.82rem !important; }
+    .year-label { font-size: 1.6rem !important; }
+    .pub-card .pub-title { font-size: 0.92rem !important; }
+    .pub-abstract { font-size: 0.82rem !important; }
+    .abstract-label { font-size: 0.72rem !important; }
+    .expand-hint { font-size: 0.7rem !important; }
+    .pub-card .pub-authors { font-size: 0.82rem !important; }
+    .pub-card .pub-venue { font-size: 0.8rem !important; }
+    .pub-badge { font-size: 0.68rem !important; }
+    .pub-link-btn { font-size: 0.75rem !important; }
+    .cite-badge { font-size: 0.72rem !important; }
+    footer { font-size: 0.82rem !important; }
+  }
+    @media (max-width: 580px) {
+    .page-header h1 { font-size: 1.8rem !important; }
+  }
+</style>
 </head>
 <body>
 
