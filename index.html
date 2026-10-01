@@ -555,10 +555,10 @@
       text-align: center;
       padding: 0.8rem 1.5rem;
       margin: 0 0 2rem;
-      background: var(--card-bg);
-      border: 1px solid var(--subtle);
+      background: var(--accent);
+      border: 1px solid var(--accent);
       border-radius: 8px;
-      color: var(--accent);
+      color: #ffffff;
       font-size: 1.125rem;
       font-weight: 600;
       text-decoration: none;
@@ -566,8 +566,8 @@
       transition: all 0.25s;
     }
     .view-all-btn:hover, .view-all-btn:focus-visible {
-      border-color: var(--accent);
-      background: var(--accent);
+      border-color: #133d6d;
+      background: #133d6d;
       color: #ffffff;
       transform: translateY(-1px);
       box-shadow: 0 6px 18px rgba(27, 79, 138, 0.28);
@@ -942,6 +942,30 @@
       .cv-card { flex-direction: column; gap: 1.5rem; text-align: center; }
     }
   
+    /* ── Deep-blue hover states (mouse/trackpad only, so taps on phones do not leave items stuck blue) ── */
+    @media (hover: hover) and (pointer: fine) {
+      .tag, .year-toggle, .award-item, .contact-btn.icon-btn, .award-item .award-year, .award-item .award-text, .award-item .award-note {
+        transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+      }
+      .research-tags .tag:hover {
+        background: var(--accent); color: #ffffff; border-color: var(--accent);
+        box-shadow: 0 6px 16px rgba(27, 79, 138, 0.25);
+      }
+      .collapsible-section .year-toggle:hover {
+        background: var(--accent); color: #ffffff; border-color: var(--accent);
+      }
+      .contact-row .contact-btn.icon-btn:hover {
+        background: var(--accent); color: #ffffff; border-color: var(--accent);
+        box-shadow: 0 6px 16px rgba(27, 79, 138, 0.25);
+      }
+      .contact-row .contact-btn.icon-btn:hover svg { opacity: 1; }
+      /* Award rows */
+      .awards-list .award-item:hover { background: var(--accent); }
+      .awards-list .award-item:hover .award-year { color: #a9c8f0; }
+      .awards-list .award-item:hover .award-text { color: #ffffff; }
+      .awards-list .award-item:hover .award-note { background: #ffffff; color: var(--accent); }
+    }
+
   /* Phones: original type sizes (the larger desktop sizes were too big on small screens) */
   @media (max-width: 720px) {
     .nav-name { font-size: 1.15rem !important; }

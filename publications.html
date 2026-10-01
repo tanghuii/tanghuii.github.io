@@ -223,7 +223,8 @@
     .pub-card .pub-venue { font-size: 1rem; font-style: italic; color: var(--accent-light); margin-bottom: 0.5rem; }
     .pub-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
     .pub-badge { display: inline-block; font-size: 0.85rem; font-weight: 600; padding: 0.12rem 0.5rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
-    .badge-first { background: #c8dbf5; color: #174a85; }
+    .badge-first { background: #2f74e0; color: #ffffff; }
+    .badge-corr { background: #ffffff; color: #2f74e0; box-shadow: inset 0 0 0 1.5px #2f74e0; }
     .badge-review { background: #fcefd6; color: #8a5300; }
     .pub-link-btn {
       display: inline-flex; align-items: center; gap: 0.3rem;
@@ -272,6 +273,7 @@
       .page-header h1 { font-size: 2.016rem; }
     }
   
+
   /* Phones: original type sizes (the larger desktop sizes were too big on small screens) */
   @media (max-width: 720px) {
     .back-link { font-size: 1.5rem !important; }
@@ -343,6 +345,7 @@
       : esc(p.title);
     let badges = '';
     if (p.first_author) badges += '<span class="pub-badge badge-first">First Author</span>';
+    if (p.corresponding) badges += '<span class="pub-badge badge-corr">Corresponding Author</span>';
     if (p.status) badges += `<span class="pub-badge badge-review">${esc(p.status)}</span>`;
     if (p.url) badges += `<a class="pub-link-btn" href="${attr(p.url)}" target="_blank" data-en="Read" data-zh="原文">Read</a>`;
     if (p.cited !== null && p.cited !== undefined && p.cited !== '') badges += `<span class="cite-badge">${CITE_ICON} Cited: ${esc(p.cited)}</span>`;
