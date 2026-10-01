@@ -41,6 +41,11 @@
         "icon": "researchgate",
         "label": "ResearchGate",
         "url": "https://www.researchgate.net/profile/Hui-Tang-35"
+      },
+      {
+        "icon": "orcid",
+        "label": "ORCID",
+        "url": "https://orcid.org/0000-0002-6039-588X"
       }
     ]
   },
