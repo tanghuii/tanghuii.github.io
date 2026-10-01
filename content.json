@@ -202,6 +202,22 @@
   ],
   "publications": [
     {
+      "id": "pubmuprvy2m",
+      "year": "2025",
+      "title": "Breaking boundaries: A social–ecological network approach to collaborative governance of soil erosion risk",
+      "title_short": "",
+      "authors": "Lin Y., Peng J., Xu Z., Hu T., Liu X., <strong>Tang H.</strong>, Yu S.",
+      "venue": "Ambio, 55(8), 1954–1966",
+      "url": "https://doi.org/10.1007/s13280-025-02320-8",
+      "doi": "10.1007/s13280-025-02320-8",
+      "first_author": false,
+      "status": "",
+      "cover": "",
+      "cited": 0,
+      "abstract": "Complex interactions within social–ecological systems underpin multiple social–ecological risks, which can cross administrative boundaries and have large-scale impacts, especially under hierarchical governance. However, a systematic approach for examining collaborative risk governance is still lacking. Here, we developed a multiscale social–ecological network approach, applied it to the case study of soil erosion risk in Shanxi Province, China, and further explored the alignment between networks of ecological linkages related to soil erosion and intergovernmental collaboration. The results showed that, in 91% of cities, the intensity of cross-county collaborative governance failed to effectively address soil erosion risk, particularly in Lvliang and Changzhi. Insufficient collaboration was also evident between adjacent cities. Xinzhou, Lvliang, and Linfen were identified as key nodes for strengthening collaborative governance networks in Shanxi Province. This study highlights the importance of breaking administrative boundaries and provides policy insights for fostering multiscale collaborative governance systems.",
+      "featured": false
+    },
+    {
       "id": "pubmupqozo8",
       "year": "2026",
       "title": "Global effectiveness of mountain protected areas for biodiversity conservation across elevational gradient",
