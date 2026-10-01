@@ -525,13 +525,112 @@ function viewEducation(v) {
   $('#add-edu').onclick = () => { list.unshift({ period: '', degree: { en: '', zh: '' }, school: { en: '', zh: '' }, logo: '', logo_title: '', supervisors: [] }); markDirty(); rr(); };
 }
 
+// ── DOI metadata lookup (Crossref → OpenAlex → Semantic Scholar) ──
+function parseDoi(s) { const m = String(s || '').match(/10\.\d{4,9}\/[^\s"<>]+/i); return m ? m[0].replace(/[.,;)]+$/, '') : null; }
+function initials(given) { return (given || '').split(/[\s]+/).filter(Boolean).map(w => w.split('-').map(x => x[0].toUpperCase() + '.').join('-')).join(''); }
+function fmtAuthor(a) { return a.family ? `${a.family} ${initials(a.given)}`.trim() : (a.name || ''); }
+function normName(s) { return String(s || '').toLowerCase().replace(/[^a-z]/g, ''); }
+// Convert JATS/HTML fragments to plain text; drops a leading <jats:title>Abstract</jats:title> heading
+function stripTags(s) {
+  const d = document.createElement('div');
+  d.innerHTML = String(s || '').replace(/<jats:title>[^<]*<\/jats:title>/gi, '').replace(/<\/?jats:[^>]*>/gi, ' ');
+  return d.textContent.replace(/\s+/g, ' ').trim();
+}
+function invertedToText(idx) {
+  if (!idx) return ''; const words = [];
+  Object.entries(idx).forEach(([w, pos]) => pos.forEach(p => { words[p] = w; }));
+  return words.join(' ').trim();
+}
+async function fetchJson(url, headers = {}) { const r = await fetch(url, { headers }); if (!r.ok) throw new Error(`${new URL(url).host} ${r.status}`); return r.json(); }
+// Returns a partial publication record built from public metadata APIs
+async function lookupDoi(doiInput, status = () => {}) {
+  const doi = parseDoi(doiInput); if (!doi) throw new Error('That does not look like a DOI (expected 10.xxxx/…).');
+  const out = { doi, url: `https://doi.org/${doi}` };
+  const me = normName(C.site.me_author || 'Tang H.');
+  status('Crossref…');
+  let cr = null;
+  try { cr = (await fetchJson(`https://api.crossref.org/works/${encodeURIComponent(doi)}`)).message; } catch (e) {}
+  status('OpenAlex…');
+  let oa = null;
+  try { oa = await fetchJson(`https://api.openalex.org/works/doi:${encodeURIComponent(doi)}`); } catch (e) {}
+  if (!cr && !oa) throw new Error('DOI not found in Crossref or OpenAlex.');
+
+  // Title
+  out.title = (cr && cr.title && cr.title[0]) || (oa && (oa.display_name || oa.title)) || '';
+  out.title = stripTags(out.title);
+  // Authors
+  let authors = [];
+  if (cr && cr.author && cr.author.length) authors = cr.author.map(fmtAuthor);
+  else if (oa && oa.authorships) authors = oa.authorships.map(a => { const n = (a.author?.display_name || '').trim().split(/\s+/); return n.length > 1 ? `${n[n.length - 1]} ${initials(n.slice(0, -1).join(' '))}` : n[0]; });
+  authors = authors.filter(Boolean);
+  out.first_author = authors.length > 0 && normName(authors[0]) === me;
+  out.authors = authors.map(a => normName(a) === me ? `<strong>${esc(a)}</strong>` : esc(a)).join(', ');
+  // Venue: Journal, vol(issue), pages|article-number
+  const journal = stripTags((cr && cr['container-title'] && cr['container-title'][0]) || oa?.primary_location?.source?.display_name || '');
+  const vol = cr?.volume || oa?.biblio?.volume || '', issue = cr?.issue || oa?.biblio?.issue || '';
+  let pages = (cr?.page || '').replace(/-/g, '–');
+  if (!pages && oa?.biblio?.first_page) pages = oa.biblio.first_page + (oa.biblio.last_page && oa.biblio.last_page !== oa.biblio.first_page ? '–' + oa.biblio.last_page : '');
+  if (!pages && cr?.['article-number']) pages = cr['article-number'];
+  out.venue = journal + (vol ? `, ${vol}` : '') + (issue ? `(${issue})` : '') + (pages ? `, ${pages}` : '');
+  out.journal = journal;
+  // Year
+  const dp = cr?.issued?.['date-parts']?.[0]?.[0] || cr?.['published-online']?.['date-parts']?.[0]?.[0] || oa?.publication_year;
+  if (dp) out.year = String(dp);
+  // Citations (OpenAlex; differs from Google Scholar)
+  if (oa && typeof oa.cited_by_count === 'number') out.cited = oa.cited_by_count;
+  // Abstract
+  out.abstract = stripTags(cr?.abstract) || invertedToText(oa?.abstract_inverted_index);
+  if (!out.abstract) {
+    status('Semantic Scholar…');
+    try { const ss = await fetchJson(`https://api.semanticscholar.org/graph/v1/paper/DOI:${encodeURIComponent(doi)}?fields=abstract,citationCount`); out.abstract = ss.abstract || ''; if (out.cited == null && typeof ss.citationCount === 'number') out.cited = ss.citationCount; } catch (e) {}
+  }
+  // Reuse an existing journal cover for the same journal
+  if (journal) { const same = C.publications.find(p => p.cover && normName(p.venue).startsWith(normName(journal).slice(0, 12))); if (same) out.cover = same.cover; }
+  return out;
+}
+async function updateAllCitations(btn) {
+  const pubs = C.publications.filter(p => p.year !== 'book' && (p.doi || parseDoi(p.url) || parseDoi(p.venue)));
+  if (!pubs.length) return toast('No publications with a DOI yet. Add a DOI in each paper to enable this.', true);
+  btn.disabled = true; let n = 0, changed = 0;
+  for (const p of pubs) {
+    btn.textContent = `Updating citations… ${++n}/${pubs.length}`;
+    const doi = p.doi || parseDoi(p.url) || parseDoi(p.venue);
+    try { const oa = await fetchJson(`https://api.openalex.org/works/doi:${encodeURIComponent(doi)}`); if (typeof oa.cited_by_count === 'number' && oa.cited_by_count !== p.cited) { p.cited = oa.cited_by_count; changed++; } p.doi ||= doi; }
+    catch (e) {}
+    await new Promise(r => setTimeout(r, 150));
+  }
+  btn.disabled = false; btn.textContent = 'Update citation counts';
+  markDirty(); render(); toast(`Citation counts refreshed from OpenAlex (${changed} changed). Publish to save.`);
+}
+
 // ── Publications ──
 function viewPublications(v) {
   const pubs = C.publications;
   v.innerHTML = `<h2>Publications</h2><p class="lead">Click a paper to edit. Papers are grouped by year on both pages; the collaboration network and the summary counts are computed from this list automatically.</p>
-    <div class="toolbar"><button class="btn primary sm" id="add-pub">+ Add publication</button>
-      <input type="file" id="up-cover" accept="image/*" style="display:none"><button class="btn sm" id="btn-up-cover">Upload journal cover…</button><span class="hint" id="up-cover-msg"></span></div>
+    <div class="card" style="padding:0.9rem 1.2rem"><div class="row" style="grid-template-columns:1fr auto;align-items:end">
+      <div class="field" style="margin:0"><label>Add from DOI</label><input type="text" id="doi-in" class="mono" placeholder="10.1016/j.jenvman.2023.118888  or  https://doi.org/…"></div>
+      <div class="toolbar" style="margin:0"><button class="btn primary sm" id="doi-go">Fetch &amp; add</button></div></div>
+      <div class="hint" id="doi-msg">Title, authors, journal, volume/pages, year, abstract and citation count are filled in from Crossref, OpenAlex and Semantic Scholar. Check the author list (corresponding author *) and the status badge afterwards.</div></div>
+    <div class="toolbar"><button class="btn sm" id="add-pub">+ Add manually</button>
+      <input type="file" id="up-cover" accept="image/*" style="display:none"><button class="btn sm" id="btn-up-cover">Upload journal cover…</button>
+      <button class="btn sm" id="btn-cites">Update citation counts</button><span class="hint" id="up-cover-msg"></span></div>
     <div id="pubs"></div>`;
+  $('#doi-go').onclick = async () => {
+    const val = $('#doi-in').value.trim(); if (!val) return;
+    const msg = $('#doi-msg'), b = $('#doi-go'); b.disabled = true;
+    try {
+      const meta = await lookupDoi(val, s => msg.textContent = 'Looking up ' + s);
+      const dup = pubs.find(p => (p.doi && p.doi.toLowerCase() === meta.doi.toLowerCase()) || normName(p.title) === normName(meta.title));
+      if (dup) { msg.textContent = 'This paper is already in the list; opening it.'; openPub = dup.id; rr(); b.disabled = false; return; }
+      const id = 'pub' + Date.now().toString(36);
+      pubs.unshift({ id, year: meta.year || String(new Date().getFullYear()), title: meta.title, title_short: '', authors: meta.authors, venue: meta.venue, url: meta.url, doi: meta.doi, first_author: meta.first_author, status: '', cover: meta.cover || '', cited: meta.cited ?? null, abstract: meta.abstract || '', featured: false });
+      openPub = id; markDirty(); rr(); $('#doi-in').value = '';
+      msg.textContent = `Added “${meta.title.slice(0, 70)}${meta.title.length > 70 ? '…' : ''}”.` + (meta.abstract ? '' : ' No abstract was available from the open APIs; paste it manually.') + (meta.cover ? '' : ' Pick or upload a journal cover.');
+    } catch (e) { msg.textContent = e.message; }
+    b.disabled = false;
+  };
+  $('#doi-in').addEventListener('keydown', e => { if (e.key === 'Enter') $('#doi-go').click(); });
+  $('#btn-cites').onclick = () => updateAllCitations($('#btn-cites'));
   const rr = () => {
     const box = $('#pubs'); BIND.clear();
     const groups = {}; pubs.forEach(p => (groups[p.year || '?'] ||= []).push(p));
@@ -558,6 +657,10 @@ function viewPublications(v) {
           ${field('Short title for homepage (optional)', p, 'title_short')}
           ${field('Authors', p, 'authors', 'textarea', 'HTML allowed. Wrap your own name in &lt;strong&gt;…&lt;/strong&gt;; mark corresponding authors with *. Names are split on commas for the network graph.', 'class="mono" style="min-height:52px"')}
           <div class="row two">${field('Venue', p, 'venue', 'text', 'Journal, volume, pages')}${field('Link (URL)', p, 'url')}</div>
+          <div class="row" style="grid-template-columns:1fr auto;align-items:end">
+            <div class="field" style="margin-bottom:0.9rem"><label>DOI</label>${bind(p, 'doi', 'text', 'class="mono" placeholder="10.xxxx/…"')}</div>
+            <div class="field"><button class="btn sm" data-refill>Refill from DOI</button></div></div>
+          <div class="hint" style="margin:-0.4rem 0 0.9rem" data-refill-msg>Refill replaces title, authors, venue, link, year, abstract and citation count; flags, status and cover are kept.</div>
           <div class="field"><label>Journal cover</label>${bind(p, 'cover', 'select')}<div class="hint">Images in the repository root. Use “Upload journal cover…” above to add one.</div></div>
           ${field('Abstract', p, 'abstract', 'textarea', '', 'style="min-height:120px"')}
         </div>` : ''}</div>`;
@@ -575,6 +678,19 @@ function viewPublications(v) {
     box.querySelectorAll('[data-toggle]').forEach(row => row.onclick = (e) => {
       if (e.target.closest('[data-act]')) return;
       const id = row.closest('.item').dataset.id; openPub = openPub === id ? null : id; rr();
+    });
+    // Refill an existing record from its DOI
+    box.querySelectorAll('[data-refill]').forEach(btn => btn.onclick = async () => {
+      const item = btn.closest('.item'); const p = pubs.find(x => x.id === item.dataset.id); const msg = item.querySelector('[data-refill-msg]');
+      const doi = p.doi || parseDoi(p.url) || parseDoi(p.venue);
+      if (!doi) { msg.textContent = 'Enter a DOI first.'; return; }
+      btn.disabled = true;
+      try {
+        const m = await lookupDoi(doi, s => msg.textContent = 'Looking up ' + s);
+        Object.assign(p, { doi: m.doi, title: m.title || p.title, authors: m.authors || p.authors, venue: m.venue || p.venue, url: m.url, year: m.year || p.year, abstract: m.abstract || p.abstract, cited: m.cited ?? p.cited });
+        if (!p.cover && m.cover) p.cover = m.cover;
+        markDirty(); rr(); toast('Refilled from DOI. Review, then publish.');
+      } catch (e) { msg.textContent = e.message; btn.disabled = false; }
     });
     // Keep header text live while typing
     box.querySelectorAll('.pub-edit [data-bind]').forEach(el => { const b = BIND.get(el.dataset.bind); if (['title', 'title_short', 'venue'].includes(b.key)) b.onChange = () => { const it = el.closest('.item'); it.querySelector('.t').textContent = b.obj.title_short || b.obj.title || 'Untitled'; }; });
@@ -693,62 +809,96 @@ function viewOverview(v) {
   $('#gc-save').onclick = () => { lsSet(LS.gcToken, $('#gc-token').value.trim() || null); toast('Saved'); loadStats(); };
   loadStats();
 }
-async function gcApi(code, token, path) {
-  const res = await fetch(`https://${code}.goatcounter.com/api/v0${path}`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
-  if (!res.ok) throw new Error(`GoatCounter ${res.status}`);
-  return res.json();
+// GoatCounter rate-limits the API, so requests run one at a time, retry on 429 and are cached briefly
+const GC_CACHE = new Map();
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function gcFetch(url, opts = {}, tries = 4) {
+  const hit = GC_CACHE.get(url);
+  if (hit && Date.now() - hit.t < 5 * 60 * 1000) return hit.v;
+  for (let i = 0; i < tries; i++) {
+    const res = await fetch(url, opts);
+    if (res.status === 429) {
+      const reset = Number(res.headers.get('X-Rate-Limit-Reset') || res.headers.get('Retry-After')) || (i + 1) * 2;
+      await sleep(Math.min(reset, 15) * 1000 + 300);
+      continue;
+    }
+    if (res.status === 404) { GC_CACHE.set(url, { t: Date.now(), v: null }); return null; }
+    if (!res.ok) throw new Error(`GoatCounter ${res.status}`);
+    const v = await res.json();
+    GC_CACHE.set(url, { t: Date.now(), v });
+    await sleep(350);
+    return v;
+  }
+  throw new Error('GoatCounter is rate-limiting requests; try again in a minute');
 }
+async function gcApi(code, token, path) {
+  return gcFetch(`https://${code}.goatcounter.com/api/v0${path}`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+}
+let GC_LOADING = 0;
 const fmtN = n => Number(n || 0).toLocaleString('en-US');
 const dstr = d => d.toISOString().slice(0, 10);
 async function loadStats() {
   const box = $('#gc-stats'); if (!box) return;
   const code = C.site.goatcounter_code; const token = lsGet(LS.gcToken);
   if (!code) { box.innerHTML = ''; return; }
+  const run = ++GC_LOADING; // ignore results of superseded loads
   box.innerHTML = `<div class="toolbar"><div class="seg" id="gc-seg">${[7, 30, 90, 365].map(d => `<button data-d="${d}" class="${GC_PERIOD === d ? 'active' : ''}">${d === 365 ? '1 year' : d + ' days'}</button>`).join('')}</div><span class="hint" id="gc-msg">Loading…</span></div><div id="gc-body"></div>`;
   box.querySelectorAll('#gc-seg button').forEach(b => b.onclick = () => { GC_PERIOD = Number(b.dataset.d); loadStats(); });
   const body = $('#gc-body'), msg = $('#gc-msg');
+  const stale = () => run !== GC_LOADING || !body.isConnected;
   const end = new Date(); const start = new Date(end.getTime() - GC_PERIOD * 86400000);
+  const isHome = p => p === '/' || p === '/index.html' || p === '/index';
+  const isPubs = p => p === '/publications.html' || p === '/publications';
+  const tiles = (all, home, pubs, sub = '') => `<div class="tiles">
+    <div class="tile"><div class="k">Page views</div><div class="v">${all}</div><div class="s">last ${GC_PERIOD === 365 ? '12 months' : GC_PERIOD + ' days'}, all pages</div></div>
+    <div class="tile"><div class="k">Homepage</div><div class="v">${home}</div><div class="s">/ and index.html</div></div>
+    <div class="tile"><div class="k">Publications page</div><div class="v">${pubs}</div><div class="s">publications.html${sub}</div></div></div>`;
 
-  // Public counters work without a token (site-wide and per page)
-  let totals = {};
-  try {
-    const q = `?start=${dstr(start)}&end=${dstr(end)}`;
-    const r = await Promise.all(['TOTAL', '/', '/publications.html'].map(p => fetch(`https://${code}.goatcounter.com/counter/${p === 'TOTAL' ? 'TOTAL' : encodeURIComponent(p)}.json${q}`).then(r => r.ok ? r.json() : null).catch(() => null)));
-    totals = { all: r[0], home: r[1], pubs: r[2] };
-  } catch (e) {}
-  const cnt = x => x ? String(x.count ?? x.count_unique ?? '–').replace(/\s/g, ',') : '–';
-  let html = `<div class="tiles">
-    <div class="tile"><div class="k">Page views</div><div class="v">${cnt(totals.all)}</div><div class="s">last ${GC_PERIOD} days, all pages</div></div>
-    <div class="tile"><div class="k">Homepage</div><div class="v">${cnt(totals.home)}</div><div class="s">index.html</div></div>
-    <div class="tile"><div class="k">Publications page</div><div class="v">${cnt(totals.pubs)}</div><div class="s">publications.html</div></div>
-  </div>`;
-  if (!totals.all) html += `<p class="hint" style="margin-bottom:1rem">Counts not available yet. If you just set GoatCounter up, enable <b>Settings → “Allow adding visitor counts on your website”</b> in GoatCounter and wait for the first visits.</p>`;
-
+  // Without an API token: public counters only (needs "Allow adding visitor counts" in GoatCounter settings)
   if (!token) {
-    body.innerHTML = html + `<div class="card"><p class="hint">Add a GoatCounter API token above to see daily trends, countries and referrers here.</p></div>`;
+    const q = `?start=${dstr(start)}&end=${dstr(end)}`;
+    const get = async p => { try { return await gcFetch(`https://${code}.goatcounter.com/counter/${encodeURIComponent(p)}.json${q}`); } catch (e) { return null; } };
+    const num = x => x ? Number(String(x.count ?? 0).replace(/[^\d]/g, '')) : 0;
+    const all = await get('TOTAL'); if (stale()) return;
+    const h1 = await get('/'), h2 = await get('/index.html'), p1 = await get('/publications.html'); if (stale()) return;
+    body.innerHTML = tiles(all ? fmtN(num(all)) : '–', fmtN(num(h1) + num(h2)), fmtN(num(p1)))
+      + `<div class="card"><p class="hint">Add a GoatCounter API token above to see daily trends, countries and referrers here.${all ? '' : ' If the counts stay at “–”, enable <b>Settings → Allow adding visitor counts on your website</b> in GoatCounter.'}</p></div>`;
     msg.textContent = ''; return;
   }
+
+  // With an API token: four sequential API calls
+  const q = `?start=${dstr(start)}T00:00:00Z&end=${dstr(end)}T23:59:59Z`;
   try {
-    const q = `?start=${dstr(start)}T00:00:00Z&end=${dstr(end)}T23:59:59Z`;
-    const [hits, locs, refs] = await Promise.all([
-      gcApi(code, token, `/stats/hits${q}&limit=20&daily=true`),
-      gcApi(code, token, `/stats/locations${q}&limit=15`),
-      gcApi(code, token, `/stats/toprefs${q}&limit=15`)
-    ]);
-    // Daily series summed over pages
+    msg.textContent = 'Loading totals…';
+    const total = await gcApi(code, token, `/stats/total${q}`); if (stale()) return;
+    msg.textContent = 'Loading pages…';
+    const hits = await gcApi(code, token, `/stats/hits${q}&limit=50`); if (stale()) return;
+    msg.textContent = 'Loading countries…';
+    const locs = await gcApi(code, token, `/stats/locations${q}&limit=15`); if (stale()) return;
+    msg.textContent = 'Loading referrers…';
+    const refs = await gcApi(code, token, `/stats/toprefs${q}&limit=15`); if (stale()) return;
+
+    const pages = (hits?.hits || []).filter(h => !h.event);
+    const sum = arr => arr.reduce((a, h) => a + (h.count ?? 0), 0);
+    const allViews = total?.total ?? sum(pages);
+    // Daily series from /stats/total; fall back to summing per-page stats
     const daily = {};
-    (hits.hits || []).forEach(h => (h.stats || []).forEach(s => { const d = s.day || s.Day; daily[d] = (daily[d] || 0) + (s.daily ?? s.Daily ?? (Array.isArray(s.hourly) ? s.hourly.reduce((a, b) => a + b, 0) : 0)); }));
+    if (total?.stats?.length) total.stats.forEach(s => { daily[s.day] = (daily[s.day] || 0) + (s.daily ?? (s.hourly || []).reduce((a, b) => a + b, 0)); });
+    else pages.forEach(h => (h.stats || []).forEach(s => { daily[s.day] = (daily[s.day] || 0) + (s.daily ?? (s.hourly || []).reduce((a, b) => a + b, 0)); }));
     const days = Object.keys(daily).sort(); const vals = days.map(d => daily[d]);
-    const unique = (hits.hits || []).reduce((a, h) => a + (h.count_unique ?? h.count ?? 0), 0);
-    html += `<div class="card"><h3>Daily page views</h3>${sparkline(days, vals)}</div>
+
+    let html = tiles(fmtN(allViews), fmtN(sum(pages.filter(h => isHome(h.path)))), fmtN(sum(pages.filter(h => isPubs(h.path)))));
+    if (!allViews) html += `<div class="card"><p class="hint">No visits recorded yet. GoatCounter only counts visits after the tracking script is live: check that the site code is published under <b>CV &amp; site settings</b>, then open the website once and come back in a few minutes. Your own visits from this browser may be ignored if you enabled that in GoatCounter.</p></div>`;
+    else html += `<div class="card"><h3>Daily page views</h3>${sparkline(days, vals)}</div>
       <div class="two-col">
-        <div class="card"><h3>Countries</h3>${bars((locs.stats || []).map(x => ({ name: x.name || x.id, n: x.count ?? x.count_unique })))}</div>
-        <div class="card"><h3>Referrers</h3>${bars((refs.stats || []).map(x => ({ name: x.name || x.id || '(direct)', n: x.count ?? x.count_unique })))}</div>
+        <div class="card"><h3>Countries</h3>${bars((locs?.stats || []).map(x => ({ name: x.name || x.id || 'Unknown', n: x.count })))}</div>
+        <div class="card"><h3>Referrers</h3>${bars((refs?.stats || []).map(x => ({ name: x.name || x.id || '(direct)', n: x.count })))}</div>
       </div>
-      <div class="card"><h3>Pages</h3>${bars((hits.hits || []).map(h => ({ name: h.path, n: h.count ?? h.count_unique })))}</div>`;
-    body.innerHTML = html; msg.textContent = `Visitors (unique, approx.): ${fmtN(unique)}`;
+      <div class="card"><h3>Pages</h3>${bars(pages.map(h => ({ name: h.path, n: h.count })))}</div>`;
+    body.innerHTML = html; msg.textContent = '';
   } catch (e) {
-    body.innerHTML = html + `<div class="card"><p class="hint">Could not load detailed statistics (${esc(e.message)}). Check the API token has “Read statistics”, or open the GoatCounter dashboard directly.</p></div>`;
+    if (stale()) return;
+    body.innerHTML = `<div class="card"><p class="hint">Could not load statistics (${esc(e.message)}). If this says 401 or 403, the API token needs the <b>Read statistics</b> permission. You can always open the GoatCounter dashboard directly.</p></div>`;
     msg.textContent = '';
   }
 }
@@ -772,7 +922,7 @@ function sparkline(days, vals) {
     <path d="${area}" fill="#a67c52" fill-opacity="0.15"/>
     <polyline points="${pts}" fill="none" stroke="#6b4c3b" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
     <circle cx="${x(n - 1)}" cy="${y(vals[n - 1])}" r="3.5" fill="#6b4c3b"/>
-    ${days.map((d, i) => i % labelEvery === 0 || i === n - 1 ? `<text x="${x(i)}" y="${H - 6}" font-size="11" text-anchor="middle" fill="#8a8279" font-family="DM Sans, sans-serif">${d.slice(5)}</text>` : '').join('')}
+    ${days.map((d, i) => i % labelEvery === 0 || i === n - 1 ? `<text x="${x(i)}" y="${H - 6}" font-size="11" text-anchor="${i === n - 1 && n > 1 ? 'end' : i === 0 ? 'start' : 'middle'}" fill="#8a8279" font-family="DM Sans, sans-serif">${d.slice(5)}</text>` : '').join('')}
   </svg>`;
 }
 
