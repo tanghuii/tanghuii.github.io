@@ -11,7 +11,7 @@
     },
     "footer_year": "2026",
     "ga_id": "G-1WEB63LSGJ",
-    "goatcounter_code": "",
+    "goatcounter_code": "tanghuii",
     "photo_credit": {
       "en": "Photo by Hui Tang",
       "zh": "唐辉 摄"
@@ -201,21 +201,6 @@
     ]
   ],
   "publications": [
-    {
-      "id": "pubmuppgmti",
-      "year": "2026",
-      "title": "Global effectiveness of mountain protected areas for biodiversity conservation across elevational gradient",
-      "title_short": "",
-      "authors": "<strong>Tang H.</strong>, ",
-      "venue": "",
-      "url": "",
-      "first_author": false,
-      "status": "",
-      "cover": "",
-      "cited": 0,
-      "abstract": "",
-      "featured": false
-    },
     {
       "id": "pub01",
       "year": "2026",
