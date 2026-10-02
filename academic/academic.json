@@ -11,6 +11,68 @@
   "updated": "2026-10-02",
   "places": [
     {
+      "id": "pl-44881eed94",
+      "cc": "CN",
+      "country": {
+        "en": "China",
+        "zh": "中国"
+      },
+      "city": {
+        "en": "Wuhan",
+        "zh": "武汉"
+      },
+      "lat": 30.5833,
+      "lon": 114.2667,
+      "when": "2023-05",
+      "academic": true,
+      "kind": "conference",
+      "event": {
+        "en": "The 8th Youth Geoscience Forum",
+        "zh": "第八届青年地学论坛"
+      },
+      "talk": "",
+      "talk_type": "",
+      "note": {
+        "en": "",
+        "zh": ""
+      },
+      "photos": [
+        {
+          "id": "902fae80f2",
+          "full": "academic/p-902fae80f2.jpg",
+          "thumb": "academic/t-902fae80f2.jpg",
+          "w": 1600,
+          "h": 2133,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "df73adbffb",
+          "full": "academic/p-df73adbffb.jpg",
+          "thumb": "academic/t-df73adbffb.jpg",
+          "w": 1600,
+          "h": 1067,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "ae37b631a6",
+          "full": "academic/p-ae37b631a6.jpg",
+          "thumb": "academic/t-ae37b631a6.jpg",
+          "w": 1600,
+          "h": 1067,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        }
+      ]
+    },
+    {
       "id": "pl-a4d9e00736",
       "cc": "CN",
       "country": {
@@ -274,7 +336,7 @@
           "w": 960,
           "h": 1280,
           "caption": {
-            "en": "Photo wi",
+            "en": "Photo with Prof. Feng, the president of IIOA",
             "zh": ""
           }
         },
@@ -285,7 +347,7 @@
           "w": 1600,
           "h": 1200,
           "caption": {
-            "en": "",
+            "en": "My session. Full of audiences.",
             "zh": ""
           }
         }
@@ -359,7 +421,7 @@
       "academic": true,
       "kind": "conference",
       "event": {
-        "en": "9th Youth Geoscience Forum",
+        "en": "The 9th Youth Geoscience Forum",
         "zh": "第九届青年地学论坛"
       },
       "talk": "Using spatial conservation prioritization to identify ecological security patterns",
