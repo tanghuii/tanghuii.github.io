@@ -318,9 +318,10 @@ async function gh(path, opts = {}) {
   }
   return res.status === 204 ? null : res.json();
 }
-// GitHub may serve a cached GET for up to a minute after a write, so sha lookups bypass every cache
+// GitHub may serve a cached GET for up to a minute after a write, so sha lookups add a timestamp.
+// No extra request headers here: GitHub's CORS preflight rejects e.g. Cache-Control and the fetch fails.
 async function ghGetFile(path) {
-  return gh(`/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${REPO.branch}&t=${Date.now()}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
+  return gh(`/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${REPO.branch}&t=${Date.now()}`, { cache: 'no-store' });
 }
 // PUT with the sha we know; on 409 ("does not match") re-read the current sha and try again
 async function ghPutFile(path, base64Content, message, sha) {
