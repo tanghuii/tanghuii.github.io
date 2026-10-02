@@ -11,6 +11,90 @@
   "updated": "2026-10-02",
   "places": [
     {
+      "id": "pl-22b653676c",
+      "cc": "AT",
+      "country": {
+        "en": "Austria",
+        "zh": "奥地利"
+      },
+      "city": {
+        "en": "Vienna",
+        "zh": "维也纳"
+      },
+      "lat": 48.2085,
+      "lon": 16.3721,
+      "when": "2026-05",
+      "academic": true,
+      "kind": "conference",
+      "event": {
+        "en": "The EGU General Assembly 2026",
+        "zh": "欧洲地球物理学会年会2026"
+      },
+      "talk": "Inequality reduction of conservation responsibility: An unexpected outcome of achieving the 30×30 biodiversity target in China",
+      "talk_type": "poster",
+      "note": {
+        "en": "",
+        "zh": ""
+      },
+      "photos": [
+        {
+          "id": "bf71d199ef",
+          "full": "academic/p-bf71d199ef.jpg",
+          "thumb": "academic/t-bf71d199ef.jpg",
+          "w": 1600,
+          "h": 900,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "75aaa52082",
+          "full": "academic/p-75aaa52082.jpg",
+          "thumb": "academic/t-75aaa52082.jpg",
+          "w": 1600,
+          "h": 1067,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "732b99398b",
+          "full": "academic/p-732b99398b.jpg",
+          "thumb": "academic/t-732b99398b.jpg",
+          "w": 1600,
+          "h": 2400,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "fc0c3108f6",
+          "full": "academic/p-fc0c3108f6.jpg",
+          "thumb": "academic/t-fc0c3108f6.jpg",
+          "w": 1600,
+          "h": 2400,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "f8e99d4431",
+          "full": "academic/p-f8e99d4431.jpg",
+          "thumb": "academic/t-f8e99d4431.jpg",
+          "w": 1600,
+          "h": 2133,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        }
+      ]
+    },
+    {
       "id": "pl-fba872d1c7",
       "cc": "IE",
       "country": {
