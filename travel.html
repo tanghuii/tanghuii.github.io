@@ -92,7 +92,9 @@
   .country { background: var(--card-bg); border: 1px solid var(--subtle); border-radius: 12px; padding: 1.3rem 1.5rem; margin-bottom: 1rem; scroll-margin-top: 80px; transition: box-shadow 0.3s, border-color 0.3s; }
   .country.flash { border-color: var(--accent); box-shadow: 0 0 0 3px var(--highlight); }
   .country-head { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.9rem; }
-  .flag { font-size: 1.6rem; line-height: 1; }
+  .flag { font-size: 1.6rem; line-height: 1; display: inline-flex; align-items: center; }
+  .flag-img { height: 20px; width: auto; border-radius: 3px; box-shadow: 0 0 0 1px rgba(13, 27, 42, 0.12); vertical-align: -3px; }
+  .leaflet-tooltip .flag-img { height: 14px; vertical-align: -2px; margin-right: 2px; }
   .country-head h3 { font-family: 'Crimson Pro', serif; font-weight: 600; font-size: 1.35rem; color: var(--accent); }
   body.zh .country-head h3 { font-family: 'Noto Serif SC', serif; }
   .country-head .n { color: var(--muted); font-size: 0.88rem; margin-left: auto; white-space: nowrap; }
@@ -224,7 +226,7 @@ const PRIVATE = MODE === 'travel';
 const TRAVEL_FILE = PRIVATE ? 'travel/travel.enc' : 'academic/academic.json';
 const SS_KEY = 'tv_key', LS_KEY = 'tv_key_persist';
 const KINDS = { conference: ['Conference', '学术会议'], visit: ['Research visit', '学术访问'], workshop: ['Workshop / summer school', '研讨会 / 暑期学校'] };
-const TALKS = { oral: ['Oral presentation', '口头报告'], poster: ['Poster', '海报展示'], invited: ['Invited talk', '特邀报告'], keynote: ['Keynote', '主旨报告'] };
+const TALKS = { oral: ['Oral presentation', '口头报告'], poster: ['Poster presentation', '海报报告'], invited: ['Invited talk', '特邀报告'], keynote: ['Keynote', '主旨报告'] };
 const kindLabel = k => KINDS[k] ? KINDS[k][LANG === 'zh' ? 1 : 0] : (k || '');
 const talkLabel = k => TALKS[k] ? TALKS[k][LANG === 'zh' ? 1 : 0] : (k || '');
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -274,7 +276,10 @@ const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').re
 const u8 = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
 const b64u8 = a => { let s = ''; a.forEach(x => { s += String.fromCharCode(x); }); return btoa(s); };
 const t = o => (o && typeof o === 'object') ? (o[LANG] || o.en || o.zh || '') : (o || '');
-const flag = cc => { cc = String(cc || '').toUpperCase(); return /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : '📍'; };
+const flagEmoji = cc => { cc = String(cc || '').toUpperCase(); return /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : '📍'; };
+// Flag as an image (Windows has no emoji flags and shows two letters instead); falls back to the emoji if the CDN fails
+const flag = cc => { cc = String(cc || '').toUpperCase(); if (!/^[A-Z]{2}$/.test(cc)) return '📍';
+  return `<img class="flag-img" src="https://flagcdn.com/h24/${cc.toLowerCase()}.png" srcset="https://flagcdn.com/h48/${cc.toLowerCase()}.png 2x" alt="${cc}" onerror="this.replaceWith(document.createTextNode('${flagEmoji(cc)}'))">`; };
 
 async function deriveKey(password, salt, iter) {
   const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);

@@ -110,6 +110,7 @@
   .tv-res .m { color: var(--muted); font-size: 15px; white-space: nowrap; }
   .tv-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
   .tv-flag { font-size: 1.4rem; line-height: 1; }
+  .flag-img { height: 16px; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(13, 27, 42, 0.12); vertical-align: -3px; }
   .tv-acad { background: var(--highlight); border-radius: 8px; padding: 0.9rem 1rem 0.1rem; margin-bottom: 0.9rem; }
   .thumb.tv .ph { aspect-ratio: 4/3; background: var(--highlight); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
   .thumb.tv .ph img { aspect-ratio: 4/3; }
@@ -1325,8 +1326,10 @@ function renderAccount() {
 const TRAVEL_MIN_PW = 8;
 const FP = { file: 'travel/travel.enc', pubFile: 'academic/academic.json', data: null, orig: '', remote: undefined, sha: null, pubOrig: null, key: null, ckey: null, loading: false, err: '', urls: new Map() };
 const KIND_OPTIONS = [['conference', 'Conference'], ['visit', 'Research visit'], ['workshop', 'Workshop / summer school']];
-const TALK_OPTIONS = [['', 'No presentation'], ['oral', 'Oral presentation'], ['poster', 'Poster'], ['invited', 'Invited talk'], ['keynote', 'Keynote']];
-const tvFlag = cc => /^[A-Z]{2}$/.test(cc || '') ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : '📍';
+const TALK_OPTIONS = [['', 'No presentation'], ['oral', 'Oral presentation'], ['poster', 'Poster presentation'], ['invited', 'Invited talk'], ['keynote', 'Keynote']];
+const tvFlagEmoji = cc => /^[A-Z]{2}$/.test(cc || '') ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : '📍';
+// Flag image (Windows shows letters instead of emoji flags); emoji as the fallback
+const tvFlag = cc => /^[A-Z]{2}$/.test(cc || '') ? `<img class="flag-img" src="https://flagcdn.com/h24/${cc.toLowerCase()}.png" alt="${cc}" onerror="this.replaceWith(document.createTextNode('${tvFlagEmoji(cc)}'))">` : '📍';
 const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(5)), b => b.toString(16).padStart(2, '0')).join('');
 const isPublicPhoto = ph => /\.jpe?g$/i.test(ph.full || '');
 function bytesToB64(bytes) { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); }
