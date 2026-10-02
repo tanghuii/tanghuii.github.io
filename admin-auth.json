@@ -3,8 +3,8 @@
   "kdf": "PBKDF2-SHA256",
   "iter": 600000,
   "salt": "q4V9rEecYS0KbvueDG/DBQ==",
-  "iv": "l//98A/iPL1HoLyv",
-  "ct": "q1LeofPRc31xg3EpFfek+/gYrE9Ia/UhrXHH5ctVOMoSmdqOExBAYPmOgWURZ7a6OU//Ec6OaV5FbKEv/l9iIo+CrqI/U8r99UOVzBTJIn7b5BeLawT0ugNYxAFWBWLUOMRrait9B6c6Z7P0BxcHp3FfJ3RF59x32sQI4X1Ib6YiPpFMwMplr4UNCwqnDhHWTGISjwZdTkiG5nYnBjHyC15z6pauqVjWjjspMLmjLPY5j0vGBl+Fs0JDfHHuTAE63h7+2iFYSps=",
-  "updated": "2026-10-02T15:11:23.948Z",
+  "iv": "NWUWnycs0Nc/TaUs",
+  "ct": "dgaJ0utAlaj57NxBj34SXQJFXzo6Z2WDMN87CP4Jr96dPj7UqoC4Cur/mAqfP5K2N9EbVvrePgBqj1ZC+SGvBZ1DKbfw7bEq3t7t6wodZr6JOenBXLGz84a7oyDS6kHeJhEsq79rGFoGLKYeDAugZs26NqHNiZ+kkTi9FfiADyYzcg/G0rb3E9PhZaytvLBHmJSj/uUI3o7h3L0YD2HJ8MBeAI9oxpc89LuAN+p95AU9wvukgibR0t/1EhlvXfc8VO+T1jxFq1zXmpl5SYdLC+gPylN6y5xvjagcLo7Qtv0rkU3jyswMtCg54vPFTNkc58o=",
+  "updated": "2026-10-02T16:18:51.536Z",
   "note": "Encrypted sign-in for admin.html (AES-256-GCM, key derived from the admin password). Delete this file to disable password sign-in."
 }
