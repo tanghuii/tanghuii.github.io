@@ -108,6 +108,7 @@
   body.zh .talk-type { font-family: 'Noto Serif SC', serif; letter-spacing: 0.1em; }
   body.zh .city-talk { font-family: 'Noto Serif SC', serif; font-style: normal; }
   .city-name .role { font-weight: 600; color: #fff; background: var(--accent); font-size: 0.78rem; padding: 0.05rem 0.55rem; border-radius: 100px; letter-spacing: 0.03em; }
+  .city-name .role.trip { color: var(--accent); background: var(--card-bg); box-shadow: inset 0 0 0 1.5px var(--accent); }
   .city-actions { display: flex; gap: 0.5rem; align-items: center; }
   .small-btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.8rem; border-radius: 5px; border: 1.5px solid var(--accent); background: var(--accent); color: #fff; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; transition: all 0.2s; }
   .small-btn:hover { background: #fff; color: var(--accent); }
@@ -244,6 +245,8 @@ const SS_KEY = 'tv_key', LS_KEY = 'tv_key_persist';
 const KINDS = { conference: ['Conference', '学术会议'], visit: ['Research visit', '学术访问'], workshop: ['Workshop / summer school', '研讨会 / 暑期学校'] };
 const TALKS = { oral: ['Oral presentation', '口头报告'], poster: ['Poster presentation', '海报报告'], invited: ['Invited talk', '特邀报告'], keynote: ['Keynote', '主旨报告'] };
 const kindLabel = k => KINDS[k] ? KINDS[k][LANG === 'zh' ? 1 : 0] : (k || '');
+const TRIPS = { leisure: ['Leisure trip', '休闲旅游'], nature: ['Hiking & nature', '徒步自然'], family: ['Family & friends', '探亲访友'], business: ['Business trip', '出差'], transit: ['Transit', '中转'] };
+const tripLabel = k => TRIPS[k] ? TRIPS[k][LANG === 'zh' ? 1 : 0] : (k || '');
 const talkLabel = k => TALKS[k] ? TALKS[k][LANG === 'zh' ? 1 : 0] : (k || '');
 const TAGS = { '5a': ['5A scenic area', '5A级景区'], 'wh-cultural': ['World Heritage · cultural', '世界文化遗产'], 'wh-natural': ['World Heritage · natural', '世界自然遗产'], 'wh-mixed': ['World Heritage · mixed', '世界文化与自然双遗产'], 'wh': ['World Heritage', '世界遗产'], 'national-park': ['National park', '国家公园'] };
 const tagLabel = k => TAGS[k] ? TAGS[k][LANG === 'zh' ? 1 : 0] : k;
@@ -422,7 +425,7 @@ function renderList() {
       const ph = p.photos || [];
       const strip = ph.length ? `<div class="strip" data-pid="${esc(p.id)}">${ph.slice(0, 6).map((x, i) => `<div class="ph" data-i="${i}" data-thumb="${esc(x.thumb)}"><img alt="${esc(t(x.caption))}">${i === 5 && ph.length > 6 ? `<div class="more">+${ph.length - 6}</div>` : ''}</div>`).join('')}</div>` : '';
       return `<div class="city" data-pid="${esc(p.id)}">
-        <div><div class="city-name">${esc(t(p.city))}${p.when ? `<span class="when">${esc(fmtWhen(p.when))}</span>` : ''}${p.academic ? `<span class="role">${esc(kindLabel(p.kind || 'conference'))}</span>` : ''}</div>
+        <div><div class="city-name">${esc(t(p.city))}${p.when ? `<span class="when">${esc(fmtWhen(p.when))}</span>` : ''}${p.academic ? `<span class="role">${esc(kindLabel(p.kind || 'conference'))}</span>` : (p.trip ? `<span class="role trip">${esc(tripLabel(p.trip))}</span>` : '')}</div>
           ${p.academic && t(p.event) ? `<div class="city-event">${esc(t(p.event))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="city-talk">${p.talk_type ? `<span class="talk-type">${esc(talkLabel(p.talk_type))}</span>` : ''}${p.talk ? `“${esc(p.talk)}”` : ''}</div>` : ''}${t(p.note) ? `<div class="city-note">${esc(t(p.note))}</div>` : ''}</div>
         <div class="city-actions"><button class="small-btn ghost" data-map="${esc(p.id)}"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${LANG === 'zh' ? '地图' : 'Map'}</button>
           ${ph.length ? `<button class="small-btn" data-gallery="${esc(p.id)}">${photosLabel(ph.length)}</button>` : ''}</div>
@@ -474,7 +477,7 @@ async function renderMap() {
     if (typeof p.lat !== 'number' || typeof p.lon !== 'number') continue;
     const n = (p.photos || []).length;
     const m = L.circleMarker([p.lat, p.lon], { radius: 7, color: '#ffffff', weight: 2, fillColor: '#1b4f8a', fillOpacity: 1 }).addTo(MAP);
-    m.bindPopup(`<div class="pop-city">${esc(t(p.city))}</div><div class="pop-meta">${esc(t(p.country))}${p.when ? ' · ' + esc(fmtWhen(p.when)) : ''}</div>${p.academic && t(p.event) ? `<div style="color:var(--accent);font-weight:500;margin-top:0.2rem">${esc(kindLabel(p.kind || 'conference'))} · ${esc(t(p.event))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="pop-meta">${esc(talkLabel(p.talk_type))}${p.talk ? (p.talk_type ? ': ' : '') + esc(p.talk) : ''}</div>` : ''}
+    m.bindPopup(`<div class="pop-city">${esc(t(p.city))}</div><div class="pop-meta">${esc(t(p.country))}${p.when ? ' · ' + esc(fmtWhen(p.when)) : ''}</div>${p.academic && t(p.event) ? `<div style="color:var(--accent);font-weight:500;margin-top:0.2rem">${esc(kindLabel(p.kind || 'conference'))} · ${esc(t(p.event))}</div>` : (!p.academic && p.trip ? `<div class="pop-meta">${esc(tripLabel(p.trip))}</div>` : '')}${p.academic && (p.talk || p.talk_type) ? `<div class="pop-meta">${esc(talkLabel(p.talk_type))}${p.talk ? (p.talk_type ? ': ' : '') + esc(p.talk) : ''}</div>` : ''}
       ${n ? `<button class="pop-btn" onclick="openLightbox('${esc(p.id)}',0)">${LANG === 'zh' ? `查看 ${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`} ↗</button>` : ''}`);
     m.on('mouseover', () => m.setStyle({ radius: 9, fillColor: '#3b7dd8' })).on('mouseout', () => m.setStyle({ radius: 7, fillColor: '#1b4f8a' }));
     MARKERS.set(p.id, m); bounds.push([p.lat, p.lon]);
