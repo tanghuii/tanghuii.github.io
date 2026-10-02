@@ -1471,7 +1471,7 @@ const WH_GROUP = new Set(['wh-cultural', 'wh-natural', 'wh-mixed', 'wh']);
 // Wikidata classes that count as a sight (tourist attraction, museum, national park, palace, temple, castle, archaeological site,
 // monument, theme park, park, square, mosque, church, monastery, Buddhist temple, historic site, religious building, statue, bridge,
 // mountain, lake, garden, fortification, historic district, tower, pagoda, cave, viewpoint)
-const SIGHT_CLASSES = ['Q570116', 'Q33506', 'Q46169', 'Q16560', 'Q44539', 'Q23413', 'Q839954', 'Q4989906', 'Q2416723', 'Q22698', 'Q174782', 'Q32815', 'Q16970', 'Q44613', 'Q5393308', 'Q1081138', 'Q24398318', 'Q179700', 'Q12280', 'Q8502', 'Q23397', 'Q1107656', 'Q57821', 'Q15243209', 'Q12518', 'Q1434271', 'Q35509', 'Q5004679'];
+const SIGHT_CLASSES = ['Q207694', 'Q16735822', 'Q588140', 'Q43501', 'Q167346', 'Q570116', 'Q33506', 'Q46169', 'Q16560', 'Q44539', 'Q23413', 'Q839954', 'Q4989906', 'Q2416723', 'Q22698', 'Q174782', 'Q32815', 'Q16970', 'Q44613', 'Q5393308', 'Q1081138', 'Q24398318', 'Q179700', 'Q12280', 'Q8502', 'Q23397', 'Q1107656', 'Q57821', 'Q15243209', 'Q12518', 'Q1434271', 'Q35509', 'Q5004679'];
 const SIGHT_RESULTS = new Map();   // place id -> last search results
 const OPEN_PLACES = new Set();     // ids of expanded place editors
 const haversine = (a, b, c, d) => { const r = Math.PI / 180, x = Math.sin((c - a) * r / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin((d - b) * r / 2) ** 2; return 12742 * Math.asin(Math.sqrt(x)); };
@@ -1632,29 +1632,68 @@ function cleanWebsite(w) {
 }
 // Baidu Baike resolves /item/<name> to the entry when one exists (search page otherwise)
 const baikeUrl = zh => zh && /[\u4e00-\u9fff]/.test(zh) ? `https://baike.baidu.com/item/${encodeURIComponent(String(zh).replace(/\s*[（(].*$/, '').replace(/(风景名胜区|风景区|景区|旅游区)$/, '') || zh)}` : '';
-async function sightsFromAmap(lat, lon) {
-  const out = [], seen = new Set();
-  for (let page = 1; page <= 3; page++) {
-    const d = await jsonp(`https://restapi.amap.com/v3/place/around?key=${encodeURIComponent(amapKey())}&location=${lon.toFixed(6)},${lat.toFixed(6)}&radius=50000&types=110200|110101|140100&offset=25&page=${page}&extensions=all&output=json`);
+function amapPoi(poi, lat, lon, order) {
+  const [lo0, la0] = String(poi.location || '').split(',').map(Number); if (!isFinite(lo0) || !isFinite(la0)) return null;
+  const [lo, la] = gcj02ToWgs84(lo0, la0);
+  const tags = []; const tc = String(poi.typecode || ''), ty = String(poi.type || '');
+  if (tc.startsWith('110201') || /世界遗产/.test(ty)) tags.push('wh');
+  // Amap's own labels ("5A景区", "AAAAA", "国家级景点" …) live in tag / biz_ext / type
+  const extra = [poi.tag, poi.biz_type, poi.alias, JSON.stringify(poi.biz_ext || {})].map(x => Array.isArray(x) ? x.join(' ') : String(x || '')).join(' ');
+  if (/5A|AAAAA/i.test(extra + ' ' + ty)) tags.push('5a');
+  if (/国家公园/.test(poi.name + ' ' + ty)) tags.push('national-park');
+  const rank = tc.startsWith('110201') ? 0 : tc.startsWith('110202') ? 1 : /风景名胜/.test(ty) ? 2 : 3;
+  return { id: 'amap-' + poi.id, name: { en: poi.name, zh: poi.name }, lat: la, lon: lo, links: 0, tags, enwiki: '', zhwiki: '',
+    url: cleanWebsite(poi.website), amap: `https://www.amap.com/place/${encodeURIComponent(poi.id)}`, baike: baikeUrl(poi.name),
+    dist: haversine(lat, lon, la, lo), src: 'Amap', rank, amapType: ty, order };
+}
+const AMAP_TYPES = '110200|110100|140100|140200|140300';   // 风景名胜 | 公园广场 | 博物馆 | 展览馆 | 美术馆
+async function amapPages(urlFor, lat, lon, maxPages, out, seen) {
+  for (let page = 1; page <= maxPages; page++) {
+    const d = await jsonp(urlFor(page));
     if (d.status !== '1') throw new Error('Amap: ' + (d.info || 'error'));
     for (const poi of d.pois || []) {
       if (seen.has(poi.id)) continue; seen.add(poi.id);
-      const [lo0, la0] = String(poi.location || '').split(',').map(Number); if (!isFinite(lo0) || !isFinite(la0)) continue;
-      const [lo, la] = gcj02ToWgs84(lo0, la0);
-      const tags = []; const tc = String(poi.typecode || ''), ty = String(poi.type || '');
-      if (tc.startsWith('110201') || /世界遗产/.test(ty)) tags.push('wh');
-      // Amap's own labels ("5A景区", "AAAAA", "国家级景点" …) live in tag / biz_ext / type
-      const extra = [poi.tag, poi.biz_type, poi.alias, JSON.stringify(poi.biz_ext || {})].map(x => Array.isArray(x) ? x.join(' ') : String(x || '')).join(' ');
-      if (/5A|AAAAA/i.test(extra + ' ' + ty)) tags.push('5a');
-      if (/国家公园/.test(poi.name + ' ' + ty)) tags.push('national-park');
-      const rank = tc.startsWith('110201') ? 0 : tc.startsWith('110202') ? 1 : /风景名胜/.test(ty) ? 2 : 3;
-      out.push({ id: 'amap-' + poi.id, name: { en: poi.name, zh: poi.name }, lat: la, lon: lo, links: 0, tags, enwiki: '', zhwiki: '',
-        url: cleanWebsite(poi.website), amap: `https://www.amap.com/place/${encodeURIComponent(poi.id)}`, baike: baikeUrl(poi.name),
-        dist: haversine(lat, lon, la, lo), src: 'Amap', rank, amapType: ty });
+      const r = amapPoi(poi, lat, lon, out.length); if (r) out.push(r);
     }
     if ((d.pois || []).length < 25) break;
   }
+}
+async function sightsFromAmap(p) {
+  const lat = p.lat, lon = p.lon, out = [], seen = new Set(), key = encodeURIComponent(amapKey());
+  // 1) City-wide, ordered by Amap's importance: the best-known sights of the city first
+  const city = p.city.zh && /[一-鿿]/.test(p.city.zh) ? p.city.zh : p.city.en;
+  if (city) await amapPages(page => `https://restapi.amap.com/v3/place/text?key=${key}&keywords=&types=${AMAP_TYPES}&city=${encodeURIComponent(city)}&citylimit=true&offset=25&page=${page}&extensions=all&output=json`, lat, lon, 3, out, seen);
+  // 2) Around the point (50 km), also by importance, so places outside the city boundary are covered
+  await amapPages(page => `https://restapi.amap.com/v3/place/around?key=${key}&location=${lon.toFixed(6)},${lat.toFixed(6)}&radius=50000&types=${AMAP_TYPES}&sortrule=weight&offset=25&page=${page}&extensions=all&output=json`, lat, lon, 3, out, seen);
   return out;
+}
+// "Find by name": Amap keyword search in the city (China) or Wikidata label search (elsewhere); results within 120 km
+async function findSightByName(p, q) {
+  const lat = p.lat, lon = p.lon, out = [];
+  if (amapKey() && (p.cc || '').toUpperCase() === 'CN') {
+    const city = p.city.zh && /[一-鿿]/.test(p.city.zh) ? p.city.zh : p.city.en;
+    await amapPages(() => `https://restapi.amap.com/v3/place/text?key=${encodeURIComponent(amapKey())}&keywords=${encodeURIComponent(q)}&city=${encodeURIComponent(city || '')}&citylimit=false&offset=25&page=1&extensions=all&output=json`, lat, lon, 1, out, new Set());
+  }
+  try {
+    const sr = await fetchJson(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(q)}&language=${/[一-鿿]/.test(q) ? 'zh' : 'en'}&uselang=en&limit=10&format=json&origin=*`);
+    const ids = (sr.search || []).map(x => x.id);
+    if (ids.length) {
+      const ent = await fetchJson(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${ids.join('|')}&props=claims|labels|sitelinks&languages=en|zh&format=json&origin=*`);
+      const entities = Object.entries(ent.entities || {});
+      await resolveCritLabels(entities.flatMap(([, e]) => (e.claims?.P2614 || []).map(c => c.mainsnak?.datavalue?.value?.id).filter(Boolean)));
+      for (const [id, e] of entities) {
+        const c = e.claims?.P625?.[0]?.mainsnak?.datavalue?.value; if (!c) continue;
+        const vals = P => (e.claims?.[P] || []).map(x => x.mainsnak?.datavalue?.value?.id).filter(Boolean);
+        const en = e.labels?.en?.value || '', zh = e.labels?.zh?.value || '';
+        out.push({ id, name: { en: en || zh, zh: zh || en }, lat: c.latitude, lon: c.longitude, links: Object.keys(e.sitelinks || {}).length, tags: wdTagsFromClaims({ P31: vals('P31'), P1435: vals('P1435'), P2614: vals('P2614') }),
+          enwiki: e.sitelinks?.enwiki ? 'https://en.wikipedia.org/wiki/' + encodeURIComponent(e.sitelinks.enwiki.title.replace(/ /g, '_')) : '', zhwiki: e.sitelinks?.zhwiki ? 'https://zh.wikipedia.org/wiki/' + encodeURIComponent(e.sitelinks.zhwiki.title.replace(/ /g, '_')) : '',
+          dist: haversine(lat, lon, c.latitude, c.longitude), src: 'Wikidata' });
+      }
+    }
+  } catch (e) { /* name search on Wikidata is optional */ }
+  const list = await load5A();
+  out.forEach(r => { if (!r.tags.includes('5a') && (p.cc || '').toUpperCase() === 'CN' && is5A(r.name.zh, list)) r.tags.push('5a'); if (!r.baike && (p.cc || '').toUpperCase() === 'CN') r.baike = baikeUrl(r.name.zh); });
+  return out.filter(r => r.dist <= 120).sort((a, b) => (a.src === 'Amap' ? -1 : 0) - (b.src === 'Amap' ? -1 : 0) || a.dist - b.dist);
 }
 // Source 3: the offline World Heritage list within 60 km
 async function sightsFromWH(lat, lon, radiusKm = 60) {
@@ -1665,7 +1704,7 @@ async function sightsFromWH(lat, lon, radiusKm = 60) {
 async function findSights(p) {
   const lat = p.lat, lon = p.lon, notes = [], all = [];
   const inChina = (p.cc || '').toUpperCase() === 'CN';
-  if (amapKey()) { try { const r = await sightsFromAmap(lat, lon); all.push(...r); notes.push(`Amap ${r.length}`); } catch (e) { notes.push('Amap failed: ' + e.message); } }
+  if (amapKey() && inChina) { try { const r = await sightsFromAmap(p); all.push(...r); notes.push(`Amap ${r.length}`); } catch (e) { notes.push('Amap failed: ' + e.message); } }
   else if (inChina) notes.push('no Amap key: add one below for better results in China');
   try { const r = await sightsFromWikidata(lat, lon); all.push(...r); notes.push(`Wikidata ${r.length}`); }
   catch (e) {
@@ -1695,9 +1734,9 @@ async function findSights(p) {
   // In China, Amap results (alone or merged) rank above Wikidata-only ones
   out.forEach(r => { if (inChina && !r.baike) r.baike = baikeUrl(r.name.zh); });
   const amapBonus = r => inChina && /Amap/.test(r.src) ? 2000 : 0;
-  const score = r => amapBonus(r) + (r.tags.some(t => t.startsWith('wh')) ? 1000 : 0) + (r.tags.includes('5a') ? 500 : 0) + (r.tags.includes('national-park') ? 200 : 0) + (r.rank === 1 ? 100 : 0) + Math.min(r.links, 150) - r.dist * 0.5;
+  const score = r => amapBonus(r) + (r.tags.some(t => t.startsWith('wh')) ? 1000 : 0) + (r.tags.includes('5a') ? 500 : 0) + (r.tags.includes('national-park') ? 200 : 0) + (r.rank === 0 ? 150 : r.rank === 1 ? 100 : 0) + (typeof r.order === 'number' ? Math.max(0, 80 - r.order) : 0) + Math.min(r.links, 150) - r.dist * 0.5;
   out.sort((a, b) => score(b) - score(a));
-  return { results: out.slice(0, 80), notes };
+  return { results: out.slice(0, 100), notes };
 }
 
 function viewFootprints(v) {
@@ -1816,7 +1855,7 @@ function viewFootprints(v) {
         <p class="hint" style="margin-bottom:0.8rem">Photos uploaded to an academic entry are stored as ordinary JPEGs and appear on the public page; the note is public too.</p></div>` : ''}
       ${biField('Note (optional)', p, 'note')}
       <div class="field"><label>Sights &amp; landmarks (${p.sights.length})</label><div id="tv-sg-${i}"></div>
-        <div class="toolbar" style="margin-top:0.5rem"><button class="btn sm" data-sg-find="${i}">Find landmarks nearby</button><button class="btn sm" data-sg-add="${i}">Add manually</button><span class="hint" id="tv-sg-msg-${i}"></span></div>
+        <div class="toolbar" style="margin-top:0.5rem"><button class="btn sm" data-sg-find="${i}">Find landmarks nearby</button><input type="text" data-sg-q="${i}" placeholder="or search by name, e.g. 外滩" style="width:auto;flex:1;min-width:160px;padding:0.25rem 0.5rem"><button class="btn sm" data-sg-name="${i}">Find</button><button class="btn sm" data-sg-add="${i}">Add manually</button><span class="hint" id="tv-sg-msg-${i}"></span></div>
         <div id="tv-sg-res-${i}"></div></div>
       <div class="field"><label>Photos (${p.photos.length})</label><div class="thumbs" id="tv-ph-${i}"></div>
         ${p.academic && p.photos.some(x => !isPublicPhoto(x)) ? `<p class="hint">${p.photos.filter(x => !isPublicPhoto(x)).length} photo(s) were uploaded while this entry was private, so they are encrypted and will not appear on the public page. Delete and re-upload them to publish.</p>` : ''}
@@ -1883,6 +1922,19 @@ function viewFootprints(v) {
       } catch (err) { msg.textContent = 'Search failed: ' + err.message; }
       e.target.disabled = false;
     };
+    const byName = async () => {
+      const q = $(`[data-sg-q="${i}"]`).value.trim(); if (!q) return;
+      if (typeof p.lat !== 'number' || typeof p.lon !== 'number') return msg.textContent = 'Set the coordinates first.';
+      msg.textContent = `Searching for “${q}”…`;
+      try {
+        const found = await findSightByName(p, q);
+        const prev = (SIGHT_RESULTS.get(p.id) || []).filter(r => !found.some(f => f.id === r.id));
+        SIGHT_RESULTS.set(p.id, [...found, ...prev]); renderResults(p, i);
+        msg.textContent = found.length ? `${found.length} match${found.length === 1 ? '' : 'es'} for “${q}” (top of the list).` : `No match for “${q}” within 120 km. Try another name, or add it manually.`;
+      } catch (e) { msg.textContent = 'Search failed: ' + e.message; }
+    };
+    $(`[data-sg-name="${i}"]`).onclick = byName;
+    $(`[data-sg-q="${i}"]`).onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); byName(); } };
     $(`[data-sg-add="${i}"]`).onclick = () => { p.sights.push({ id: 's-' + rid(), name: { en: '', zh: '' }, lat: null, lon: null, tags: [], enwiki: '', zhwiki: '' }); markDirty(); renderSights(p, i); renderThumbs(p, i); };
     renderResults(p, i);
   };
