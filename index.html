@@ -86,10 +86,10 @@
     .nav-right {
       display: flex;
       align-items: center;
-      gap: 1.5rem;
+      gap: 1.1rem;
     }
 
-    .nav-links { display: flex; align-items: center; gap: 1.35rem; }
+    .nav-links { display: flex; align-items: center; gap: 1.15rem; }
     .hamburger { display: none; }
 
     .nav-links a {
@@ -533,20 +533,21 @@
       gap: 0.6rem;
     }
     .pub-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
       font-size: 0.975rem;
-      font-weight: 500;
-      padding: 0.3rem 0.75rem;
-      border: 1px solid var(--subtle);
-      border-radius: 4px;
+      padding: 0.35rem 0.85rem;
+      border-radius: 5px;
       text-decoration: none;
-      color: var(--muted);
+      background: var(--accent); color: #ffffff; border: 1.5px solid var(--accent); font-weight: 600;
       transition: all 0.2s;
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
-    .pub-link:hover {
-      color: var(--accent);
-      border-color: var(--accent);
+    .pub-link::after { content: '↗'; font-size: 0.95em; line-height: 1; }
+    .pub-link:hover, .pub-link:focus-visible {
+      background: #ffffff; color: var(--accent); border-color: var(--accent); box-shadow: 0 4px 12px rgba(27, 79, 138, 0.2);
     }
 
     /* ── View All Button ── */
@@ -566,20 +567,11 @@
       transition: all 0.25s;
     }
     .view-all-btn:hover, .view-all-btn:focus-visible {
-      border-color: #133d6d;
-      background: #133d6d;
-      color: #ffffff;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(27, 79, 138, 0.28);
-    }
-    /* Pressed: flips to the light version */
-    .view-all-btn:active {
+      border-color: var(--accent);
       background: var(--card-bg);
       color: var(--accent);
-      border-color: var(--accent);
-      transform: translateY(0);
-      box-shadow: 0 2px 6px var(--shadow);
-      transition-duration: 0.05s;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(27, 79, 138, 0.18);
     }
 
     /* ── Collapsible Year Sections ── */
@@ -827,6 +819,8 @@
     .admin-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 1px solid var(--subtle); border-radius: 100px; background: var(--card-bg); color: var(--muted); flex-shrink: 0; transition: all 0.25s; }
     .admin-btn:hover { color: var(--accent); border-color: var(--accent); }
     .admin-btn svg { width: 14px; height: 14px; }
+    .travel-btn { margin-right: -0.9rem; }
+    .travel-btn svg { width: 15px; height: 15px; }
 
     /* ── Like Button ── */
     .like-btn {
@@ -879,8 +873,8 @@
     }
     .fade-in { opacity: 1; transform: translateY(0); }
 
-    /* Collapse the nav into the hamburger menu below 1000px (larger type needs the room) */
-    @media (max-width: 1000px) {
+    /* Collapse the nav into the hamburger menu below 1100px (larger type and eight links need the room) */
+    @media (max-width: 1100px) {
       .hamburger {
         display: flex;
         flex-direction: column;
@@ -1048,7 +1042,11 @@
         <a href="#network" data-en="Network" data-zh="合作网络">Network</a>
         <a href="#awards" data-en="Awards" data-zh="获奖荣誉">Awards</a>
         <a href="#cv" data-en="CV" data-zh="简历">CV</a>
+        <a href="academic.html" class="nav-academic" data-en="Conferences" data-zh="学术足迹" data-tip-en="Academic footprint: conferences on a map" data-tip-zh="学术足迹：参加过的会议地图" title="Academic footprint: conferences on a map">Conferences</a>
       </div>
+      <a href="travel.html" class="admin-btn travel-btn" rel="nofollow" data-tip-en="Private travel map (password)" data-tip-zh="私密旅行地图（需密码）" title="Private travel map (password)" aria-label="Private travel map">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+      </a>
       <a href="admin.html" class="admin-btn" rel="nofollow" title="Admin · Site Manager" aria-label="Admin sign-in">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
       </a>
@@ -1090,7 +1088,7 @@
 </section>
 
 <section id="network" class="fade-in">
-  <div class="section-header"><h2 data-en="Collaboration Network" data-zh="合作关系网络">Collaboration Network</h2></div>
+  <div class="section-header"><h2 data-en="Collaboration Network" data-zh="合作网络">Collaboration Network</h2></div>
   <div id="network-container" class="network-box">
     <svg id="network-svg" style="width:100%;height:100%;"></svg>
     <div id="network-tooltip" style="position:absolute;display:none;background:var(--ink);color:#fff;padding:0.4rem 0.8rem;border-radius:6px;font-size:0.975rem;pointer-events:none;z-index:10;white-space:nowrap;"></div>
@@ -1210,7 +1208,7 @@
     return b;
   }
   function pubItem(p, style = '') {
-    const link = p.url ? `<div class="pub-links"><a class="pub-link" href="${attr(p.url)}" target="_blank" data-en="Read in publisher" data-zh="查看原文">Read in publisher</a></div>` : '';
+    const link = p.url ? `<div class="pub-links"><a class="pub-link" href="${attr(p.url)}" target="_blank" data-en="Read in publisher" data-zh="阅读原文">Read in publisher</a></div>` : '';
     return `<div class="pub-item"${style ? ` style="${style}"` : ''}>
       <div class="pub-title">${esc(p.title_short || p.title)}${pubBadges(p)}</div>
       <div class="pub-authors">${p.authors}</div>
@@ -1267,6 +1265,7 @@
     document.querySelectorAll('[data-tip-en]').forEach(el => {
       const t = el.getAttribute('data-tip-' + lang) || el.getAttribute('data-tip-en');
       el.setAttribute('data-tip', t); el.setAttribute('aria-label', t);
+      if (el.hasAttribute('title')) el.setAttribute('title', t);
     });
     currentLang = lang;
     document.querySelectorAll('#lang-toggle .lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));

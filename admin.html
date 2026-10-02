@@ -102,6 +102,17 @@
   .map-tip { position: absolute; pointer-events: none; background: var(--ink); color: #fff; padding: 0.4rem 0.65rem; border-radius: 6px; font-size: 13px; line-height: 1.35; display: flex; flex-direction: column; z-index: 10; white-space: nowrap; box-shadow: 0 6px 18px rgba(13,27,42,0.25); }
   .map-tip[hidden] { display: none; }
   .map-tip span { color: #c9dbf3; font-variant-numeric: tabular-nums; }
+
+  /* Footprint editors (Academic footprint / Travel map) */
+  .tv-results { display: grid; gap: 0.3rem; margin-top: 0.6rem; }
+  .tv-res { display: flex; justify-content: space-between; gap: 0.8rem; align-items: center; text-align: left; padding: 0.5rem 0.8rem; border: 1px solid var(--subtle); border-radius: 6px; background: var(--card); cursor: pointer; }
+  .tv-res:hover { border-color: var(--accent); background: var(--highlight); }
+  .tv-res .m { color: var(--muted); font-size: 15px; white-space: nowrap; }
+  .tv-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  .tv-flag { font-size: 1.4rem; line-height: 1; }
+  .thumb.tv .ph { aspect-ratio: 4/3; background: var(--highlight); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
+  .thumb.tv .ph img { aspect-ratio: 4/3; }
+  .tv-prog { font-size: 15px; color: var(--accent); }
   .yearhead { font-family: var(--serif); font-weight: 600; color: var(--accent); margin: 1.1rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px dashed var(--subtle); }
   .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.8rem; }
   .thumb { border: 1px solid var(--subtle); border-radius: 8px; overflow: hidden; background: var(--card); }
@@ -400,7 +411,9 @@ function setCorrespondingMark(authors, on) {
   a = a.replace(myNameRe(), (_, name) => name + (on ? '*' : ''));
   return a;
 }
-function isDirty() { return C && JSON.stringify(C) !== C_ORIG; }
+function contentDirty() { return !!C && JSON.stringify(C) !== C_ORIG; }
+function footDirty(f) { return !!f.data && JSON.stringify(f.data) !== f.orig; }
+function isDirty() { return contentDirty() || Object.values(FOOT).some(footDirty); }
 function setStatus(msg, kind) {
   const el = $('#status');
   if (msg) { el.innerHTML = `<span class="pill ${kind || 'muted'}">${esc(msg)}</span>`; return; }
@@ -416,19 +429,22 @@ async function saveContent() {
   if (!TOKEN) return toast('Sign in with a GitHub token to publish.', true);
   const btn = $('#btn-save'); btn.disabled = true; btn.textContent = 'Publishing…';
   try {
-    // Re-read the file: if the cover workflow (or another device) changed it, keep the covers it added
-    try {
-      const remote = await ghGetFile(CONTENT_PATH);
-      if (remote.sha !== SHA) mergeRemoteCovers(JSON.parse(b64dec(remote.content)));
-      SHA = remote.sha;
-    } catch (e) { SHA = null; }
-    const json = JSON.stringify(C, null, 2) + '\n';
-    const r = await ghPutFile(CONTENT_PATH, b64enc(json), `Update site content via Site Manager (${new Date().toISOString().slice(0, 16).replace('T', ' ')})`, SHA);
-    SHA = r.content.sha; C_ORIG = JSON.stringify(C);
-    setStatus();
-    const missing = coverlessWithDoi();
-    toast(missing.length ? `Published. Looking for ${missing.length} journal cover${missing.length > 1 ? 's' : ''} on GitHub…` : 'Published. GitHub Pages usually updates within a minute.');
-    if (missing.length) watchForCovers(SHA);
+    for (const f of Object.values(FOOT)) if (footDirty(f)) await saveFoot(f);
+    if (contentDirty()) {
+      // Re-read the file: if the cover workflow (or another device) changed it, keep the covers it added
+      try {
+        const remote = await ghGetFile(CONTENT_PATH);
+        if (remote.sha !== SHA) mergeRemoteCovers(JSON.parse(b64dec(remote.content)));
+        SHA = remote.sha;
+      } catch (e) { SHA = null; }
+      const json = JSON.stringify(C, null, 2) + '\n';
+      const r = await ghPutFile(CONTENT_PATH, b64enc(json), `Update site content via Site Manager (${new Date().toISOString().slice(0, 16).replace('T', ' ')})`, SHA);
+      SHA = r.content.sha; C_ORIG = JSON.stringify(C);
+      setStatus();
+      const missing = coverlessWithDoi();
+      toast(missing.length ? `Published. Looking for ${missing.length} journal cover${missing.length > 1 ? 's' : ''} on GitHub…` : 'Published. GitHub Pages usually updates within a minute.');
+      if (missing.length) watchForCovers(SHA);
+    } else { setStatus(); toast('Published. GitHub Pages usually updates within a minute.'); }
   } catch (e) { toast(e.message, true); setStatus(); }
   btn.textContent = 'Publish changes';
 }
@@ -533,7 +549,7 @@ async function deleteAuthFile() {
 // Re-encrypt the current tokens with the unlocked key (used when the GoatCounter token changes)
 async function syncAuthBundle() {
   if (!SESSION_KEY || !TOKEN) return false;
-  const file = await encryptBundle({ gh: TOKEN, gc: SESSION?.gc || '' }, SESSION_KEY.key, SESSION_KEY.salt, SESSION_KEY.iter);
+  const file = await encryptBundle({ gh: TOKEN, gc: SESSION?.gc || '', tp: SESSION?.tp || '' }, SESSION_KEY.key, SESSION_KEY.salt, SESSION_KEY.iter);
   await writeAuthFile(file, 'Update encrypted sign-in via Site Manager');
   return true;
 }
@@ -614,7 +630,7 @@ function showLogin(opts = {}) {
           m.textContent = 'Checking GitHub access…';
           try { await verifyGitHubToken(bundle.gh); }
           catch (err) { btn.disabled = false; return viewSetup('Your password is correct, but the saved GitHub token no longer works: ' + err.message + ' Create a new token and set up sign-in again.'); }
-          TOKEN = bundle.gh; SESSION = { gh: bundle.gh, gc: bundle.gc || '' }; SESSION_KEY = { key, salt, iter };
+          TOKEN = bundle.gh; SESSION = { gh: bundle.gh, gc: bundle.gc || '', tp: bundle.tp || '' }; SESSION_KEY = { key, salt, iter };
           saveSession($('#keep').checked); done();
         } catch (err) { m.textContent = err.message; btn.disabled = false; $('#pw').select(); }
       };
@@ -655,7 +671,7 @@ function showLogin(opts = {}) {
           m.textContent = 'Encrypting and saving…';
           const salt = crypto.getRandomValues(new Uint8Array(16));
           const key = await deriveKey(p1, salt, AUTH_ITER);
-          SESSION = { gh: t, gc: gcToken() };
+          SESSION = { gh: t, gc: gcToken(), tp: SESSION?.tp || '' };
           await writeAuthFile(await encryptBundle(SESSION, key, salt, AUTH_ITER), 'Set up encrypted sign-in for Site Manager');
           SESSION_KEY = { key, salt, iter: AUTH_ITER };
           saveSession($('#s-keep').checked); done();
@@ -721,12 +737,14 @@ const TABS = [
   ['publications', 'Publications'],
   ['awards', 'Awards'],
   ['photos', 'Photos'],
+  ['academic', 'Academic footprint'],
+  ['travel', 'Travel map'],
   ['cv', 'CV & site settings'],
   ['json', 'Raw JSON'],
 ];
 function tabCount(id) {
   if (!C) return '';
-  return { research: C.research_interests.length, education: C.education.length, publications: C.publications.length, awards: C.awards.length, photos: C.carousels.flat().length }[id] ?? '';
+  return { research: C.research_interests.length, education: C.education.length, publications: C.publications.length, awards: C.awards.length, photos: C.carousels.flat().length, academic: FOOT.academic.data ? FOOT.academic.data.places.length : '', travel: FOOT.travel.data ? FOOT.travel.data.places.length : '' }[id] ?? '';
 }
 function renderNav() {
   $('#nav').innerHTML = TABS.map(([id, label]) => `<button data-tab="${id}" class="${TAB === id ? 'active' : ''}">${label}<span class="count">${tabCount(id)}</span></button>`).join('');
@@ -798,7 +816,7 @@ function render() {
   BIND.clear();
   renderNav();
   const v = $('#view');
-  const fn = { overview: viewOverview, profile: viewProfile, research: viewResearch, education: viewEducation, publications: viewPublications, awards: viewAwards, photos: viewPhotos, cv: viewCV, json: viewJSON }[TAB];
+  const fn = { overview: viewOverview, profile: viewProfile, research: viewResearch, education: viewEducation, publications: viewPublications, awards: viewAwards, photos: viewPhotos, academic: v => viewFootprint(v, FOOT.academic), travel: v => viewFootprint(v, FOOT.travel), cv: viewCV, json: viewJSON }[TAB];
   v.innerHTML = ''; fn(v); wireBindings(v);
 }
 
@@ -1267,12 +1285,12 @@ function renderAccount() {
         if (p1.length < MIN_PW) throw new Error(`The password needs at least ${MIN_PW} characters.`);
         if (p1 !== p2) throw new Error('The two new passwords do not match.');
       }
-      let bundle = { gh: TOKEN, gc: gcToken() };
+      let bundle = { gh: TOKEN, gc: gcToken(), tp: SESSION?.tp || '' };
       if (exists) {
         msg.textContent = 'Checking current password…';
         const f = await fetchAuthFile(); if (!f) throw new Error('admin-auth.json was not found. Reload the page.');
         const d = await decryptBundle(f, cur);
-        bundle = { gh: d.bundle.gh || TOKEN, gc: gcToken() || d.bundle.gc || '' };
+        bundle = { gh: d.bundle.gh || TOKEN, gc: gcToken() || d.bundle.gc || '', tp: SESSION?.tp || d.bundle.tp || '' };
         if (!p1) password = cur;
       }
       if (newTok) { msg.textContent = 'Checking new token…'; await verifyGitHubToken(newTok); bundle.gh = newTok; }
@@ -1291,6 +1309,291 @@ function renderAccount() {
     if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Click again to turn off'; setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = 'Turn off password sign-in'; } }, 3000); return; }
     try { await deleteAuthFile(); SESSION_KEY = null; setAuthState(); toast('Password sign-in turned off. Sign in with a token from now on.'); renderAccount(); }
     catch (err) { msg.textContent = err.message; }
+  };
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Footprint maps. Two pages share one editor:
+//  - academic.html (public): academic/academic.json + plain JPEG photos
+//  - travel.html (private): travel/travel.enc, AES-256-GCM with a key derived
+//    from the travel password; inside is a random content key that encrypts
+//    every photo (travel/p-*.bin full size, travel/t-*.bin thumbnail).
+// ─────────────────────────────────────────────────────────────────────────────
+const TRAVEL_MIN_PW = 8;
+const ROLE_OPTIONS = [['', '—'], ['talk', 'Oral presentation'], ['poster', 'Poster'], ['invited', 'Invited talk'], ['keynote', 'Keynote'], ['chair', 'Session chair'], ['organizer', 'Organizer'], ['attendee', 'Attendee']];
+function footState(id, label, page, dir, file, encrypted, defaults) {
+  return { id, label, page, dir, file, encrypted, defaults, data: null, orig: '', remote: undefined, sha: null, key: null, ckey: null, loading: false, err: '', urls: new Map() };
+}
+const FOOT = {
+  academic: footState('academic', 'Academic footprint', 'academic.html', 'academic', 'academic/academic.json', false,
+    { title: { en: 'Academic *footprint*', zh: '学术足迹' }, intro: { en: 'Conferences, workshops and research visits.', zh: '参加过的学术会议、研讨会与访问。' } }),
+  travel: footState('travel', 'Travel map', 'travel.html', 'travel', 'travel/travel.enc', true,
+    { title: { en: 'Places I have *been*', zh: '我的旅行足迹' }, intro: { en: '', zh: '' } }),
+};
+const tvFlag = cc => /^[A-Z]{2}$/.test(cc || '') ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : '📍';
+const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(5)), b => b.toString(16).padStart(2, '0')).join('');
+function bytesToB64(bytes) { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+async function importContentKey(b64) { return crypto.subtle.importKey('raw', u8(b64), 'AES-GCM', false, ['encrypt', 'decrypt']); }
+async function encryptBytes(key, bytes) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, bytes));
+  const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12); return out;
+}
+async function decryptBytes(key, buf) { const b = new Uint8Array(buf); return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(0, 12) }, key, b.slice(12)); }
+// Re-encode a photo as JPEG at most maxW wide (also strips EXIF, including GPS)
+async function resizeJpeg(file, maxW, q = 0.85) {
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const scale = Math.min(1, maxW / bmp.width);
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
+  return { bytes: new Uint8Array(await blob.arrayBuffer()), w: c.width, h: c.height, blob };
+}
+async function ghDeleteFile(path, message) {
+  let sha = null;
+  try { sha = (await ghGetFile(path)).sha; } catch (e) { return; }
+  await gh(`/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`, { method: 'DELETE', body: JSON.stringify({ message, sha, branch: REPO.branch }) });
+}
+function normalizeFoot(f, d) {
+  d.v ||= 1; d.places ||= []; d.title ||= { ...f.defaults.title }; d.intro ||= { ...f.defaults.intro };
+  d.places.forEach(p => { p.id ||= 'pl-' + rid(); p.photos ||= []; p.note ||= { en: '', zh: '' }; p.city ||= { en: '', zh: '' }; p.country ||= { en: '', zh: '' }; if (!f.encrypted) { p.event ||= { en: '', zh: '' }; p.role ||= ''; p.talk ||= ''; } });
+  return d;
+}
+async function loadFoot(f) {
+  if (f.loading) return; f.loading = true;
+  try {
+    const r = await ghGetFile(f.file); f.sha = r.sha;
+    if (f.encrypted) f.remote = JSON.parse(b64dec(r.content));
+    else { f.data = normalizeFoot(f, JSON.parse(b64dec(r.content))); f.orig = JSON.stringify(f.data); f.remote = true; }
+  } catch (e) {
+    if (/404/.test(e.message)) { f.sha = null; if (f.encrypted) f.remote = null; else { f.remote = null; f.data = normalizeFoot(f, {}); f.orig = JSON.stringify(f.data); } }
+    else { f.remote = undefined; f.err = e.message; }
+  }
+  f.loading = false;
+  if (TAB === f.id) render();
+}
+async function unlockFoot(f, password) {
+  const { bundle, key, salt, iter } = await decryptBundle(f.remote, password);
+  f.data = normalizeFoot(f, bundle); f.orig = JSON.stringify(f.data); f.key = { key, salt, iter }; f.ckey = await importContentKey(f.data.key);
+}
+async function saveFoot(f, message) {
+  message ||= `Update ${f.label.toLowerCase()} via Site Manager`;
+  let body;
+  if (f.encrypted) {
+    const file = await encryptBundle(f.data, f.key.key, f.key.salt, f.key.iter);
+    file.note = 'Private travel map for travel.html: AES-256-GCM, key derived from the travel password. Photos in this folder are encrypted with a content key stored inside.';
+    body = file;
+  } else body = f.data;
+  try { f.sha = (await ghGetFile(f.file)).sha; } catch (e) { f.sha = null; }
+  const r = await ghPutFile(f.file, b64enc(JSON.stringify(body, null, 2) + '\n'), message, f.sha);
+  f.sha = r.content.sha; f.orig = JSON.stringify(f.data); if (f.encrypted) f.remote = body; else f.remote = true;
+}
+async function rememberTravelPassword(pw) {
+  SESSION ||= { gh: TOKEN, gc: '' }; SESSION.tp = pw; saveSession();
+  try { return await syncAuthBundle(); } catch (e) { toast('Travel password set, but it could not be saved into your sign-in: ' + e.message, true); return false; }
+}
+// Open-Meteo geocoding: free, no key, English and Chinese names
+async function geocode(q) {
+  const base = 'https://geocoding-api.open-meteo.com/v1/search?count=6&format=json&name=' + encodeURIComponent(q);
+  const [en, zh] = await Promise.all([fetchJson(base + '&language=en'), fetchJson(base + '&language=zh').catch(() => null)]);
+  return (en.results || []).map(r => {
+    const z = (zh?.results || []).find(x => x.id === r.id);
+    return { city: { en: r.name, zh: z?.name || r.name }, country: { en: r.country || '', zh: z?.country || r.country || '' }, cc: (r.country_code || '').toUpperCase(), admin: r.admin1 || '', lat: Math.round(r.latitude * 1e4) / 1e4, lon: Math.round(r.longitude * 1e4) / 1e4 };
+  });
+}
+const rawUrl = path => `https://raw.githubusercontent.com/${REPO.owner}/${REPO.name}/${REPO.branch}/${path}`;
+async function footThumbUrl(f, ph) {
+  if (f.urls.has(ph.thumb)) return f.urls.get(ph.thumb);
+  if (!f.encrypted) return rawUrl(ph.thumb) + '?t=' + Date.now();
+  const p = (async () => {
+    let buf;
+    try { const r = await fetch(rawUrl(ph.thumb), { cache: 'no-store' }); if (!r.ok) throw 0; buf = await r.arrayBuffer(); }
+    catch (e) { const g = await ghGetFile(ph.thumb); buf = u8(g.content.replace(/\n/g, '')).buffer; }
+    return URL.createObjectURL(new Blob([await decryptBytes(f.ckey, buf)], { type: 'image/jpeg' }));
+  })();
+  f.urls.set(ph.thumb, p); p.catch(() => f.urls.delete(ph.thumb));
+  return p;
+}
+
+function viewFootprint(v, f) {
+  const intro = f.encrypted
+    ? `<h2>Travel map</h2><p class="lead">A private page (<a href="travel.html" target="_blank">travel.html</a>) with the countries and cities you have visited on an online map, plus your photos. It opens only with the <b>travel password</b>, which you can share with family and friends without giving them access to this manager.</p>`
+    : `<h2>Academic footprint</h2><p class="lead">A public page (<a href="academic.html" target="_blank">academic.html</a>) with the conferences, workshops and research visits you have attended on an online map, with optional photos. Everything here is visible to anyone.</p>`;
+  if (!TOKEN) { v.innerHTML = intro + `<div class="card"><p class="hint">Sign in to edit this page.</p></div>`; return; }
+  if (f.remote === undefined) {
+    if (f.err) { v.innerHTML = intro + `<div class="card"><p class="hint">Could not load ${esc(f.file)}: ${esc(f.err)}</p><div class="toolbar"><button class="btn sm" id="tv-retry">Try again</button></div></div>`; $('#tv-retry').onclick = () => { f.err = ''; render(); }; return; }
+    v.innerHTML = intro + `<div class="card"><p class="hint">Loading ${esc(f.file)} from GitHub…</p></div>`; loadFoot(f); return;
+  }
+
+  // Encrypted page, first time: choose the travel password
+  if (f.encrypted && f.remote === null) {
+    v.innerHTML = intro + `<div class="card"><h3>Set up the travel page</h3>
+      <p style="margin-bottom:0.9rem">Choose a <b>travel password</b>. Everything on the travel page (places, dates, notes and photos) is encrypted with it before it is uploaded to GitHub, so the public repository only ever contains ciphertext. ${SESSION_KEY ? 'It is saved inside your encrypted admin sign-in, so you will not have to type it here again.' : 'You are signed in with a token only, so you will be asked for it each time you open this tab. Turn on password sign-in (CV &amp; site settings) to have it remembered.'}</p>
+      <form id="f-tv-setup" autocomplete="off"><div class="row two">
+        <div class="field"><label for="tv-pw">Travel password</label><input id="tv-pw" type="password" minlength="${TRAVEL_MIN_PW}" required autocomplete="new-password"><div class="hint">At least ${TRAVEL_MIN_PW} characters. Use one that is different from your admin password.</div></div>
+        <div class="field"><label for="tv-pw2">Repeat password</label><input id="tv-pw2" type="password" required autocomplete="new-password"></div></div>
+        <div class="toolbar"><button class="btn primary sm" type="submit" id="tv-go">Create travel page</button><span class="hint" id="tv-msg"></span></div></form></div>`;
+    $('#f-tv-setup').onsubmit = async e => {
+      e.preventDefault();
+      const p1 = $('#tv-pw').value, p2 = $('#tv-pw2').value, m = $('#tv-msg'), btn = $('#tv-go');
+      if (p1.length < TRAVEL_MIN_PW) return m.textContent = `The password needs at least ${TRAVEL_MIN_PW} characters.`;
+      if (p1 !== p2) return m.textContent = 'The two passwords do not match.';
+      btn.disabled = true; m.textContent = 'Encrypting and saving…';
+      try {
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        f.key = { key: await deriveKey(p1, salt, AUTH_ITER), salt, iter: AUTH_ITER };
+        const ck = b64u8(crypto.getRandomValues(new Uint8Array(32)));
+        f.data = normalizeFoot(f, { key: ck }); f.ckey = await importContentKey(ck);
+        await saveFoot(f, 'Create encrypted travel map');
+        await rememberTravelPassword(p1);
+        toast('Travel page created. Add your first place below.'); render();
+      } catch (err) { m.textContent = err.message; btn.disabled = false; }
+    };
+    return;
+  }
+
+  // Encrypted page, locked: try the remembered password, otherwise ask
+  if (f.encrypted && !f.data) {
+    v.innerHTML = intro + `<div class="card"><h3>Unlock the travel map</h3>
+      <form id="f-tv-unlock" autocomplete="off"><div class="row two"><div class="field"><label for="tv-upw">Travel password</label><input id="tv-upw" type="password" required autocomplete="current-password"></div></div>
+      <div class="toolbar"><button class="btn primary sm" type="submit" id="tv-ugo">Unlock</button><span class="hint" id="tv-umsg"></span></div></form></div>`;
+    const go = async pw => {
+      const m = $('#tv-umsg'); m.textContent = 'Unlocking…';
+      try { await unlockFoot(f, pw); if (SESSION && SESSION.tp !== pw) await rememberTravelPassword(pw); render(); }
+      catch (err) { m.textContent = err.message + (SESSION?.tp ? ' The saved travel password no longer matches: enter the current one.' : ''); if (SESSION?.tp === pw) { SESSION.tp = ''; saveSession(); } }
+    };
+    $('#f-tv-unlock').onsubmit = e => { e.preventDefault(); go($('#tv-upw').value); };
+    if (SESSION?.tp) { $('#tv-upw').value = SESSION.tp; go(SESSION.tp); }
+    return;
+  }
+
+  // Editor
+  const T = f.data;
+  const nPhotos = T.places.reduce((n, p) => n + (p.photos || []).length, 0);
+  const noun = f.encrypted ? 'place' : 'entry';
+  v.innerHTML = intro + `<div class="card"><div class="tv-head">${f.remote ? `<span class="pill ok">${f.encrypted ? 'Travel page on' : 'Published'}</span>` : `<span class="pill warn">Not published yet</span>`}<span class="hint">${T.places.length} ${T.places.length === 1 ? noun : (noun === 'entry' ? 'entries' : 'places')}, ${nPhotos} photo${nPhotos === 1 ? '' : 's'}. Text changes are saved with <b>Publish changes</b>; photos upload immediately.</span></div>
+    ${biField('Page title (use *asterisks* for the italic blue word)', T, 'title')}${biField('Introduction (optional)', T, 'intro', 'textarea')}
+    <div class="toolbar"><a class="btn sm" href="${f.page}" target="_blank">Open ${esc(f.page)} ↗</a></div></div>
+  <div class="card"><h3>${f.encrypted ? 'Add a place' : 'Add a conference or visit'}</h3>
+    <div class="row" style="grid-template-columns:1fr auto auto;align-items:end">
+      <div class="field" style="margin:0"><label for="tv-q">City or town</label><input id="tv-q" type="text" placeholder="e.g. Groningen, Lhasa, Kyoto" autocomplete="off"></div>
+      <button class="btn primary" id="tv-search">Search</button><button class="btn" id="tv-manual">Add manually</button></div>
+    <div class="tv-results" id="tv-results"></div><p class="hint" id="tv-smsg"></p></div>
+  <h3 class="yearhead">${f.encrypted ? 'Places' : 'Conferences and visits'}</h3><div id="tv-places"></div>
+  ${f.encrypted ? `<div class="card"><h3>Travel password</h3>
+    <p class="hint" style="margin-bottom:0.8rem">Share this password with the people who may see the page. Changing it only re-encrypts the place list; the photos stay as they are.</p>
+    <form id="f-tv-chpw" autocomplete="off"><div class="row two">
+      <div class="field"><label for="tv-npw">New travel password</label><input id="tv-npw" type="password" minlength="${TRAVEL_MIN_PW}" required autocomplete="new-password"></div>
+      <div class="field"><label for="tv-npw2">Repeat</label><input id="tv-npw2" type="password" required autocomplete="new-password"></div></div>
+      <div class="toolbar"><button class="btn sm" type="submit" id="tv-chgo">Change travel password</button><span class="hint" id="tv-chmsg"></span></div></form></div>` : ''}`;
+
+  // Search
+  const doSearch = async () => {
+    const q = $('#tv-q').value.trim(); if (!q) return;
+    const box = $('#tv-results'), m = $('#tv-smsg'); m.textContent = 'Searching…'; box.innerHTML = '';
+    try {
+      const res = await geocode(q);
+      m.textContent = res.length ? 'Click a result to add it.' : 'Nothing found. Try the English name, or add the place manually.';
+      box.innerHTML = res.map((r, i) => `<button type="button" class="tv-res" data-i="${i}"><span>${tvFlag(r.cc)} <b>${esc(r.city.en)}</b>${r.city.zh !== r.city.en ? ` · ${esc(r.city.zh)}` : ''}${r.admin ? `<span class="m"> — ${esc(r.admin)}</span>` : ''}</span><span class="m">${esc(r.country.en)} · ${r.lat}, ${r.lon}</span></button>`).join('');
+      box.querySelectorAll('.tv-res').forEach(b => b.onclick = () => { addPlace(res[Number(b.dataset.i)]); box.innerHTML = ''; $('#tv-q').value = ''; m.textContent = ''; });
+    } catch (e) { m.textContent = 'Search failed: ' + e.message; }
+  };
+  $('#tv-search').onclick = doSearch;
+  $('#tv-q').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } };
+  $('#tv-manual').onclick = () => addPlace({ city: { en: '', zh: '' }, country: { en: '', zh: '' }, cc: '', lat: null, lon: null });
+  const addPlace = r => {
+    const p = { id: 'pl-' + rid(), cc: r.cc, country: r.country, city: r.city, lat: r.lat, lon: r.lon, when: '', note: { en: '', zh: '' }, photos: [] };
+    if (!f.encrypted) { p.event = { en: '', zh: '' }; p.role = ''; p.talk = ''; }
+    T.places.unshift(p); markDirty(); renderPlaces();
+  };
+
+  // Places
+  const renderPlaces = () => {
+    const box = $('#tv-places');
+    box.innerHTML = T.places.map((p, i) => `<div class="item" data-i="${i}"><div class="item-head"><div class="title"><span class="tv-flag">${tvFlag(p.cc)}</span> ${esc(p.city.en || 'New ' + noun)}${p.country.en ? `, ${esc(p.country.en)}` : ''}${p.when ? ` <span class="hint" style="display:inline">· ${esc(p.when)}</span>` : ''}${!f.encrypted && p.event?.en ? ` <span class="hint" style="display:inline">· ${esc(p.event.en)}</span>` : ''}</div>${itemTools(T.places, i)}</div>
+      ${f.encrypted ? '' : biField('Conference / event', p, 'event')}
+      ${f.encrypted ? '' : `<div class="row" style="grid-template-columns:220px 1fr"><div class="field"><label>Role</label>${bind(p, 'role', 'select')}</div><div class="field"><label>Talk or poster title (optional)</label>${bind(p, 'talk', 'text', 'placeholder="Title of your presentation"')}</div></div>`}
+      ${biField('City', p, 'city')}${biField('Country', p, 'country')}
+      <div class="row" style="grid-template-columns:90px 1fr 1fr 1fr">
+        <div class="field"><label>Code</label>${bind(p, 'cc', 'text', 'placeholder="NL" maxlength="2" style="text-transform:uppercase"')}</div>
+        <div class="field"><label>Latitude</label>${bind(p, 'lat', 'number', 'step="any" placeholder="53.2194"')}</div>
+        <div class="field"><label>Longitude</label>${bind(p, 'lon', 'number', 'step="any" placeholder="6.5665"')}</div>
+        <div class="field"><label>When</label>${bind(p, 'when', 'text', 'placeholder="2024-09 or Sep 2024"')}</div></div>
+      ${biField('Note (optional)', p, 'note')}
+      <div class="field"><label>Photos (${p.photos.length})</label><div class="thumbs" id="tv-ph-${i}"></div>
+        <div class="toolbar"><input type="file" id="tv-up-${i}" accept="image/*" multiple style="display:none"><button class="btn sm" data-up="${i}">Upload photos…</button><span class="tv-prog" id="tv-prog-${i}"></span></div></div></div>`).join('') || `<p class="hint">Nothing yet. Search for a city above.</p>`;
+    box.querySelectorAll('select').forEach((sel, i) => { sel.innerHTML = ROLE_OPTIONS.map(([val, lab]) => `<option value="${val}" ${T.places[i].role === val ? 'selected' : ''}>${lab}</option>`).join(''); });
+    wireBindings(box); wireItemTools(box, T.places, renderPlaces);
+    box.querySelectorAll('input[maxlength="2"]').forEach(inp => inp.addEventListener('change', () => { inp.value = inp.value.toUpperCase(); inp.dispatchEvent(new Event('input')); }));
+    T.places.forEach((p, i) => { renderThumbs(p, i); wireUpload(p, i); });
+  };
+  const renderThumbs = (p, i) => {
+    const box = $('#tv-ph-' + i); if (!box) return;
+    box.innerHTML = p.photos.map((ph, j) => `<div class="thumb tv" data-j="${j}"><div class="ph"><img alt="" hidden>…</div>
+      <div class="cap">${bind(ph.caption ||= { en: '', zh: '' }, 'en', 'text', 'placeholder="Caption (EN)"')}${bind(ph.caption, 'zh', 'text', 'placeholder="说明（中文）"')}</div>
+      <div class="tools"><button class="btn" title="Move left" data-pact="left" ${j === 0 ? 'disabled' : ''}>←</button><button class="btn" title="Move right" data-pact="right" ${j === p.photos.length - 1 ? 'disabled' : ''}>→</button><button class="btn danger" data-pact="del">✕</button></div></div>`).join('') || '<p class="hint" style="grid-column:1/-1">No photos yet.</p>';
+    wireBindings(box);
+    box.querySelectorAll('.thumb').forEach(el => {
+      const j = Number(el.dataset.j), ph = p.photos[j], img = el.querySelector('img');
+      Promise.resolve(footThumbUrl(f, ph)).then(u => { img.src = u; img.hidden = false; img.parentElement.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = ''; }); }).catch(() => { el.querySelector('.ph').textContent = 'not on GitHub yet'; });
+      el.querySelectorAll('[data-pact]').forEach(b => b.onclick = async () => {
+        const act = b.dataset.pact;
+        if (act === 'left' && j > 0) [p.photos[j - 1], p.photos[j]] = [p.photos[j], p.photos[j - 1]];
+        if (act === 'right' && j < p.photos.length - 1) [p.photos[j + 1], p.photos[j]] = [p.photos[j], p.photos[j + 1]];
+        if (act === 'del') {
+          if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Delete?'; setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = '✕'; } }, 2500); return; }
+          b.disabled = true; b.textContent = '…';
+          try { await ghDeleteFile(ph.full, 'Remove photo'); await ghDeleteFile(ph.thumb, 'Remove photo'); p.photos.splice(j, 1); await saveFoot(f, 'Remove photo'); toast('Photo deleted.'); }
+          catch (e) { toast(e.message, true); }
+        }
+        markDirty(); renderThumbs(p, i);
+      });
+    });
+  };
+  const wireUpload = (p, i) => {
+    const input = $('#tv-up-' + i), btn = $(`[data-up="${i}"]`), prog = $('#tv-prog-' + i);
+    btn.onclick = () => input.click();
+    input.onchange = async () => {
+      const files = [...input.files]; input.value = ''; if (!files.length) return;
+      btn.disabled = true; let n = 0;
+      try {
+        for (const file of files) {
+          n++; prog.textContent = `Uploading ${n} of ${files.length}: ${file.name}…`;
+          if (!/^image\//.test(file.type)) throw new Error(`${file.name} is not an image.`);
+          const full = await resizeJpeg(file, 1600, 0.85), thumb = await resizeJpeg(file, 480, 0.8);
+          const id = rid(), ext = f.encrypted ? 'bin' : 'jpg';
+          const ph = { id, full: `${f.dir}/p-${id}.${ext}`, thumb: `${f.dir}/t-${id}.${ext}`, w: full.w, h: full.h, caption: { en: '', zh: '' } };
+          const pack = async bytes => bytesToB64(f.encrypted ? await encryptBytes(f.ckey, bytes) : bytes);
+          await ghPutFile(ph.full, await pack(full.bytes), `Add photo (${p.city.en || noun})`);
+          await ghPutFile(ph.thumb, await pack(thumb.bytes), 'Add photo thumbnail');
+          f.urls.set(ph.thumb, Promise.resolve(URL.createObjectURL(thumb.blob)));
+          p.photos.push(ph);
+        }
+        prog.textContent = 'Saving…';
+        await saveFoot(f, `Add ${files.length} photo${files.length === 1 ? '' : 's'}`);
+        toast(`Uploaded ${files.length} photo${files.length === 1 ? '' : 's'}.`);
+      } catch (e) { toast(e.message, true); }
+      prog.textContent = ''; btn.disabled = false; markDirty(); renderPlaces();
+    };
+  };
+  renderPlaces();
+
+  // Change travel password (encrypted page only)
+  if ($('#f-tv-chpw')) $('#f-tv-chpw').onsubmit = async e => {
+    e.preventDefault();
+    const p1 = $('#tv-npw').value, p2 = $('#tv-npw2').value, m = $('#tv-chmsg'), btn = $('#tv-chgo');
+    if (p1.length < TRAVEL_MIN_PW) return m.textContent = `The password needs at least ${TRAVEL_MIN_PW} characters.`;
+    if (p1 !== p2) return m.textContent = 'The two passwords do not match.';
+    btn.disabled = true; m.textContent = 'Re-encrypting…';
+    try {
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      f.key = { key: await deriveKey(p1, salt, AUTH_ITER), salt, iter: AUTH_ITER };
+      await saveFoot(f, 'Change travel password');
+      await rememberTravelPassword(p1);
+      m.textContent = ''; $('#tv-npw').value = ''; $('#tv-npw2').value = ''; toast('Travel password changed. Anyone with the old password can no longer open the page.');
+    } catch (err) { m.textContent = err.message; }
+    btn.disabled = false;
   };
 }
 

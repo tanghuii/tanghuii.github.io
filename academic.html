@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Conferences and academic visits of Hui Tang, shown on a map.">
+<title>Academic footprint | Hui Tang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=DM+Sans:wght@400;500;600&family=Pinyon+Script&family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="">
+<style>
+  /* Private travel map: everything on this page is decrypted in the browser with the travel password.
+     Same Deep-ocean palette as the rest of the site. */
+  :root {
+    --ink: #0d1b2a; --paper: #f5f7fa; --accent: #1b4f8a; --accent-light: #3b7dd8;
+    --subtle: #d3dce7; --muted: #647387; --highlight: #d6e3f5; --card-bg: #ffffff;
+    --shadow: rgba(13, 27, 42, 0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); line-height: 1.7; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  body.zh { font-family: 'Noto Serif SC', 'DM Sans', serif; }
+  a { color: var(--accent); }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  /* Top bar (same as the publications page) */
+  .top-bar { position: sticky; top: 0; z-index: 40; backdrop-filter: blur(16px); background: rgba(245, 247, 250, 0.88); border-bottom: 1px solid var(--subtle); }
+  .top-bar-inner { max-width: 1100px; margin: 0 auto; padding: 0 2rem; height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .back-link { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--accent); font-family: 'Pinyon Script', cursive; font-size: 1.68rem; white-space: nowrap; }
+  .back-arrow { font-family: 'DM Sans', sans-serif; font-size: 1.1rem; }
+  .bar-right { display: flex; align-items: center; gap: 0.9rem; }
+  .lang-toggle { display: flex; border: 1px solid var(--subtle); border-radius: 100px; overflow: hidden; }
+  .lang-btn { border: none; background: none; padding: 0.25rem 0.75rem; font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+  .lang-btn.active { background: var(--accent); color: #fff; }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--subtle); border-radius: 100px; background: var(--card-bg); color: var(--muted); transition: all 0.2s; }
+  .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .icon-btn svg { width: 15px; height: 15px; }
+
+  /* Password gate */
+  .gate { min-height: calc(100vh - 60px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 16px; }
+  .gate-card { width: 100%; max-width: 420px; background: var(--card-bg); border: 1px solid var(--subtle); border-radius: 12px; padding: 2rem 2rem 1.5rem; box-shadow: 0 12px 40px var(--shadow); }
+  .gate-icon { width: 48px; height: 48px; border-radius: 100px; background: var(--highlight); color: var(--accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+  .gate-icon svg { width: 22px; height: 22px; }
+  .gate h1 { font-family: 'Crimson Pro', serif; font-weight: 400; font-size: 1.9rem; text-align: center; margin-bottom: 0.3rem; }
+  body.zh .gate h1 { font-family: 'Noto Serif SC', serif; }
+  .gate p.lead { color: var(--muted); text-align: center; font-size: 0.95rem; margin-bottom: 1.3rem; }
+  .gate label { display: block; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem; }
+  .gate input[type=password] { width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--subtle); border-radius: 6px; font: inherit; background: var(--card-bg); }
+  .gate input:focus { outline: 2px solid var(--accent-light); outline-offset: 1px; }
+  .check { display: flex; align-items: center; gap: 0.45rem; margin: 0.8rem 0 1rem; font-size: 0.92rem; cursor: pointer; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.6rem 1.1rem; border-radius: 6px; border: 1.5px solid var(--accent); background: var(--accent); color: #fff; font-weight: 600; transition: all 0.2s; text-decoration: none; }
+  .btn:hover { background: #fff; color: var(--accent); }
+  .btn:disabled { opacity: 0.6; cursor: wait; }
+  .btn.block { width: 100%; }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn.ghost:hover { background: var(--accent); color: #fff; }
+  .gate-msg { min-height: 1.4em; margin-top: 0.7rem; text-align: center; font-size: 0.92rem; color: #b42318; }
+  .gate-foot { margin-top: 1.4rem; font-size: 0.9rem; color: var(--muted); text-align: center; }
+
+  /* Page */
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+  .hero { padding: 2.6rem 0 1.4rem; display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; flex-wrap: wrap; }
+  .hero h1 { font-family: 'Crimson Pro', serif; font-weight: 300; font-size: 2.6rem; line-height: 1.15; }
+  body.zh .hero h1 { font-family: 'Noto Serif SC', serif; font-weight: 300; }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero .intro { color: var(--muted); margin-top: 0.5rem; max-width: 620px; font-size: 1.05rem; }
+  .stats { display: flex; gap: 2rem; }
+  .stat { text-align: center; }
+  .stat-num { display: block; font-family: 'Crimson Pro', serif; font-size: 2.1rem; font-weight: 600; color: var(--accent); line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  body.zh .stat-label { letter-spacing: 0.1em; }
+
+  #map { width: 100%; height: 62vh; min-height: 380px; border-radius: 12px; border: 1px solid var(--subtle); background: #e9eef5; box-shadow: 0 6px 24px var(--shadow); z-index: 1; }
+  .leaflet-container { font-family: inherit; }
+  .leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 8px 24px rgba(13,27,42,0.18); }
+  .leaflet-popup-content { margin: 0.8rem 1rem; line-height: 1.5; font-size: 0.95rem; }
+  .pop-city { font-weight: 600; font-size: 1.05rem; color: var(--ink); }
+  .pop-meta { color: var(--muted); font-size: 0.88rem; }
+  .pop-btn { margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.7rem; border-radius: 5px; background: var(--accent); color: #fff; border: 1.5px solid var(--accent); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .pop-btn:hover { background: #fff; color: var(--accent); }
+  .map-note { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; color: var(--muted); font-size: 0.85rem; margin: 0.6rem 0.2rem 0; }
+  .legend { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; background: rgba(59,125,216,0.35); border: 1px solid var(--accent); }
+  .legend b { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--accent); }
+
+  /* Country sections */
+  .places { padding: 2.4rem 0 4rem; }
+  .section-title { font-family: 'Crimson Pro', serif; font-weight: 400; font-size: 1.9rem; margin-bottom: 1.4rem; display: flex; align-items: baseline; gap: 0.8rem; }
+  body.zh .section-title { font-family: 'Noto Serif SC', serif; }
+  .section-title small { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: var(--muted); }
+  .country { background: var(--card-bg); border: 1px solid var(--subtle); border-radius: 12px; padding: 1.3rem 1.5rem; margin-bottom: 1rem; scroll-margin-top: 80px; transition: box-shadow 0.3s, border-color 0.3s; }
+  .country.flash { border-color: var(--accent); box-shadow: 0 0 0 3px var(--highlight); }
+  .country-head { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.9rem; }
+  .flag { font-size: 1.6rem; line-height: 1; }
+  .country-head h3 { font-family: 'Crimson Pro', serif; font-weight: 600; font-size: 1.35rem; color: var(--accent); }
+  body.zh .country-head h3 { font-family: 'Noto Serif SC', serif; }
+  .country-head .n { color: var(--muted); font-size: 0.88rem; margin-left: auto; white-space: nowrap; }
+  .city { display: grid; grid-template-columns: 1fr auto; gap: 1rem 1.5rem; padding: 0.9rem 0; border-top: 1px dashed var(--subtle); align-items: center; }
+  .city-name { font-weight: 600; font-size: 1.08rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .city-name .when { font-weight: 500; color: var(--muted); font-size: 0.86rem; background: var(--highlight); padding: 0.05rem 0.55rem; border-radius: 100px; }
+  .city-note { color: var(--muted); font-size: 0.95rem; margin-top: 0.15rem; }
+  .city-event { color: var(--accent); font-weight: 500; margin-top: 0.1rem; }
+  .city-talk { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 1.02rem; color: var(--ink); margin-top: 0.1rem; }
+  body.zh .city-talk { font-family: 'Noto Serif SC', serif; font-style: normal; }
+  .city-name .role { font-weight: 600; color: #fff; background: var(--accent); font-size: 0.78rem; padding: 0.05rem 0.55rem; border-radius: 100px; letter-spacing: 0.03em; }
+  .city-actions { display: flex; gap: 0.5rem; align-items: center; }
+  .small-btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.8rem; border-radius: 5px; border: 1.5px solid var(--accent); background: var(--accent); color: #fff; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; transition: all 0.2s; }
+  .small-btn:hover { background: #fff; color: var(--accent); }
+  .small-btn.ghost { background: transparent; color: var(--accent); }
+  .small-btn.ghost:hover { background: var(--accent); color: #fff; }
+  .small-btn svg { width: 14px; height: 14px; }
+  .strip { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.6rem; }
+  .strip .ph { aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden; background: var(--highlight); border: 1px solid var(--subtle); position: relative; cursor: zoom-in; }
+  .strip .ph img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.4s; }
+  .strip .ph img.ready { opacity: 1; }
+  .strip .ph .more { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(13,27,42,0.55); color: #fff; font-weight: 600; font-size: 1.1rem; }
+  .empty { text-align: center; color: var(--muted); padding: 3rem 1rem; }
+
+  /* Lightbox */
+  .lb { position: fixed; inset: 0; background: rgba(13, 27, 42, 0.94); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; }
+  .lb img { max-width: 100%; max-height: calc(100vh - 7rem); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s; }
+  .lb img.ready { opacity: 1; }
+  .lb-cap { color: #c9dbf3; margin-top: 0.8rem; text-align: center; font-size: 0.95rem; max-width: 800px; }
+  .lb-cap b { color: #fff; font-weight: 600; margin-right: 0.5rem; }
+  .lb-x, .lb-prev, .lb-next { position: absolute; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); color: #fff; border-radius: 100px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; transition: background 0.2s; }
+  .lb-x:hover, .lb-prev:hover, .lb-next:hover { background: rgba(255,255,255,0.22); }
+  .lb-x { top: 1rem; right: 1rem; }
+  .lb-prev { left: 1rem; top: 50%; transform: translateY(-50%); }
+  .lb-next { right: 1rem; top: 50%; transform: translateY(-50%); }
+  .lb-count { position: absolute; top: 1.4rem; left: 1.4rem; color: #c9dbf3; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+  .spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; position: absolute; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  footer { text-align: center; color: var(--muted); font-size: 0.9rem; padding: 2rem 1rem 3rem; border-top: 1px solid var(--subtle); }
+  footer a { text-decoration: none; }
+
+  @media (max-width: 720px) {
+    .top-bar-inner, .wrap { padding: 0 16px; }
+    .hero { padding-top: 1.6rem; gap: 1rem; }
+    .hero h1 { font-size: 1.9rem; }
+    .stats { gap: 1.2rem; }
+    .stat-num { font-size: 1.6rem; }
+    #map { height: 50vh; min-height: 300px; border-radius: 10px; }
+    .city { grid-template-columns: 1fr; gap: 0.6rem; }
+    .strip { grid-template-columns: repeat(3, 1fr); }
+    .lb-prev, .lb-next { width: 36px; height: 36px; top: auto; bottom: 1rem; transform: none; }
+    .lb-prev { left: 1rem; } .lb-next { right: 1rem; }
+    .lb img { max-height: calc(100vh - 9rem); }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-inner">
+    <a href="index.html" class="back-link"><span class="back-arrow">←</span> <span>Hui Tang</span></a>
+    <div class="bar-right">
+      <button class="icon-btn" id="btn-lock" hidden data-tip-en="Lock this page" data-tip-zh="锁定页面" title="Lock this page" aria-label="Lock">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      </button>
+      <div class="lang-toggle" id="lang-toggle">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="zh">中</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Password gate -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+    <h1 data-en="Academic footprint" data-zh="学术足迹">Academic footprint</h1>
+    <p class="lead" data-en="A private page. Enter the password to see the places and photos." data-zh="这是一个私密页面，请输入密码查看地点和照片。">A private page. Enter the password to see the places and photos.</p>
+    <form id="f-gate" autocomplete="on">
+      <input type="text" name="username" value="travel" autocomplete="username" hidden>
+      <label for="pw" data-en="Password" data-zh="密码">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <label class="check" style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink);font-size:0.92rem"><input type="checkbox" id="keep"> <span data-en="Keep me signed in on this device" data-zh="在此设备上保持登录">Keep me signed in on this device</span></label>
+      <button class="btn block" id="go" type="submit" data-en="Unlock" data-zh="解锁">Unlock</button>
+      <p class="gate-msg" id="gate-msg"></p>
+    </form>
+  </div>
+  <p class="gate-foot" data-en="Everything on this page is stored encrypted and decrypted only in your browser." data-zh="本页所有内容均加密存储，仅在你的浏览器中解密。">Everything on this page is stored encrypted and decrypted only in your browser.</p>
+</div>
+
+<!-- Unlocked content -->
+<div id="app" hidden>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1 id="title"></h1>
+        <p class="intro" id="intro"></p>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div id="map" role="region" aria-label="Map of visited places"></div>
+    <div class="map-note">
+      <span><span class="legend"><i></i> <span data-en="Visited country" data-zh="到访过的国家">Visited country</span></span> &nbsp; <span class="legend"><b></b> <span data-en="City" data-zh="城市">City</span></span></span>
+      <span data-en="Click a marker or a country to jump to its entry." data-zh="点击标记或国家可跳转到对应条目。">Click a marker or a country to jump to its entry.</span>
+    </div>
+    <div class="places">
+      <h2 class="section-title"><span id="places-h"></span><small id="places-sub"></small></h2>
+      <div id="list"></div>
+    </div>
+  </div>
+  <footer><p><a href="index.html" data-en="← Back to Homepage" data-zh="← 返回主页">← Back to Homepage</a> &nbsp;&middot;&nbsp; &copy; <span id="footer-year">2026</span> Hui Tang</p></footer>
+</div>
+
+<div id="lb-root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin=""></script>
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Config and crypto. The file travel/travel.enc is AES-256-GCM encrypted with a
+// key derived from the travel password (PBKDF2-SHA256). Inside it is a random
+// content key that encrypts every photo file (travel/p-*.bin, travel/t-*.bin).
+// ─────────────────────────────────────────────────────────────────────────────
+const MODE = 'academic';                 // 'travel' (encrypted, password) or 'academic' (public)
+const PRIVATE = MODE === 'travel';
+const TRAVEL_FILE = PRIVATE ? 'travel/travel.enc' : 'academic/academic.json';
+const SS_KEY = 'tv_key', LS_KEY = 'tv_key_persist';
+const ROLES = { talk: ['Oral presentation', '口头报告'], poster: ['Poster', '海报'], invited: ['Invited talk', '特邀报告'], keynote: ['Keynote', '主旨报告'], attendee: ['Attendee', '参会'], organizer: ['Organizer', '组织者'], chair: ['Session chair', '分会主席'] };
+const roleLabel = r => ROLES[r] ? ROLES[r][LANG === 'zh' ? 1 : 0] : (r || '');
+const WORLD_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json';
+const TOPO_URL = 'https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js';
+const ISO_A2_TO_NUM = {"AW":"533","AF":"004","AO":"024","AI":"660","AX":"248","AL":"008","AD":"020","AE":"784","AR":"032","AM":"051","AS":"016","AQ":"010","TF":"260","AG":"028","AU":"036","AT":"040","AZ":"031","BI":"108","BE":"056","BJ":"204","BQ":"535","BF":"854","BD":"050","BG":"100","BH":"048","BS":"044","BA":"070","BL":"652","BY":"112","BZ":"084","BM":"060","BO":"068","BR":"076","BB":"052","BN":"096","BT":"064","BV":"074","BW":"072","CF":"140","CA":"124","CC":"166","CH":"756","CL":"152","CN":"156","CI":"384","CM":"120","CD":"180","CG":"178","CK":"184","CO":"170","KM":"174","CV":"132","CR":"188","CU":"192","CW":"531","CX":"162","KY":"136","CY":"196","CZ":"203","DE":"276","DJ":"262","DM":"212","DK":"208","DO":"214","DZ":"012","EC":"218","EG":"818","ER":"232","EH":"732","ES":"724","EE":"233","ET":"231","FI":"246","FJ":"242","FK":"238","FR":"250","FO":"234","FM":"583","GA":"266","GB":"826","GE":"268","GG":"831","GH":"288","GI":"292","GN":"324","GP":"312","GM":"270","GW":"624","GQ":"226","GR":"300","GD":"308","GL":"304","GT":"320","GF":"254","GU":"316","GY":"328","HK":"344","HM":"334","HN":"340","HR":"191","HT":"332","HU":"348","ID":"360","IM":"833","IN":"356","IO":"086","IE":"372","IR":"364","IQ":"368","IS":"352","IL":"376","IT":"380","JM":"388","JE":"832","JO":"400","JP":"392","KZ":"398","KE":"404","KG":"417","KH":"116","KI":"296","KN":"659","KR":"410","KW":"414","LA":"418","LB":"422","LR":"430","LY":"434","LC":"662","LI":"438","LK":"144","LS":"426","LT":"440","LU":"442","LV":"428","MO":"446","MF":"663","MA":"504","MC":"492","MD":"498","MG":"450","MV":"462","MX":"484","MH":"584","MK":"807","ML":"466","MT":"470","MM":"104","ME":"499","MN":"496","MP":"580","MZ":"508","MR":"478","MS":"500","MQ":"474","MU":"480","MW":"454","MY":"458","YT":"175","NA":"516","NC":"540","NE":"562","NF":"574","NG":"566","NI":"558","NU":"570","NL":"528","NO":"578","NP":"524","NR":"520","NZ":"554","OM":"512","PK":"586","PA":"591","PN":"612","PE":"604","PH":"608","PW":"585","PG":"598","PL":"616","PR":"630","KP":"408","PT":"620","PY":"600","PS":"275","PF":"258","QA":"634","RE":"638","RO":"642","RU":"643","RW":"646","SA":"682","SD":"729","SN":"686","SG":"702","GS":"239","SH":"654","SJ":"744","SB":"090","SL":"694","SV":"222","SM":"674","SO":"706","PM":"666","RS":"688","SS":"728","ST":"678","SR":"740","SK":"703","SI":"705","SE":"752","SZ":"748","SX":"534","SC":"690","SY":"760","TC":"796","TD":"148","TG":"768","TH":"764","TJ":"762","TK":"772","TM":"795","TL":"626","TO":"776","TT":"780","TN":"788","TR":"792","TV":"798","TW":"158","TZ":"834","UG":"800","UA":"804","UM":"581","UY":"858","US":"840","UZ":"860","VA":"336","VC":"670","VE":"862","VG":"092","VI":"850","VN":"704","VU":"548","WF":"876","WS":"882","YE":"887","ZA":"710","ZM":"894","ZW":"716","XK":"-99"};
+
+let LANG = 'en', DATA = null, CKEY = null, MAP = null, MARKERS = new Map(), COUNTRY_LAYERS = new Map();
+const URLS = new Map();   // encrypted file path -> object URL (decrypted)
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const u8 = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
+const b64u8 = a => { let s = ''; a.forEach(x => { s += String.fromCharCode(x); }); return btoa(s); };
+const t = o => (o && typeof o === 'object') ? (o[LANG] || o.en || o.zh || '') : (o || '');
+const flag = cc => { cc = String(cc || '').toUpperCase(); return /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : '📍'; };
+
+async function deriveKey(password, salt, iter) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, { name: 'AES-GCM', length: 256 }, true, ['decrypt']);
+}
+async function fetchTravelFile() {
+  const r = await fetch(TRAVEL_FILE + '?t=' + Date.now(), { cache: 'no-store' });
+  if (r.status === 404) throw new Error(LANG === 'zh' ? '这个页面还没有内容。请先在 Site Manager 中添加。' : 'This page has no content yet. Add places in Site Manager.');
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+async function unlockWith(key, file) {
+  let pt;
+  try { pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8(file.iv) }, key, u8(file.ct)); }
+  catch (e) { throw new Error(LANG === 'zh' ? '密码错误。' : 'Wrong password.'); }
+  DATA = JSON.parse(new TextDecoder().decode(pt));
+  CKEY = await crypto.subtle.importKey('raw', u8(DATA.key), 'AES-GCM', false, ['decrypt']);
+}
+// Decrypt a photo file into an object URL (12-byte IV + ciphertext)
+async function photoUrl(path) {
+  if (!PRIVATE) return path;                 // public photos are plain files
+  if (URLS.has(path)) return URLS.get(path);
+  const p = (async () => {
+    const r = await fetch(path, { cache: 'force-cache' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const buf = new Uint8Array(await r.arrayBuffer());
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: buf.slice(0, 12) }, CKEY, buf.slice(12));
+    return URL.createObjectURL(new Blob([pt], { type: 'image/jpeg' }));
+  })();
+  URLS.set(path, p); p.catch(() => URLS.delete(path));
+  return p;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Gate
+// ─────────────────────────────────────────────────────────────────────────────
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+function ssGet(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+function ssSet(k, v) { try { v === null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} }
+
+$('#f-gate').onsubmit = async e => {
+  e.preventDefault();
+  const btn = $('#go'), msg = $('#gate-msg'); btn.disabled = true; msg.textContent = LANG === 'zh' ? '解锁中…' : 'Unlocking…';
+  try {
+    const file = await fetchTravelFile();
+    const key = await deriveKey($('#pw').value, u8(file.salt), file.iter || 600000);
+    await unlockWith(key, file);
+    const raw = b64u8(new Uint8Array(await crypto.subtle.exportKey('raw', key)));
+    ssSet(SS_KEY, raw); if ($('#keep').checked) lsSet(LS_KEY, raw);
+    msg.textContent = '';
+    showApp();
+  } catch (err) { msg.textContent = err.message; btn.disabled = false; $('#pw').select(); }
+};
+async function tryStoredKey() {
+  const raw = ssGet(SS_KEY) || lsGet(LS_KEY);
+  if (!raw) return false;
+  try {
+    const key = await crypto.subtle.importKey('raw', u8(raw), 'AES-GCM', false, ['decrypt']);
+    await unlockWith(key, await fetchTravelFile());
+    return true;
+  } catch (e) { ssSet(SS_KEY, null); lsSet(LS_KEY, null); return false; }
+}
+$('#btn-lock').onclick = () => { ssSet(SS_KEY, null); lsSet(LS_KEY, null); URLS.forEach(p => p.then(u => URL.revokeObjectURL(u)).catch(() => {})); location.reload(); };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rendering
+// ─────────────────────────────────────────────────────────────────────────────
+function groupByCountry(places) {
+  const g = new Map();
+  for (const p of places) { const k = p.cc || t(p.country) || '?'; if (!g.has(k)) g.set(k, { cc: p.cc, name: p.country, places: [] }); g.get(k).places.push(p); }
+  const arr = [...g.values()];
+  arr.forEach(c => c.places.sort((a, b) => String(b.when || '').localeCompare(String(a.when || ''))));
+  arr.sort((a, b) => t(a.name).localeCompare(t(b.name), LANG === 'zh' ? 'zh' : 'en'));
+  return arr;
+}
+function renderHeader() {
+  const places = DATA.places || [];
+  const nCountries = new Set(places.map(p => p.cc || t(p.country))).size;
+  const nPhotos = places.reduce((n, p) => n + (p.photos || []).length, 0);
+  const title = t(DATA.title) || (PRIVATE ? (LANG === 'zh' ? '我的旅行足迹' : 'Places I have been') : (LANG === 'zh' ? '学术足迹' : 'Academic footprint'));
+  $('#title').innerHTML = esc(title).replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  $('#intro').textContent = t(DATA.intro) || '';
+  $('#intro').hidden = !t(DATA.intro);
+  const nCities = new Set(places.map(p => (p.cc || '') + '|' + (p.city?.en || t(p.city)).toLowerCase())).size;
+  const rows = PRIVATE
+    ? [[nCountries, LANG === 'zh' ? '个国家' : 'Countries'], [nCities, LANG === 'zh' ? '座城市' : 'Cities'], [nPhotos, LANG === 'zh' ? '张照片' : 'Photos']]
+    : [[nCountries, LANG === 'zh' ? '个国家' : 'Countries'], [nCities, LANG === 'zh' ? '座城市' : 'Cities'], [places.length, LANG === 'zh' ? '场会议' : 'Conferences']];
+  $('#stats').innerHTML = rows.map(([n, l]) => `<div class="stat"><span class="stat-num">${n}</span><span class="stat-label">${l}</span></div>`).join('');
+  $('#places-h').textContent = PRIVATE ? (LANG === 'zh' ? '足迹' : 'Places') : (LANG === 'zh' ? '会议' : 'Conferences');
+  $('#places-sub').textContent = LANG === 'zh' ? '按国家排列，时间倒序' : 'by country, newest first';
+  $('#footer-year').textContent = new Date().getFullYear();
+}
+function renderList() {
+  const list = $('#list');
+  const groups = groupByCountry(DATA.places || []);
+  if (!groups.length) { list.innerHTML = `<p class="empty">${LANG === 'zh' ? '还没有添加地点。' : 'No places yet.'}</p>`; return; }
+  const photosLabel = n => LANG === 'zh' ? `${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`;
+  list.innerHTML = groups.map(c => `<section class="country" id="c-${esc(c.cc || t(c.name))}">
+    <div class="country-head"><span class="flag">${flag(c.cc)}</span><h3>${esc(t(c.name) || c.cc)}</h3><span class="n">${c.places.length} ${PRIVATE ? (LANG === 'zh' ? '座城市' : (c.places.length === 1 ? 'city' : 'cities')) : (LANG === 'zh' ? '场会议' : (c.places.length === 1 ? 'conference' : 'conferences'))}</span></div>
+    ${c.places.map(p => {
+      const ph = p.photos || [];
+      const strip = ph.length ? `<div class="strip" data-pid="${esc(p.id)}">${ph.slice(0, 6).map((x, i) => `<div class="ph" data-i="${i}" data-thumb="${esc(x.thumb)}"><img alt="${esc(t(x.caption))}">${i === 5 && ph.length > 6 ? `<div class="more">+${ph.length - 6}</div>` : ''}</div>`).join('')}</div>` : '';
+      return `<div class="city" data-pid="${esc(p.id)}">
+        <div><div class="city-name">${esc(t(p.city))}${p.when ? `<span class="when">${esc(p.when)}</span>` : ''}${p.role ? `<span class="role">${esc(roleLabel(p.role))}</span>` : ''}</div>
+          ${t(p.event) ? `<div class="city-event">${esc(t(p.event))}</div>` : ''}${p.talk ? `<div class="city-talk">“${esc(p.talk)}”</div>` : ''}${t(p.note) ? `<div class="city-note">${esc(t(p.note))}</div>` : ''}</div>
+        <div class="city-actions"><button class="small-btn ghost" data-map="${esc(p.id)}"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${LANG === 'zh' ? '地图' : 'Map'}</button>
+          ${ph.length ? `<button class="small-btn" data-gallery="${esc(p.id)}">${photosLabel(ph.length)}</button>` : ''}</div>
+        ${strip}</div>`;
+    }).join('')}</section>`).join('');
+  list.querySelectorAll('[data-map]').forEach(b => b.onclick = () => focusPlace(b.dataset.map));
+  list.querySelectorAll('[data-gallery]').forEach(b => b.onclick = () => openLightbox(b.dataset.gallery, 0));
+  list.querySelectorAll('.strip .ph').forEach(el => el.onclick = () => openLightbox(el.parentElement.dataset.pid, Number(el.dataset.i)));
+  // Decrypt thumbnails as they scroll into view
+  const io = new IntersectionObserver(entries => entries.forEach(async en => {
+    if (!en.isIntersecting) return; io.unobserve(en.target);
+    const img = en.target.querySelector('img');
+    try { img.src = await photoUrl(en.target.dataset.thumb); img.onload = () => img.classList.add('ready'); } catch (e) { en.target.style.opacity = 0.4; }
+  }), { rootMargin: '600px' });
+  list.querySelectorAll('.strip .ph').forEach(el => io.observe(el));
+}
+function placeById(id) { return (DATA.places || []).find(p => p.id === id); }
+function focusPlace(id) {
+  const p = placeById(id); if (!p || !MAP) return;
+  window.scrollTo({ top: $('#map').getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
+  MAP.flyTo([p.lat, p.lon], Math.max(MAP.getZoom(), 6), { duration: 0.9 });
+  const m = MARKERS.get(id); if (m) setTimeout(() => m.openPopup(), 950);
+}
+function jumpToCountry(key) {
+  const el = document.getElementById('c-' + key); if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600);
+}
+
+// ── Map (Leaflet + Carto light tiles + world-atlas country shapes) ──
+function loadScriptOnce(src, test) {
+  if (test()) return Promise.resolve();
+  return new Promise((ok, fail) => { const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = () => fail(new Error('Could not load ' + src)); document.head.appendChild(el); });
+}
+async function renderMap() {
+  const places = DATA.places || [];
+  if (!MAP) {
+    MAP = L.map('map', { worldCopyJump: true, minZoom: 2, maxZoom: 18, zoomControl: true, attributionControl: true });
+    MAP.attributionControl.setPrefix('');
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' }).addTo(MAP);
+    MAP.setView([25, 15], 2);
+    MAP.createPane('countries'); MAP.getPane('countries').style.zIndex = 350;
+  }
+  // City markers
+  MARKERS.forEach(m => m.remove()); MARKERS.clear();
+  const bounds = [];
+  for (const p of places) {
+    if (typeof p.lat !== 'number' || typeof p.lon !== 'number') continue;
+    const n = (p.photos || []).length;
+    const m = L.circleMarker([p.lat, p.lon], { radius: 7, color: '#ffffff', weight: 2, fillColor: '#1b4f8a', fillOpacity: 1 }).addTo(MAP);
+    m.bindPopup(`<div class="pop-city">${esc(t(p.city))}</div><div class="pop-meta">${esc(t(p.country))}${p.when ? ' · ' + esc(p.when) : ''}</div>${t(p.event) ? `<div style="color:var(--accent);font-weight:500;margin-top:0.2rem">${esc(t(p.event))}</div>` : ''}${p.role ? `<div class="pop-meta">${esc(roleLabel(p.role))}${p.talk ? ': ' + esc(p.talk) : ''}</div>` : ''}
+      ${n ? `<button class="pop-btn" onclick="openLightbox('${esc(p.id)}',0)">${LANG === 'zh' ? `查看 ${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`} ↗</button>` : ''}`);
+    m.on('mouseover', () => m.setStyle({ radius: 9, fillColor: '#3b7dd8' })).on('mouseout', () => m.setStyle({ radius: 7, fillColor: '#1b4f8a' }));
+    MARKERS.set(p.id, m); bounds.push([p.lat, p.lon]);
+  }
+  if (bounds.length > 1) MAP.fitBounds(bounds, { padding: [40, 40], maxZoom: 6 });
+  else if (bounds.length === 1) MAP.setView(bounds[0], 5);
+  // Country shapes (optional: the page works without them)
+  try {
+    await loadScriptOnce(TOPO_URL, () => window.topojson);
+    renderMap._world ||= await (await fetch(WORLD_URL)).json();
+    const visited = new Map();
+    for (const p of places) { const key = p.cc === 'XK' ? 'Kosovo' : ISO_A2_TO_NUM[(p.cc || '').toUpperCase()]; if (key) visited.set(key, p.cc); }
+    COUNTRY_LAYERS.forEach(l => l.remove()); COUNTRY_LAYERS.clear();
+    const feats = topojson.feature(renderMap._world, renderMap._world.objects.countries).features.filter(f => visited.has(f.id || f.properties.name));
+    const layer = L.geoJSON({ type: 'FeatureCollection', features: feats }, { pane: 'countries',
+      style: { color: '#1b4f8a', weight: 1, fillColor: '#3b7dd8', fillOpacity: 0.32 },
+      onEachFeature: (f, l) => {
+        const cc = visited.get(f.id || f.properties.name);
+        l.on('mouseover', () => l.setStyle({ fillOpacity: 0.5, weight: 1.5 })).on('mouseout', () => l.setStyle({ fillOpacity: 0.32, weight: 1 }));
+        l.on('click', () => jumpToCountry(cc));
+        l.bindTooltip(`${flag(cc)} ${esc(t((places.find(p => p.cc === cc) || {}).country) || f.properties.name)}`, { sticky: true, direction: 'top', opacity: 0.95 });
+      } }).addTo(MAP);
+    layer.bringToBack();
+    COUNTRY_LAYERS.set('all', layer);
+  } catch (e) { /* no country shapes: markers still work */ }
+}
+
+// ── Lightbox ──
+let LB = null;
+async function openLightbox(pid, i) {
+  const p = placeById(pid); if (!p || !(p.photos || []).length) return;
+  LB = { p, i };
+  $('#lb-root').innerHTML = `<div class="lb" role="dialog" aria-modal="true">
+    <span class="lb-count" id="lb-count"></span>
+    <button class="lb-x" id="lb-x" aria-label="Close">✕</button>
+    ${p.photos.length > 1 ? '<button class="lb-prev" id="lb-prev" aria-label="Previous">‹</button><button class="lb-next" id="lb-next" aria-label="Next">›</button>' : ''}
+    <div class="spinner" id="lb-spin"></div>
+    <img id="lb-img" alt="">
+    <div class="lb-cap" id="lb-cap"></div></div>`;
+  $('#lb-x').onclick = closeLightbox;
+  if ($('#lb-prev')) { $('#lb-prev').onclick = () => stepLightbox(-1); $('#lb-next').onclick = () => stepLightbox(1); }
+  $('.lb').onclick = e => { if (e.target === e.currentTarget) closeLightbox(); };
+  document.body.style.overflow = 'hidden';
+  showLightbox();
+}
+async function showLightbox() {
+  const { p, i } = LB; const ph = p.photos[i];
+  const img = $('#lb-img'), spin = $('#lb-spin'); img.classList.remove('ready'); spin.hidden = false;
+  $('#lb-count').textContent = `${i + 1} / ${p.photos.length}`;
+  $('#lb-cap').innerHTML = `<b>${esc(t(p.city))}${p.when ? ', ' + esc(p.when) : ''}</b>${esc(t(ph.caption))}`;
+  try {
+    // Thumbnail first (usually cached), then the full-size image
+    if (URLS.has(ph.thumb)) { img.src = await photoUrl(ph.thumb); img.classList.add('ready'); }
+    const url = await photoUrl(ph.full);
+    if (LB && LB.p === p && LB.i === i) { img.src = url; img.onload = () => { img.classList.add('ready'); spin.hidden = true; }; }
+  } catch (e) { spin.hidden = true; $('#lb-cap').textContent = (LANG === 'zh' ? '照片无法加载：' : 'Could not load this photo: ') + e.message; }
+  // Prefetch neighbours
+  [i + 1, i - 1].forEach(j => { const q = p.photos[j]; if (q) photoUrl(q.full).catch(() => {}); });
+}
+function stepLightbox(d) { if (!LB) return; const n = LB.p.photos.length; LB.i = (LB.i + d + n) % n; showLightbox(); }
+function closeLightbox() { LB = null; $('#lb-root').innerHTML = ''; document.body.style.overflow = ''; }
+document.addEventListener('keydown', e => { if (!LB) return; if (e.key === 'Escape') closeLightbox(); if (e.key === 'ArrowRight') stepLightbox(1); if (e.key === 'ArrowLeft') stepLightbox(-1); });
+
+// ── Language ──
+function applyLang(lang) {
+  LANG = lang;
+  document.querySelectorAll('#lang-toggle .lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+  document.body.classList.toggle('zh', lang === 'zh');
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('[data-en][data-zh]').forEach(el => { el.textContent = el.getAttribute('data-' + lang); });
+  document.querySelectorAll('[data-tip-en]').forEach(el => { el.title = el.getAttribute('data-tip-' + lang); });
+  document.title = PRIVATE ? (lang === 'zh' ? '旅行足迹 | 唐辉' : 'Travel | Hui Tang') : (lang === 'zh' ? '学术足迹 | 唐辉' : 'Academic footprint | Hui Tang');
+  if (DATA && !$('#app').hidden) { renderHeader(); renderList(); renderMap(); }
+}
+$('#lang-toggle').addEventListener('click', e => { const b = e.target.closest('.lang-btn'); if (b && b.dataset.lang !== LANG) applyLang(b.dataset.lang); });
+
+function showApp() {
+  $('#gate').hidden = true; $('#app').hidden = false; $('#btn-lock').hidden = !PRIVATE;
+  renderHeader(); renderList(); renderMap();
+}
+(async () => {
+  if (!PRIVATE) {
+    // Public page: load the plain JSON and render straight away
+    $('#gate-msg').textContent = ''; $('#f-gate').hidden = true; $('.gate-foot').hidden = true;
+    $('.gate p.lead').textContent = LANG === 'zh' ? '加载中…' : 'Loading…';
+    try { DATA = await fetchTravelFile(); showApp(); }
+    catch (e) { $('.gate p.lead').textContent = e.message; }
+    return;
+  }
+  if (await tryStoredKey()) showApp(); else $('#pw').focus();
+})();
+</script>
+</body>
+</html>
