@@ -47,7 +47,8 @@
           "caption": {
             "en": "Group photo",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "df73adbffb",
@@ -58,7 +59,8 @@
           "caption": {
             "en": "",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "ae37b631a6",
@@ -69,7 +71,8 @@
           "caption": {
             "en": "A visit to Wuhan University",
             "zh": ""
-          }
+          },
+          "sights": []
         }
       ]
     },
@@ -110,7 +113,8 @@
           "caption": {
             "en": "With my poster",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "450d55514d",
@@ -121,7 +125,8 @@
           "caption": {
             "en": "",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "3677f9ad2e",
@@ -132,7 +137,8 @@
           "caption": {
             "en": "",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "40ac6661b3",
@@ -143,7 +149,8 @@
           "caption": {
             "en": "",
             "zh": ""
-          }
+          },
+          "sights": []
         }
       ]
     },
@@ -184,7 +191,8 @@
           "caption": {
             "en": "With my colleagues",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "75aaa52082",
@@ -195,7 +203,8 @@
           "caption": {
             "en": "Group photo",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "732b99398b",
@@ -206,7 +215,8 @@
           "caption": {
             "en": "With my poster",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "fc0c3108f6",
@@ -217,7 +227,8 @@
           "caption": {
             "en": "Answering smart guys",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "f8e99d4431",
@@ -228,7 +239,8 @@
           "caption": {
             "en": "Discussion",
             "zh": ""
-          }
+          },
+          "sights": []
         }
       ]
     },
@@ -269,7 +281,8 @@
           "caption": {
             "en": "Group photos with Prof. Bojie Fu",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "bf8b4180ed",
@@ -280,7 +293,8 @@
           "caption": {
             "en": "I and my colleagues",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "a81755cf2e",
@@ -291,7 +305,8 @@
           "caption": {
             "en": "Group photos with chair of Yifan's session",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "881aa1d3cf",
@@ -302,7 +317,8 @@
           "caption": {
             "en": "Oral Presenation",
             "zh": ""
-          }
+          },
+          "sights": []
         }
       ]
     },
@@ -343,7 +359,8 @@
           "caption": {
             "en": "Photo with Prof. Feng, the president of IIOA",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "6d77d0a54e",
@@ -354,7 +371,8 @@
           "caption": {
             "en": "My session. Full of audiences.",
             "zh": ""
-          }
+          },
+          "sights": []
         }
       ]
     },
@@ -395,7 +413,8 @@
           "caption": {
             "en": "Posters",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "76d265410f",
@@ -406,7 +425,8 @@
           "caption": {
             "en": "Posters and we",
             "zh": ""
-          }
+          },
+          "sights": []
         }
       ]
     },
@@ -447,7 +467,8 @@
           "caption": {
             "en": "Group photos",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "b2d7d72090",
@@ -458,7 +479,8 @@
           "caption": {
             "en": "Happy hours in Xiamen",
             "zh": ""
-          }
+          },
+          "sights": []
         },
         {
           "id": "44288760f4",
@@ -469,7 +491,8 @@
           "caption": {
             "en": "Oral presentation",
             "zh": ""
-          }
+          },
+          "sights": []
         }
       ]
     }
