@@ -11,6 +11,79 @@
   "updated": "2026-10-02",
   "places": [
     {
+      "id": "pl-fba872d1c7",
+      "cc": "IE",
+      "country": {
+        "en": "Ireland",
+        "zh": "爱尔兰"
+      },
+      "city": {
+        "en": "Dublin",
+        "zh": "都柏林"
+      },
+      "lat": 53.3331,
+      "lon": -6.2489,
+      "when": "2024-07",
+      "academic": true,
+      "kind": "conference",
+      "event": {
+        "en": "The 35th International Geographical Congress 2024 (IGC 2024)",
+        "zh": "35届国际地理学大会"
+      },
+      "talk": "Spatial analysis enables priority selection in conservation practices for landscapes that need ecological security",
+      "talk_type": "oral",
+      "note": {
+        "en": "",
+        "zh": ""
+      },
+      "photos": [
+        {
+          "id": "b7a4c8f9ed",
+          "full": "academic/p-b7a4c8f9ed.jpg",
+          "thumb": "academic/t-b7a4c8f9ed.jpg",
+          "w": 1600,
+          "h": 1200,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "bf8b4180ed",
+          "full": "academic/p-bf8b4180ed.jpg",
+          "thumb": "academic/t-bf8b4180ed.jpg",
+          "w": 1600,
+          "h": 720,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "a81755cf2e",
+          "full": "academic/p-a81755cf2e.jpg",
+          "thumb": "academic/t-a81755cf2e.jpg",
+          "w": 1600,
+          "h": 900,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "881aa1d3cf",
+          "full": "academic/p-881aa1d3cf.jpg",
+          "thumb": "academic/t-881aa1d3cf.jpg",
+          "w": 1600,
+          "h": 900,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        }
+      ]
+    },
+    {
       "id": "pl-bb36375638",
       "cc": "ES",
       "country": {
