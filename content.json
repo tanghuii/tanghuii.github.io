@@ -17,7 +17,11 @@
       "zh": "唐辉 摄"
     },
     "me_author": "Tang H.",
-    "last_refresh": "2026-10-02T18:10:13.845Z"
+    "last_refresh": "2026-10-02T18:10:13.845Z",
+    "fonts": {
+      "en": "F",
+      "zh": "3"
+    }
   },
   "profile": {
     "name_en": "Hui Tang",
