@@ -44,7 +44,8 @@
   .pill.warn { background: var(--warn-bg); color: var(--warn); }
   .pill.err { background: var(--err-bg); color: var(--err); }
   .pill.muted { background: var(--highlight); color: var(--muted); }
-  .pill.first { background: #c8dbf5; color: #174a85; }
+  .pill.first { background: #2f74e0; color: #ffffff; }
+  .pill.corr { background: #ffffff; color: #2f74e0; box-shadow: inset 0 0 0 1.5px #2f74e0; }
   .pill.status { background: #fcefd6; color: #8a5300; }
 
   .app { display: grid; grid-template-columns: 230px 1fr; height: 100%; }
@@ -89,6 +90,18 @@
   .cover-prev:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
   .cover-prev img { width: 100%; height: 100%; object-fit: cover; }
   .cover-status { background: var(--highlight); border-radius: 6px; padding: 0.5rem 0.8rem; margin-bottom: 0.8rem; color: var(--accent); }
+
+  .map-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+  .map-head h3 { margin: 0; }
+  .map-legend { display: flex; align-items: center; gap: 0.4rem; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .lg-swatch { width: 14px; height: 10px; border-radius: 2px; border: 1px solid var(--subtle); }
+  .lg-ramp { width: 120px; height: 10px; border-radius: 2px; margin-left: 0.8rem; }
+  .map-box { width: 100%; min-height: 120px; }
+  .map-box svg { display: block; }
+  .card { position: relative; }
+  .map-tip { position: absolute; pointer-events: none; background: var(--ink); color: #fff; padding: 0.4rem 0.65rem; border-radius: 6px; font-size: 13px; line-height: 1.35; display: flex; flex-direction: column; z-index: 10; white-space: nowrap; box-shadow: 0 6px 18px rgba(13,27,42,0.25); }
+  .map-tip[hidden] { display: none; }
+  .map-tip span { color: #c9dbf3; font-variant-numeric: tabular-nums; }
   .yearhead { font-family: var(--serif); font-weight: 600; color: var(--accent); margin: 1.1rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px dashed var(--subtle); }
   .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.8rem; }
   .thumb { border: 1px solid var(--subtle); border-radius: 8px; overflow: hidden; background: var(--card); }
@@ -368,7 +381,24 @@ function normalize() {
   C.site ||= {}; C.profile ||= {}; C.profile.links ||= [];
   C.research_interests ||= []; C.education ||= []; C.carousels ||= [[], []];
   C.publications ||= []; C.awards ||= []; C.cv ||= {};
-  C.publications.forEach((p, i) => { p.id ||= 'pub' + String(i + 1).padStart(2, '0'); });
+  C.publications.forEach((p, i) => { p.id ||= 'pub' + String(i + 1).padStart(2, '0'); if (typeof p.corresponding !== 'boolean') p.corresponding = detectCorresponding(p.authors); });
+}
+
+// ── Corresponding author: the checkbox and the "*" after my name in the author list stay in sync ──
+function myNameRe() {
+  const me = (C.site.me_author || 'Tang H.').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp('(<strong>\\s*' + me + '\\s*</strong>|' + me + ')(\\s*\\*)?');
+}
+function detectCorresponding(authors) {
+  const m = String(authors || '').match(myNameRe());
+  return !!(m && m[2]) || new RegExp('<strong>\\s*' + (C.site.me_author || 'Tang H.').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\*\\s*</strong>').test(authors || '');
+}
+function setCorrespondingMark(authors, on) {
+  let a = String(authors || '');
+  const me = (C.site.me_author || 'Tang H.').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  a = a.replace(new RegExp('(<strong>\\s*' + me + ')\\s*\\*(\\s*</strong>)'), '$1$2'); // normalise "*" inside <strong>
+  a = a.replace(myNameRe(), (_, name) => name + (on ? '*' : ''));
+  return a;
 }
 function isDirty() { return C && JSON.stringify(C) !== C_ORIG; }
 function setStatus(msg, kind) {
@@ -1003,7 +1033,7 @@ function viewPublications(v) {
       const dup = pubs.find(p => (p.doi && p.doi.toLowerCase() === meta.doi.toLowerCase()) || normName(p.title) === normName(meta.title));
       if (dup) { msg.textContent = 'This paper is already in the list; opening it.'; openPub = dup.id; rr(); b.disabled = false; return; }
       const id = 'pub' + Date.now().toString(36);
-      pubs.unshift({ id, year: meta.year || String(new Date().getFullYear()), title: meta.title, title_short: '', authors: meta.authors, venue: meta.venue, url: meta.url, doi: meta.doi, first_author: meta.first_author, status: '', cover: meta.cover || '', cited: meta.cited ?? null, abstract: meta.abstract || '', featured: false });
+      pubs.unshift({ id, year: meta.year || String(new Date().getFullYear()), title: meta.title, title_short: '', authors: meta.authors, venue: meta.venue, url: meta.url, doi: meta.doi, first_author: meta.first_author, corresponding: false, status: '', cover: meta.cover || '', cited: meta.cited ?? null, abstract: meta.abstract || '', featured: false });
       openPub = id; markDirty(); rr(); $('#doi-in').value = '';
       msg.textContent = `Added “${meta.title.slice(0, 70)}${meta.title.length > 70 ? '…' : ''}”.` + (meta.abstract ? '' : ' No abstract was available from the open APIs; paste it manually.') + (meta.cover ? '' : ' Pick or upload a journal cover.');
     } catch (e) { msg.textContent = e.message; }
@@ -1022,7 +1052,7 @@ function viewPublications(v) {
         <div class="pub-row" data-toggle>
           ${p.cover ? `<img src="${esc(p.cover)}" alt="" onerror="imgFallback(this)">` : `<div class="nocover">📝</div>`}
           <div><div class="t">${esc(p.title_short || p.title || 'Untitled')}</div>
-            <div class="m">${p.first_author ? '<span class="pill first">First author</span>' : ''}${p.status ? `<span class="pill status">${esc(p.status)}</span>` : ''}${p.featured ? '<span class="pill ok">Featured</span>' : ''}<span>${esc(p.venue)}</span>${p.cited != null && p.cited !== '' ? `<span>· Cited ${esc(p.cited)}</span>` : ''}</div></div>
+            <div class="m">${p.first_author ? '<span class="pill first">First author</span>' : ''}${p.corresponding ? '<span class="pill corr">Corresponding</span>' : ''}${p.status ? `<span class="pill status">${esc(p.status)}</span>` : ''}${p.featured ? '<span class="pill ok">Featured</span>' : ''}<span>${esc(p.venue)}</span>${p.cited != null && p.cited !== '' ? `<span>· Cited ${esc(p.cited)}</span>` : ''}</div></div>
           ${itemTools(pubs, i)}
         </div>
         ${open ? `<div class="pub-edit">
@@ -1032,10 +1062,11 @@ function viewPublications(v) {
             <div class="field"><label>Citations</label>${bind(p, 'cited', 'number', 'placeholder="leave empty to hide"')}</div>
             <div class="field"><label>Flags</label>
               <label class="check" style="text-transform:none;letter-spacing:0;color:var(--ink);font-weight:500">${bind(p, 'first_author', 'checkbox')} First author</label>
+              <label class="check" style="text-transform:none;letter-spacing:0;color:var(--ink);font-weight:500">${bind(p, 'corresponding', 'checkbox', 'data-corr')} Corresponding author</label>
               <label class="check" style="text-transform:none;letter-spacing:0;color:var(--ink);font-weight:500">${bind(p, 'featured', 'checkbox')} Featured on homepage</label></div></div>
           ${field('Title', p, 'title', 'textarea', '', 'style="min-height:52px"')}
           ${field('Short title for homepage (optional)', p, 'title_short')}
-          ${field('Authors', p, 'authors', 'textarea', 'HTML allowed. Wrap your own name in &lt;strong&gt;…&lt;/strong&gt;; mark corresponding authors with *. Names are split on commas for the network graph.', 'class="mono" style="min-height:52px"')}
+          ${field('Authors', p, 'authors', 'textarea', 'HTML allowed. Wrap your own name in &lt;strong&gt;…&lt;/strong&gt;; mark corresponding authors with * (for yourself, just tick “Corresponding author”). Names are split on commas for the network graph.', 'class="mono" style="min-height:52px"')}
           <div class="row two">${field('Venue', p, 'venue', 'text', 'Journal, volume, pages')}${field('Link (URL)', p, 'url')}</div>
           <div class="row" style="grid-template-columns:1fr auto;align-items:end">
             <div class="field" style="margin-bottom:0.9rem"><label>DOI</label>${bind(p, 'doi', 'text', 'class="mono" placeholder="10.xxxx/…"')}</div>
@@ -1105,13 +1136,29 @@ function viewPublications(v) {
       const v = inp.value.trim(); if (v && !/^https?:\/\//.test(v)) return toast('Enter a full image URL starting with https://', true);
       p.cover = v; markDirty(); rr();
     }));
+    box.querySelectorAll('.pub-edit [data-corr]').forEach(el => {
+      const b = BIND.get(el.dataset.bind);
+      b.onChange = on => {
+        b.obj.authors = setCorrespondingMark(b.obj.authors, on);
+        const ta = [...el.closest('.pub-edit').querySelectorAll('[data-bind]')].find(x => BIND.get(x.dataset.bind)?.key === 'authors');
+        if (ta) ta.value = b.obj.authors;
+        const m = el.closest('.item').querySelector('.pub-row .m');
+        if (m) { const pill = m.querySelector('.pill.corr'); if (on && !pill) m.querySelector('.pill.first, .pill.status, span')?.insertAdjacentHTML('afterend', '<span class="pill corr">Corresponding</span>'); if (!on && pill) pill.remove(); }
+      };
+    });
+    // Typing a "*" after my name in the author list ticks the box too
+    box.querySelectorAll('.pub-edit [data-bind]').forEach(el => {
+      const b = BIND.get(el.dataset.bind); if (!b || b.key !== 'authors') return;
+      const prev = b.onChange;
+      b.onChange = v => { if (prev) prev(v); const on = detectCorresponding(v); if (on !== !!b.obj.corresponding) { b.obj.corresponding = on; const cb = el.closest('.pub-edit').querySelector('[data-corr]'); if (cb) cb.checked = on; } };
+    });
     // Keep header text live while typing
     box.querySelectorAll('.pub-edit [data-bind]').forEach(el => { const b = BIND.get(el.dataset.bind); if (['title', 'title_short', 'venue'].includes(b.key)) b.onChange = () => { const it = el.closest('.item'); it.querySelector('.t').textContent = b.obj.title_short || b.obj.title || 'Untitled'; }; });
   };
   rr();
   $('#add-pub').onclick = () => {
     const id = 'pub' + Date.now().toString(36);
-    pubs.unshift({ id, year: String(new Date().getFullYear()), title: '', title_short: '', authors: '<strong>Tang H.</strong>, ', venue: '', url: '', first_author: true, status: '', cover: '', cited: null, abstract: '', featured: false });
+    pubs.unshift({ id, year: String(new Date().getFullYear()), title: '', title_short: '', authors: '<strong>Tang H.</strong>, ', venue: '', url: '', first_author: true, corresponding: false, status: '', cover: '', cited: null, abstract: '', featured: false });
     openPub = id; markDirty(); rr();
   };
   uploader('#btn-up-cover', '#up-cover', '#up-cover-msg', async (file) => {
@@ -1343,7 +1390,14 @@ async function loadStats() {
     const all = await get('TOTAL'); if (stale()) return;
     const h1 = await get('/'), h2 = await get('/index.html'), p1 = await get('/publications.html'); if (stale()) return;
     body.innerHTML = tiles(all ? fmtN(num(all)) : '–', fmtN(num(h1) + num(h2)), fmtN(num(p1)))
-      + `<div class="card"><p class="hint">Add a GoatCounter API token above to see daily trends, countries and referrers here.${all ? '' : ' If the counts stay at “–”, enable <b>Settings → Allow adding visitor counts on your website</b> in GoatCounter.'}</p></div>`;
+      + `<div class="card"><h3>Unlock the map, countries and trends</h3>
+        <p style="margin-bottom:0.6rem">The numbers above are public counters. The world map, the country list, referrers and the daily chart come from GoatCounter's statistics API, which needs an <b>API token</b>: a password-like key that lets this page read your statistics (read only, it cannot change anything).</p>
+        <ol style="margin:0 0 0.6rem 1.2rem;line-height:1.8">
+          <li>Open <a href="https://${esc(code)}.goatcounter.com/user/api" target="_blank">${esc(code)}.goatcounter.com → Settings (your account) → API</a>.</li>
+          <li>Click <b>New API token</b>, give it a name such as <i>site manager</i>, and tick <b>Read statistics</b> only.</li>
+          <li>Create it, copy the token, paste it into the box above and click <b>Save</b>.</li>
+        </ol>
+        <p class="hint">If you are signed in with your password, the token is saved inside your encrypted sign-in, so it works on every device.${all ? '' : ' If the counts stay at “–”, enable <b>Settings → Allow adding visitor counts on your website</b> in GoatCounter.'}</p></div>`;
     msg.textContent = ''; return;
   }
 
@@ -1355,7 +1409,7 @@ async function loadStats() {
     msg.textContent = 'Loading pages…';
     const hits = await gcApi(code, token, `/stats/hits${q}&limit=50`); if (stale()) return;
     msg.textContent = 'Loading countries…';
-    const locs = await gcApi(code, token, `/stats/locations${q}&limit=15`); if (stale()) return;
+    const locs = await gcApi(code, token, `/stats/locations${q}&limit=200`); if (stale()) return;
     msg.textContent = 'Loading referrers…';
     const refs = await gcApi(code, token, `/stats/toprefs${q}&limit=15`); if (stale()) return;
 
@@ -1371,17 +1425,87 @@ async function loadStats() {
     let html = tiles(fmtN(allViews), fmtN(sum(pages.filter(h => isHome(h.path)))), fmtN(sum(pages.filter(h => isPubs(h.path)))));
     if (!allViews) html += `<div class="card"><p class="hint">No visits recorded yet. GoatCounter only counts visits after the tracking script is live: check that the site code is published under <b>CV &amp; site settings</b>, then open the website once and come back in a few minutes. Your own visits from this browser may be ignored if you enabled that in GoatCounter.</p></div>`;
     else html += `<div class="card"><h3>Daily page views</h3>${sparkline(days, vals)}</div>
+      <div class="card"><div class="map-head"><h3>Visitors by country</h3><div class="map-legend" id="gc-legend"></div></div>
+        <div class="map-box" id="gc-map" role="img" aria-label="World map of page views by country"><p class="hint">Loading map…</p></div>
+        <div class="map-tip" id="gc-map-tip" hidden></div></div>
       <div class="two-col">
-        <div class="card"><h3>Countries</h3>${bars((locs?.stats || []).map(x => ({ name: x.name || x.id || 'Unknown', n: x.count })))}</div>
+        <div class="card"><h3>Countries</h3>${bars((locs?.stats || []).slice(0, 15).map(x => ({ name: x.name || x.id || 'Unknown', n: x.count })))}</div>
         <div class="card"><h3>Referrers</h3>${bars((refs?.stats || []).map(x => ({ name: x.name || x.id || '(direct)', n: x.count })))}</div>
       </div>
       <div class="card"><h3>Pages</h3>${bars(pages.map(h => ({ name: h.path, n: h.count })))}</div>`;
     body.innerHTML = html; msg.textContent = '';
+    if (allViews) renderVisitorMap(locs?.stats || []);
   } catch (e) {
     if (stale()) return;
     body.innerHTML = `<div class="card"><p class="hint">Could not load statistics (${esc(e.message)}). If this says 401 or 403, the API token needs the <b>Read statistics</b> permission. You can always open the GoatCounter dashboard directly.</p></div>`;
     msg.textContent = '';
   }
+}
+
+// ── Visitor map: choropleth of page views by country (GoatCounter gives countries, never IPs) ──
+const ISO_A2_TO_NUM = {"AW":"533","AF":"004","AO":"024","AI":"660","AX":"248","AL":"008","AD":"020","AE":"784","AR":"032","AM":"051","AS":"016","AQ":"010","TF":"260","AG":"028","AU":"036","AT":"040","AZ":"031","BI":"108","BE":"056","BJ":"204","BQ":"535","BF":"854","BD":"050","BG":"100","BH":"048","BS":"044","BA":"070","BL":"652","BY":"112","BZ":"084","BM":"060","BO":"068","BR":"076","BB":"052","BN":"096","BT":"064","BV":"074","BW":"072","CF":"140","CA":"124","CC":"166","CH":"756","CL":"152","CN":"156","CI":"384","CM":"120","CD":"180","CG":"178","CK":"184","CO":"170","KM":"174","CV":"132","CR":"188","CU":"192","CW":"531","CX":"162","KY":"136","CY":"196","CZ":"203","DE":"276","DJ":"262","DM":"212","DK":"208","DO":"214","DZ":"012","EC":"218","EG":"818","ER":"232","EH":"732","ES":"724","EE":"233","ET":"231","FI":"246","FJ":"242","FK":"238","FR":"250","FO":"234","FM":"583","GA":"266","GB":"826","GE":"268","GG":"831","GH":"288","GI":"292","GN":"324","GP":"312","GM":"270","GW":"624","GQ":"226","GR":"300","GD":"308","GL":"304","GT":"320","GF":"254","GU":"316","GY":"328","HK":"344","HM":"334","HN":"340","HR":"191","HT":"332","HU":"348","ID":"360","IM":"833","IN":"356","IO":"086","IE":"372","IR":"364","IQ":"368","IS":"352","IL":"376","IT":"380","JM":"388","JE":"832","JO":"400","JP":"392","KZ":"398","KE":"404","KG":"417","KH":"116","KI":"296","KN":"659","KR":"410","KW":"414","LA":"418","LB":"422","LR":"430","LY":"434","LC":"662","LI":"438","LK":"144","LS":"426","LT":"440","LU":"442","LV":"428","MO":"446","MF":"663","MA":"504","MC":"492","MD":"498","MG":"450","MV":"462","MX":"484","MH":"584","MK":"807","ML":"466","MT":"470","MM":"104","ME":"499","MN":"496","MP":"580","MZ":"508","MR":"478","MS":"500","MQ":"474","MU":"480","MW":"454","MY":"458","YT":"175","NA":"516","NC":"540","NE":"562","NF":"574","NG":"566","NI":"558","NU":"570","NL":"528","NO":"578","NP":"524","NR":"520","NZ":"554","OM":"512","PK":"586","PA":"591","PN":"612","PE":"604","PH":"608","PW":"585","PG":"598","PL":"616","PR":"630","KP":"408","PT":"620","PY":"600","PS":"275","PF":"258","QA":"634","RE":"638","RO":"642","RU":"643","RW":"646","SA":"682","SD":"729","SN":"686","SG":"702","GS":"239","SH":"654","SJ":"744","SB":"090","SL":"694","SV":"222","SM":"674","SO":"706","PM":"666","RS":"688","SS":"728","ST":"678","SR":"740","SK":"703","SI":"705","SE":"752","SZ":"748","SX":"534","SC":"690","SY":"760","TC":"796","TD":"148","TG":"768","TH":"764","TJ":"762","TK":"772","TM":"795","TL":"626","TO":"776","TT":"780","TN":"788","TR":"792","TV":"798","TW":"158","TZ":"834","UG":"800","UA":"804","UM":"581","UY":"858","US":"840","UZ":"860","VA":"336","VC":"670","VE":"862","VG":"092","VI":"850","VN":"704","VU":"548","WF":"876","WS":"882","YE":"887","ZA":"710","ZM":"894","ZW":"716","XK":"-99"};
+const MAP_LIBS = { d3: 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js',
+  topo: 'https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js',
+  world: 'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json' };
+let WORLD = null;
+function loadScriptOnce(src, test) {
+  if (test()) return Promise.resolve();
+  return new Promise((ok, fail) => { const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = () => fail(new Error('Could not load ' + src)); document.head.appendChild(el); });
+}
+async function renderVisitorMap(stats) {
+  const box = $('#gc-map'); if (!box) return;
+  try {
+    await loadScriptOnce(MAP_LIBS.d3, () => window.d3);
+    await loadScriptOnce(MAP_LIBS.topo, () => window.topojson);
+    WORLD ||= await fetchJson(MAP_LIBS.world);
+  } catch (e) { box.innerHTML = `<p class="hint">The map could not be loaded (${esc(e.message)}). The country list below has the same numbers.</p>`; return; }
+  if (!box.isConnected) return;
+  const d3 = window.d3;
+  // Views per map feature (numeric ISO id; Kosovo has none in world-atlas, so match it by name)
+  const views = new Map(), names = new Map();
+  for (const x of stats) {
+    const id = (x.id || '').toUpperCase().slice(0, 2);
+    const key = id === 'XK' ? 'Kosovo' : ISO_A2_TO_NUM[id];
+    if (!key) continue;
+    views.set(key, (views.get(key) || 0) + (x.count || 0)); names.set(key, x.name || id);
+  }
+  const countries = window.topojson.feature(WORLD, WORLD.objects.countries).features.filter(f => f.properties.name !== 'Antarctica');
+  const keyOf = f => f.id || f.properties.name;
+  const max = Math.max(1, ...views.values());
+  // Sequential single-hue ramp from the site palette: pale blue to deep ocean
+  const color = d3.scaleSequentialSqrt(d3.interpolateLab('#cfe0f5', '#0f3360')).domain([1, max]);
+  const EMPTY = '#e6ebf2';
+  const draw = () => {
+    const W = box.clientWidth || 800, H = Math.round(W * 0.5);
+    const projection = d3.geoEqualEarth().fitExtent([[4, 4], [W - 4, H - 4]], { type: 'Sphere' });
+    const path = d3.geoPath(projection);
+    box.innerHTML = '';
+    const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').attr('height', H);
+    svg.append('path').datum({ type: 'Sphere' }).attr('d', path).attr('fill', '#f7f9fc').attr('stroke', '#d3dce7');
+    const tip = $('#gc-map-tip');
+    svg.append('g').selectAll('path').data(countries).join('path')
+      .attr('d', path)
+      .attr('fill', f => views.has(keyOf(f)) ? color(views.get(keyOf(f))) : EMPTY)
+      .attr('stroke', '#ffffff').attr('stroke-width', 0.6)
+      .style('cursor', f => views.has(keyOf(f)) ? 'pointer' : 'default')
+      .on('mousemove', (ev, f) => {
+        const n = views.get(keyOf(f)) || 0;
+        tip.innerHTML = `<b>${esc(names.get(keyOf(f)) || f.properties.name)}</b><span>${n ? fmtN(n) + ' page view' + (n > 1 ? 's' : '') : 'No visits'}</span>`;
+        tip.hidden = false;
+        const card = box.parentElement.getBoundingClientRect();
+        const x = ev.clientX - card.left, y = ev.clientY - card.top;
+        tip.style.left = Math.max(8, Math.min(x + 14, card.width - tip.offsetWidth - 8)) + 'px'; tip.style.top = (y - tip.offsetHeight - 10) + 'px';
+        d3.select(ev.currentTarget).attr('stroke', '#0d1b2a').attr('stroke-width', 1.2).raise();
+      })
+      .on('mouseleave', ev => { tip.hidden = true; d3.select(ev.currentTarget).attr('stroke', '#ffffff').attr('stroke-width', 0.6); });
+  };
+  draw();
+  // Legend: gradient over the real range, plus the "no visits" swatch
+  const lg = $('#gc-legend');
+  if (lg) lg.innerHTML = `<span class="lg-swatch" style="background:${EMPTY}"></span><span>No visits</span>
+    <span class="lg-ramp" style="background:linear-gradient(90deg, ${[0, .25, .5, .75, 1].map(t => color(1 + t * (max - 1))).join(',')})"></span>
+    <span>1</span><span>–</span><span>${fmtN(max)}</span><span>views</span>`;
+  window.onresize = () => { clearTimeout(renderVisitorMap._t); renderVisitorMap._t = setTimeout(() => { if ($('#gc-map')) draw(); }, 200); };
 }
 function bars(items) {
   items = items.filter(x => x.n != null); if (!items.length) return '<p class="hint">No data in this period.</p>';
