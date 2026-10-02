@@ -11,6 +11,34 @@
   "updated": "2026-10-02",
   "places": [
     {
+      "id": "pl-6d2f1ce94e",
+      "cc": "GB",
+      "country": {
+        "en": "United Kingdom",
+        "zh": "英国"
+      },
+      "city": {
+        "en": "London",
+        "zh": "伦敦"
+      },
+      "lat": 51.5085,
+      "lon": -0.1257,
+      "when": "2023-07",
+      "academic": true,
+      "kind": "conference",
+      "event": {
+        "en": "",
+        "zh": ""
+      },
+      "talk": "",
+      "talk_type": "poster",
+      "note": {
+        "en": "",
+        "zh": ""
+      },
+      "photos": []
+    },
+    {
       "id": "pl-be769a8845",
       "cc": "CN",
       "country": {
@@ -23,7 +51,7 @@
       },
       "lat": 24.4798,
       "lon": 118.0819,
-      "when": "",
+      "when": "2024-05",
       "academic": true,
       "kind": "conference",
       "event": {
