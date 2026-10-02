@@ -20,8 +20,10 @@
     "last_refresh": "2026-10-02T18:10:13.845Z",
     "fonts": {
       "en": "F",
-      "zh": "3"
-    }
+      "zh": "3",
+      "size": 110
+    },
+    "palette": "graphite"
   },
   "profile": {
     "name_en": "Hui Tang",
