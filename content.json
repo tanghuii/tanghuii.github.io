@@ -16,7 +16,8 @@
       "en": "Photo by Hui Tang",
       "zh": "唐辉 摄"
     },
-    "me_author": "Tang H."
+    "me_author": "Tang H.",
+    "last_refresh": "2026-10-02T11:42:29.771Z"
   },
   "profile": {
     "name_en": "Hui Tang",
@@ -284,10 +285,11 @@
       "first_author": false,
       "status": "",
       "cover": "cover-tee.png",
-      "cited": 7,
+      "cited": 31,
       "abstract": "Addressing practical challenges in ecological conservation and restoration planning, ecological security pattern (ESP) – spatial networks composed of ecological sources and connecting corridors – offers an actionable and nature-based framework. Rooted in landscape ecology, the ESP approach integrates ecological thresholds and connectivity to ensure ecosystem integrity and landscape sustainability. Although ESP-related research has proliferated – particularly in China – critical dimensions, such as underlying ecological mechanisms, spatiotemporal dynamics, and spillover effects, have received less attention. Consequently, the foundational scientific concepts and research priorities remain insufficiently articulated, hindering ESP’s further development and broader international acceptance. To fill this knowledge gap, we identify key research issues for ESP to tackle the main challenges in its construction, optimization, and evaluation, highlighting future directions as a landscape ecological approach to spatial conservation and restoration planning.",
       "featured": false,
-      "corresponding": false
+      "corresponding": false,
+      "doi": "10.1016/j.tree.2025.07.014"
     },
     {
       "id": "pub04",
@@ -334,10 +336,11 @@
       "first_author": true,
       "status": "",
       "cover": "cover-gec.png",
-      "cited": 18,
+      "cited": 14,
       "abstract": "Since the Anthropocene, global natural ecosystems have suffered more severe and accelerating harm than at any other period in history. The growing conflict between urban expansion and ecological conservation highlights the importance of finding a balance. Ecological security pattern (ESP) focuses on minimizing the cost-benefit ratio of ecological conservation while maintaining a minimum level of land use demand. It is an effective spatial tool for balancing urban sprawl and ecological conservation, sustaining regional ecological security and safeguarding human well-being, and thus fostering sustainable development. However, when identifying ESP, it is still unclear whether core areas of specific or comprehensive ecosystem characteristics should be highlighted. In this study we established three ESP construction scenarios to explore the trade-off between the conservations of comprehensive and specific ecosystem characteristics. Scenario 1 and Scenario 3 respectively tended to prioritize the conservation of comprehensive and specific ecosystem characteristics respectively, while Scenario 2 represented an intermediate approach. Furthermore, conservation effectiveness of the three scenarios were assessed to choose the best solution under the objectives of ecosystem health, landscape connectivity and integrated conservation. The results showed that Scenario 3 had the largest number of ecological sources and ecological corridors, being 5.82 times and 7.48 times of that in Scenario 1, respectively. The total area of ecological sources in each scenario was 1626 km², accounting for 24% of the study area. Besides, Scenario 3 had the largest area of ecological corridors, with a total area of 705 km². Natural reserves of Helan Mountain, Sha Lake, and Baijitan were identified as ecological sources in all the three scenarios, emphasizing their conservation importance. The ESP identified in Scenario 1 exhibited better representativeness of ecosystem health, while the ESP identified in Scenario 3 demonstrated the highest level of landscape connectivity and integrated conservation. Scenario 2 was not the optimal solution under all conservation objectives. The results suggested that the scenario for the conservation of specific ecosystem characteristic had better conservation benefits. This study highlights the conservation trade-off between comprehensive and specific ecosystem characteristics, which will help to identify optimal ESP construction solution.",
       "featured": false,
-      "corresponding": false
+      "corresponding": false,
+      "doi": "10.1016/j.gecco.2023.e02776"
     },
     {
       "id": "pub07",
@@ -384,10 +387,11 @@
       "first_author": false,
       "status": "",
       "cover": "cover-gec.png",
-      "cited": 20,
+      "cited": 17,
       "abstract": "The trade-off of ecosystem services should be considered in ecological security pattern (ESP) construction, which can be reflected in landscape multifunctionality and comprehensive importance. Multi-intensity ESPs management is also required to achieve effective ecological planning. In this study, we proposed an approach of multi-intensity ESPs construction that integrated multifunctional landscape identification and multi-criteria decision-making into ecological source identification, and categorized ecological sources based on the \"trend-status-risk\" framework, with a case study in the city belt along the Yellow River in Ningxia. The results showed that the optimal weights of the four ecosystem services of habitat maintenance, water conservation, carbon sequestration and soil retention based on multi-criteria decision making were 0.5000, 0.2071, 0.1589 and 0.1340, respectively. The trade-off degree of the ecosystem services was 0.6612, and the overall conservation efficiency was 1.5212. Conservation priority areas based on multifunctional landscape identification and multi-criteria decision-making had an overlapping area of 2189.38 km², accounting for 84.86% of that identified through landscape multi-functionality. The comprehensive ESP of the study area included 45 ecological sources covering a total area of 6067.14 km² and 91 ecological corridors with a total area of 3331.62 km². Multi-intensity ESPs aiming at conservation, prevention, restoration and reconstruction were established with corresponding management suggestions. The approach to constructing multi-intensity ESPs proposed in this study has application potential in ecological planning of ecologically vulnerable regions, facilitating differentiated ESP management.",
       "featured": false,
-      "corresponding": false
+      "corresponding": false,
+      "doi": "10.1016/j.gecco.2024.e02862"
     },
     {
       "id": "pub10",
@@ -417,10 +421,11 @@
       "first_author": false,
       "status": "",
       "cover": "cover-geosus.png",
-      "cited": 12,
+      "cited": 11,
       "abstract": "Enhancing the spatio-temporal connectivity of dynamic landscapes is crucial for species to adapt to climate change. However, the spatio-temporal connectivity network approach considering climate change and species movement is often overlooked. Taking Tibetan wild ass on the Qinghai-Xizang Plateau as an example, we simulated species distribution under current (2019) and future scenarios (2100), constructed spatio-temporal connectivity networks, and assessed the spatio-temporal connectivity. The results show that under the current, SSP2–4.5 and SSP3–7.0 scenarios, suitable habitats for the Tibetan wild ass account for 21.11%, 21.34%, and 20.95% of the total area, respectively, with increased fragmentation projected by 2100. 78.35% of the habitats which are predicted to be suitable under current conditions will remain suitable in the future, which can be regarded as stable climate refuges. With the increase in future emission intensity, the percentage of auxiliary connectivity corridors increases from 27.65% to 33.57%. This indicates that more patches will function as temporary refuges and the auxiliary connectivity corridors will gradually weaken the dominance of direct connectivity corridors. Under different SSP-RCP scenarios, the internal spatio-temporal connectivity is always higher than direct connectivity and auxiliary connectivity, accounting for 42%–43%. Compared with the spatio-temporal perspective, the purely spatial perspective overestimates network connectivity by about 28% considering all current and future patches, and underestimates network connectivity by 16%–21% when only considering all current or future patches. In this study, a new approach of spatio-temporal connectivity network is proposed to bridge climate refuges, which contributes to the long-term effectiveness of conservation networks for species' adaptation to climate change.",
       "featured": false,
-      "corresponding": false
+      "corresponding": false,
+      "doi": "10.1016/j.geosus.2024.08.012"
     },
     {
       "id": "pub12",
@@ -450,10 +455,11 @@
       "first_author": true,
       "status": "",
       "cover": "cover-jem.png",
-      "cited": 50,
+      "cited": 55,
       "abstract": "Global urbanization has not only promoted social and economic development, but also contributed to seriously ecological challenges. As a type of sustainable landscape patterns, ecological security pattern is considered as an effective spatial pathway to simultaneously conserve ecological security and maintain social-economic development. However, the fragmentation issue of ecological sources of ecological security pattern has not been effectively addressed, although many case studies have been conducted to identify ecological security pattern. In this study, we used spatial conservation prioritization to identify the ecological security pattern of the city belt along the Yellow River in Ningxia, China. Ecological sources were selected using Zonation model while ecological corridors and key ecological nodes were identified with circuit model. The results showed that the ecological security pattern was composed of 97 ecological sources, 226 ecological corridors, 267 pinch points and 22 barriers, covering a total area of 7713.1 km² and accounting for 34% of the study area. Ecological sources were concentrated in the Helan Mountain, Xiang Mountain and along the Yellow River. Besides, ecological corridors were dense in the southern and eastern part of the study area. Both indicated that the Yellow River and Helan Mountain were the conservation hotspots. Landscape connectivity of ecological sources identified through Zonation-based spatial conservation prioritization was better than that with the scoring approach based on ecosystem service importance. Particularly, in the Zonation approach the landscape connectivity increased with 44% while the average patch area increased with 28% when comparing with the scoring approach. The spatial conservation prioritization approach proposed in this study provides a new effective tool to construct ecological security pattern, which is conducive to the synergic enhancement of landscape connectivity and ecosystem services conservation.",
       "featured": false,
-      "corresponding": false
+      "corresponding": false,
+      "doi": "10.1016/j.jenvman.2023.118888"
     },
     {
       "id": "pub14",
@@ -466,10 +472,11 @@
       "first_author": false,
       "status": "",
       "cover": "cover-jem.png",
-      "cited": 32,
+      "cited": 40,
       "abstract": "Widespread degradation of natural ecosystems around the globe has resulted in several ecological problems. Ecological restoration is considered a global priority as an important means of mitigating ecosystem degradation and enhancing ecosystem services provision. Regarding ecosystem reference state is a prerequisite for ecological restoration. However, there were few studies focusing on how to regard reference state for ecological restoration, especially under a changing climate. Taking Guizhou Province, a typical karst region in China, as a case study area, in this study we firstly assessed ecosystem services under homogeneous climate conditions. Secondly, we defined the optimal ecosystem services as ecosystem reference state, and then evaluated restoration suitability under a comprehensive framework. Finally, ecological restoration priority areas (EPRAs), which included ecological reconstruction areas, assisted regeneration areas and conservation priority areas needing restoration, were identified by integrating restoration suitability and conservation priority areas. The results showed that the services of water conservation and habitat maintenance only increased less than 10% from 2001 to 2018. Identified ecological reconstruction areas and assisted regeneration areas covered 1078 km 2 and 1159 km 2 respectively. Additionally, 15 conservation priority areas with the total area of 18,507 km 2 were identified as conservation priority areas needing restoration. Accounting for 11.78% of the total area, ERPAs were mostly located in the eastern part of Guizhou, including Qiandongnan, Tongren, and Zunyi. The approach proposed here for regarding ecosystem reference state after controlling climate variables and the framework for identifying ERPAs can provide a scientific reference for large-scale ecological restoration planning.",
       "featured": false,
-      "corresponding": false
+      "corresponding": false,
+      "doi": "10.1016/j.jenvman.2023.119214"
     },
     {
       "id": "pub15",
