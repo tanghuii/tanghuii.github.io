@@ -318,13 +318,23 @@ async function gh(path, opts = {}) {
   }
   return res.status === 204 ? null : res.json();
 }
+// GitHub may serve a cached GET for up to a minute after a write, so sha lookups bypass every cache
 async function ghGetFile(path) {
-  return gh(`/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${REPO.branch}`);
+  return gh(`/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${REPO.branch}&t=${Date.now()}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
 }
+// PUT with the sha we know; on 409 ("does not match") re-read the current sha and try again
 async function ghPutFile(path, base64Content, message, sha) {
-  const body = { message, content: base64Content, branch: REPO.branch };
-  if (sha) body.sha = sha;
-  return gh(`/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`, { method: 'PUT', body: JSON.stringify(body) });
+  const url = `/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`;
+  for (let attempt = 0; ; attempt++) {
+    const body = { message, content: base64Content, branch: REPO.branch };
+    if (sha) body.sha = sha;
+    try { return await gh(url, { method: 'PUT', body: JSON.stringify(body) }); }
+    catch (e) {
+      if (!/GitHub 409/.test(e.message) || attempt >= 3) throw e;
+      await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
+      try { sha = (await ghGetFile(path)).sha; } catch (err) { sha = null; }
+    }
+  }
 }
 async function ghListRoot(force = false) {
   if (REPO_FILES && !force) return REPO_FILES;
@@ -1324,7 +1334,7 @@ function renderAccount() {
 // with a content key kept inside travel.enc (travel/*.bin).
 // ─────────────────────────────────────────────────────────────────────────────
 const TRAVEL_MIN_PW = 8;
-const FP = { file: 'travel/travel.enc', pubFile: 'academic/academic.json', data: null, orig: '', remote: undefined, sha: null, pubOrig: null, key: null, ckey: null, loading: false, err: '', urls: new Map() };
+const FP = { file: 'travel/travel.enc', pubFile: 'academic/academic.json', data: null, orig: '', remote: undefined, sha: null, pubOrig: null, pubSha: null, key: null, ckey: null, loading: false, err: '', urls: new Map() };
 const KIND_OPTIONS = [['conference', 'Conference'], ['visit', 'Research visit'], ['workshop', 'Workshop / summer school']];
 const TALK_OPTIONS = [['', 'No presentation'], ['oral', 'Oral presentation'], ['poster', 'Poster presentation'], ['invited', 'Invited talk'], ['keynote', 'Keynote']];
 const tvFlagEmoji = cc => /^[A-Z]{2}$/.test(cc || '') ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : '📍';
@@ -1371,7 +1381,7 @@ async function loadFootprints() {
   if (FP.loading) return; FP.loading = true;
   try { const r = await ghGetFile(FP.file); FP.sha = r.sha; FP.remote = JSON.parse(b64dec(r.content)); }
   catch (e) { if (/404/.test(e.message)) { FP.sha = null; FP.remote = null; } else { FP.remote = undefined; FP.err = e.message; } }
-  try { const r = await ghGetFile(FP.pubFile); FP.pubOrig = b64dec(r.content); } catch (e) { FP.pubOrig = ''; }
+  try { const r = await ghGetFile(FP.pubFile); FP.pubOrig = b64dec(r.content); FP.pubSha = r.sha; } catch (e) { FP.pubOrig = ''; FP.pubSha = null; }
   FP.loading = false;
   if (TAB === 'travel') render();
 }
@@ -1382,16 +1392,15 @@ async function unlockFootprints(password) {
 async function saveFootprints(message = 'Update footprints via Site Manager') {
   const file = await encryptBundle(FP.data, FP.key.key, FP.key.salt, FP.key.iter);
   file.note = 'Private travel map for travel.html: AES-256-GCM, key derived from the travel password. Photos in this folder are encrypted with a content key stored inside.';
-  try { FP.sha = (await ghGetFile(FP.file)).sha; } catch (e) { FP.sha = null; }
+  if (FP.sha === undefined) { try { FP.sha = (await ghGetFile(FP.file)).sha; } catch (e) { FP.sha = null; } }
   const r = await ghPutFile(FP.file, b64enc(JSON.stringify(file, null, 2) + '\n'), message, FP.sha);
   FP.sha = r.content.sha; FP.remote = file; FP.orig = JSON.stringify(FP.data);
   // Public export, only when it changed (the "updated" date is ignored for the comparison)
   const pub = JSON.stringify(derivePublic(FP.data), null, 2) + '\n';
   const strip = x => (x || '').replace(/"updated": "[^"]*",?\n?/, '');
   if (strip(pub) !== strip(FP.pubOrig)) {
-    let sha = null; try { sha = (await ghGetFile(FP.pubFile)).sha; } catch (e) {}
-    await ghPutFile(FP.pubFile, b64enc(pub), 'Update academic footprint (public export)', sha);
-    FP.pubOrig = pub;
+    const r2 = await ghPutFile(FP.pubFile, b64enc(pub), 'Update academic footprint (public export)', FP.pubSha);
+    FP.pubSha = r2.content.sha; FP.pubOrig = pub;
   }
 }
 async function rememberTravelPassword(pw) {
