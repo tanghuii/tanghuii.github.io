@@ -1,0 +1,39 @@
+{
+  "v": 1,
+  "places": [
+    {
+      "id": "pl-9f7c2e06cd",
+      "cc": "GB",
+      "country": {
+        "en": "United Kingdom",
+        "zh": "英国"
+      },
+      "city": {
+        "en": "London",
+        "zh": "倫敦"
+      },
+      "lat": 51.5085,
+      "lon": -0.1257,
+      "when": "",
+      "note": {
+        "en": "",
+        "zh": ""
+      },
+      "photos": [],
+      "event": {
+        "en": "",
+        "zh": ""
+      },
+      "role": "",
+      "talk": ""
+    }
+  ],
+  "title": {
+    "en": "Academic *footprint*",
+    "zh": "学术足迹"
+  },
+  "intro": {
+    "en": "Conferences, workshops and research visits.",
+    "zh": "参加过的学术会议、研讨会与访问。"
+  }
+}
