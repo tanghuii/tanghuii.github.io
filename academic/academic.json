@@ -2,6 +2,32 @@
   "v": 1,
   "places": [
     {
+      "id": "pl-d15716a036",
+      "cc": "CN",
+      "country": {
+        "en": "China",
+        "zh": "中国"
+      },
+      "city": {
+        "en": "Xiamen",
+        "zh": "厦门市"
+      },
+      "lat": 24.4798,
+      "lon": 118.0819,
+      "when": "",
+      "note": {
+        "en": "",
+        "zh": ""
+      },
+      "photos": [],
+      "event": {
+        "en": "",
+        "zh": ""
+      },
+      "role": "",
+      "talk": ""
+    },
+    {
       "id": "pl-9f7c2e06cd",
       "cc": "GB",
       "country": {
