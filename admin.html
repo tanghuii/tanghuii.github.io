@@ -1843,7 +1843,7 @@ function viewFootprints(v) {
         <div class="field"><label>Code</label>${bind(p, 'cc', 'text', 'placeholder="NL" maxlength="2" style="text-transform:uppercase"')}</div>
         <div class="field"><label>Latitude</label>${bind(p, 'lat', 'number', 'step="any" placeholder="53.2194"')}</div>
         <div class="field"><label>Longitude</label>${bind(p, 'lon', 'number', 'step="any" placeholder="6.5665"')}</div>
-        <div class="field"><label>When</label>${bind(p, 'when', 'text', 'placeholder="2025-07, 2018-2025, or blank" data-when="${i}"')}<div class="hint">A month (2025-07), a year or a range (2018-2025, 2025 - present). Several visits: separate with “;”, e.g. 2019-05; 2023-08. <a href="#" data-addvisit="${i}">+ Add another visit</a></div></div></div></div>
+        <div class="field"><label>When</label>${bind(p, 'when', 'text', 'placeholder="2025-07, 2018-2025, or blank" data-when="${i}"')}<div class="hint">A month (2025-07), a year or a range (2018-2025, 2025 - present). Several visits: separate with “;”, e.g. 2019-05; 2023-08. <a href="#" data-addvisit="${i}">+ Add another visit</a></div></div></div>
       <div class="row" style="grid-template-columns:auto 1fr;align-items:center;gap:1.2rem;margin-bottom:0.7rem"><label class="check" style="margin:0">${bind(p, 'academic', 'checkbox', 'data-acad')} Academic visit (also shown on the public academic page)</label>
         ${p.academic ? '' : `<div class="field" style="margin:0;max-width:260px"><label>Trip type (private page label)</label>${bind(p, 'trip', 'select', 'data-trip')}</div>`}</div>
       ${p.academic ? `<div class="tv-acad">
