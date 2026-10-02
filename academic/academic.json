@@ -11,6 +11,79 @@
   "updated": "2026-10-02",
   "places": [
     {
+      "id": "pl-a4d9e00736",
+      "cc": "CN",
+      "country": {
+        "en": "China",
+        "zh": "中国"
+      },
+      "city": {
+        "en": "Enshi",
+        "zh": "恩施"
+      },
+      "lat": 30.3,
+      "lon": 109.4833,
+      "when": "2025-08",
+      "academic": true,
+      "kind": "conference",
+      "event": {
+        "en": "The 2nd Symposium on Ecosystem Services",
+        "zh": "第二届生态系统服务学术研讨会"
+      },
+      "talk": "国土空间生态修复基线：理论认知、划定框架与关键议题",
+      "talk_type": "poster",
+      "note": {
+        "en": "",
+        "zh": ""
+      },
+      "photos": [
+        {
+          "id": "537473b541",
+          "full": "academic/p-537473b541.jpg",
+          "thumb": "academic/t-537473b541.jpg",
+          "w": 1600,
+          "h": 1067,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "450d55514d",
+          "full": "academic/p-450d55514d.jpg",
+          "thumb": "academic/t-450d55514d.jpg",
+          "w": 1600,
+          "h": 1067,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "3677f9ad2e",
+          "full": "academic/p-3677f9ad2e.jpg",
+          "thumb": "academic/t-3677f9ad2e.jpg",
+          "w": 1600,
+          "h": 1067,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "40ac6661b3",
+          "full": "academic/p-40ac6661b3.jpg",
+          "thumb": "academic/t-40ac6661b3.jpg",
+          "w": 1600,
+          "h": 900,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        }
+      ]
+    },
+    {
       "id": "pl-22b653676c",
       "cc": "AT",
       "country": {
@@ -44,7 +117,7 @@
           "w": 1600,
           "h": 900,
           "caption": {
-            "en": "",
+            "en": "With my colleagues",
             "zh": ""
           }
         },
@@ -55,7 +128,7 @@
           "w": 1600,
           "h": 1067,
           "caption": {
-            "en": "",
+            "en": "Group photo",
             "zh": ""
           }
         },
@@ -66,7 +139,7 @@
           "w": 1600,
           "h": 2400,
           "caption": {
-            "en": "",
+            "en": "With my poster",
             "zh": ""
           }
         },
@@ -77,7 +150,7 @@
           "w": 1600,
           "h": 2400,
           "caption": {
-            "en": "",
+            "en": "Answering smart guys",
             "zh": ""
           }
         },
@@ -88,7 +161,7 @@
           "w": 1600,
           "h": 2133,
           "caption": {
-            "en": "",
+            "en": "Discussion",
             "zh": ""
           }
         }
