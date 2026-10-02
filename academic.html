@@ -152,7 +152,11 @@
   .sights-label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #2f7a4f; margin-right: 0.2rem; }
   .sights-label svg { width: 15px; height: 15px; }
   body.zh .sights-label { letter-spacing: 0.12em; }
-  .sight { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem 0.2rem 0.55rem; border: 1px solid var(--subtle); border-radius: 100px; background: var(--card-bg); font-size: 0.88rem; color: var(--ink); text-decoration: none; transition: border-color 0.2s, background 0.2s; }
+  .sight { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0.25rem 0.4rem; max-width: 100%; padding: 0.25rem 0.7rem 0.25rem 0.55rem; border: 1px solid var(--subtle); border-radius: 16px; background: var(--card-bg); font-size: 0.88rem; line-height: 1.35; color: var(--ink); text-decoration: none; transition: border-color 0.2s, background 0.2s, transform 0.2s; }
+  .sight .sg-name { min-width: 0; }
+  .sight .sg-tags { display: inline-flex; flex-wrap: wrap; gap: 0.25rem; }
+  .sights-more { border: 1px dashed var(--subtle); background: transparent; color: var(--accent); font: inherit; font-size: 0.85rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 16px; cursor: pointer; }
+  .sights-more:hover { border-color: var(--accent); background: var(--highlight); }
   .sight svg.si { width: 15px; height: 15px; flex-shrink: 0; color: var(--accent-light); }
   .sight-cam { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-left: 0.1rem; }
   .sight-cam svg { width: 14px; height: 14px; }
@@ -179,7 +183,6 @@
   .sight.si-culture svg.si { color: var(--accent); }
   .sight.si-5a svg.si { color: #b8860b; }
   a.sight:hover { border-color: var(--accent); background: var(--highlight); }
-  .sight { flex-wrap: wrap; row-gap: 0.25rem; }
   .tag { white-space: nowrap; }
   .tag { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.02rem 0.4rem; border-radius: 4px; line-height: 1.5; text-transform: uppercase; }
   body.zh .tag { letter-spacing: 0.06em; font-size: 0.7rem; }
@@ -222,6 +225,17 @@
     .stat-num { font-size: 1.6rem; }
     #map { height: 50vh; min-height: 300px; border-radius: 10px; }
     .city { grid-template-columns: 1fr; gap: 0.6rem; padding: 0.9rem 0.9rem 0.9rem 1.1rem; }
+    /* Sights as a list: icon | name | photos, tags on a second line under the name */
+    .sights { display: grid; grid-template-columns: 1fr; gap: 0.4rem; }
+    .sights-label { margin: 0 0 0.1rem; }
+    .sight { display: grid; grid-template-columns: 18px 1fr auto; column-gap: 0.55rem; row-gap: 0.3rem; align-items: center; width: 100%; padding: 0.55rem 0.75rem; border-radius: 10px; font-size: 0.92rem; }
+    .sight svg.si { grid-column: 1; grid-row: 1; align-self: start; margin-top: 0.15rem; }
+    .sight .sight-cam { align-self: start; }
+    .sight .sg-name { grid-column: 2; grid-row: 1; font-weight: 500; }
+    .sight .sight-cam { grid-column: 3; grid-row: 1; margin: 0; }
+    .sight .sg-tags { grid-column: 2 / -1; grid-row: 2; }
+    .sight:active { transform: scale(0.985); background: var(--highlight); }
+    .sights-more { justify-self: start; }
     /* Swipeable photo row */
     .strip { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0.5rem; margin: 0 -0.9rem 0 0; padding: 0 0.9rem 0.3rem 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .strip::-webkit-scrollbar { display: none; }
@@ -338,12 +352,14 @@ function sightIcon(tags) {
   if (tags.includes('5a')) return ['5a', SIGHT_ICONS.star];
   return ['pin', SIGHT_ICONS.pin];
 }
+const SIGHTS_SHOWN = 6;
 const sightPhotos = (p, sid) => (p.photos || []).filter(ph => (ph.sights || []).includes(sid));
 const CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 function sightChip(sg, p) {
   const [kind, icon] = sightIcon(sg.tags);
   const n = p ? sightPhotos(p, sg.id).length : 0;
-  const inner = `${icon}<span>${esc(t(sg.name))}</span>${(sg.tags || []).map(tagHtml).join('')}${n ? `<span class="sight-cam" title="${n} ${LANG === 'zh' ? '张照片' : (n === 1 ? 'photo' : 'photos')}">${CAM}${n}</span>` : ''}`;
+  const tags = (sg.tags || []).map(tagHtml).join('');
+  const inner = `${icon}<span class="sg-name">${esc(t(sg.name))}</span>${tags ? `<span class="sg-tags">${tags}</span>` : ''}${n ? `<span class="sight-cam" title="${n} ${LANG === 'zh' ? '张照片' : (n === 1 ? 'photo' : 'photos')}">${CAM}${n}</span>` : ''}`;
   const u = sightUrl(sg);
   const data = p ? ` data-pid="${esc(p.id)}" data-sid="${esc(sg.id)}"${n ? ' data-has-photos="1"' : ''}` : '';
   return u ? `<a class="sight si-${kind}${n ? ' has-photos' : ''}" href="${esc(u)}" target="_blank" rel="noopener"${data}>${inner}</a>` : `<span class="sight si-${kind}${n ? ' has-photos' : ''}"${data}${n ? ' tabindex="0"' : ''}>${inner}</span>`;
@@ -556,11 +572,11 @@ function renderList() {
       const ph = p.photos || [];
       const strip = ph.length ? `<div class="strip" data-pid="${esc(p.id)}">${ph.slice(0, 6).map((x, i) => `<div class="ph" data-i="${i}" data-thumb="${esc(x.thumb)}"><img alt="${esc(t(x.caption))}">${i === 5 && ph.length > 6 ? `<div class="more">+${ph.length - 6}</div>` : ''}</div>`).join('')}</div>` : '';
       return `<div class="city" data-pid="${esc(p.id)}">
-        <div><div class="city-name">${cityIcon(p)}<span class="city-title">${esc(t(p.city))}</span>${whenHtml(p.when)}${p.academic ? `<span class="role">${esc(kindLabel(p.kind || 'conference'))}</span>` : (p.trip ? `<span class="role trip trip-${esc(p.trip)}">${esc(tripLabel(p.trip))}</span>` : '')}</div>
-          ${p.academic && t(p.event) ? `<div class="city-event">${esc(t(p.event))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="city-talk">${p.talk_type ? `<span class="talk-type">${esc(talkLabel(p.talk_type))}</span>` : ''}${p.talk ? `“${esc(p.talk)}”` : ''}</div>` : ''}${t(p.note) ? `<div class="city-note">${esc(t(p.note))}</div>` : ''}</div>
+        <div><div class="city-name">${cityIcon(p)}<span class="city-title">${esc(t(p.city))}</span>${whenHtml(p.when)}${p.academic ? `<span class="role">${esc(kindLabel(p.kind || 'conference'))}</span>` : ''}${PRIVATE && p.trip ? `<span class="role trip trip-${esc(p.trip)}">${esc(tripLabel(p.trip))}</span>` : ''}</div>
+          ${p.academic && t(p.event) ? `<div class="city-event">${esc(t(p.event))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="city-talk">${p.talk_type ? `<span class="talk-type">${esc(talkLabel(p.talk_type))}</span>` : ''}${p.talk ? `“${esc(p.talk)}”` : ''}</div>` : ''}${t(p.note) ? `<div class="city-note">${esc(t(p.note))}</div>` : ''}${PRIVATE && t(p.pnote) ? `<div class="city-note">${esc(t(p.pnote))}</div>` : ''}</div>
         <div class="city-actions"><button class="small-btn ghost" data-map="${esc(p.id)}"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${LANG === 'zh' ? '地图' : 'Map'}</button>
           ${ph.length ? `<button class="small-btn" data-gallery="${esc(p.id)}">${photosLabel(ph.length)}</button>` : ''}</div>
-        ${(p.sights || []).length ? `<div class="sights"><span class="sights-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.5L16 9.5"/></svg>${LANG === 'zh' ? '去过' : 'Visited'}</span>${p.sights.map(g => sightChip(g, p)).join('')}</div>` : ''}${strip}</div>`;
+        ${(p.sights || []).length ? `<div class="sights"><span class="sights-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.5L16 9.5"/></svg>${LANG === 'zh' ? '去过' : 'Visited'}</span>${p.sights.map((g, k) => k < SIGHTS_SHOWN ? sightChip(g, p) : sightChip(g, p).replace(/^<(a|span) class="sight/, '<$1 hidden data-more class="sight')).join('')}${p.sights.length > SIGHTS_SHOWN ? `<button type="button" class="sights-more" data-more-btn data-n="${p.sights.length - SIGHTS_SHOWN}">${LANG === 'zh' ? `再显示 ${p.sights.length - SIGHTS_SHOWN} 个` : `+ ${p.sights.length - SIGHTS_SHOWN} more`}</button>` : ''}</div>` : ''}${strip}</div>`;
     }).join('')}</section>`).join('');
   list.querySelectorAll('[data-map]').forEach(b => b.onclick = () => focusPlace(b.dataset.map));
   list.querySelectorAll('[data-gallery]').forEach(b => b.onclick = () => openLightbox(b.dataset.gallery, 0));
@@ -574,6 +590,11 @@ function renderList() {
   list.querySelectorAll('.strip .ph').forEach(el => io.observe(el));
   animateCards(list);
   wireSightPopovers(list);
+  list.querySelectorAll('[data-more-btn]').forEach(b => b.onclick = () => {
+    const box = b.parentElement, open = b.classList.toggle('open');
+    box.querySelectorAll('[data-more]').forEach(el => { el.hidden = !open; });
+    b.textContent = open ? (LANG === 'zh' ? '收起' : 'Show less') : (LANG === 'zh' ? `再显示 ${b.dataset.n} 个` : `+ ${b.dataset.n} more`);
+  });
 }
 // Cards rise in once (staggered within a country); on touch screens the card crossing the middle band gets the focus style
 const REVEALED = new Set();
@@ -637,7 +658,7 @@ async function renderMap() {
     if (typeof p.lat !== 'number' || typeof p.lon !== 'number') continue;
     const n = (p.photos || []).length;
     const m = L.circleMarker([p.lat, p.lon], { radius: 7, color: '#ffffff', weight: 2, fillColor: '#1b4f8a', fillOpacity: 1 }).addTo(MAP);
-    m.bindPopup(`<div class="pop-city">${esc(t(p.city))}</div><div class="pop-meta">${esc(t(p.country))}${p.when ? ' · ' + esc(fmtWhen(p.when)) : ''}</div>${p.academic && t(p.event) ? `<div style="color:var(--accent);font-weight:500;margin-top:0.2rem">${esc(kindLabel(p.kind || 'conference'))} · ${esc(t(p.event))}</div>` : (!p.academic && p.trip ? `<div class="pop-meta">${esc(tripLabel(p.trip))}</div>` : '')}${p.academic && (p.talk || p.talk_type) ? `<div class="pop-meta">${esc(talkLabel(p.talk_type))}${p.talk ? (p.talk_type ? ': ' : '') + esc(p.talk) : ''}</div>` : ''}
+    m.bindPopup(`<div class="pop-city">${esc(t(p.city))}</div><div class="pop-meta">${esc(t(p.country))}${p.when ? ' · ' + esc(fmtWhen(p.when)) : ''}</div>${p.academic && t(p.event) ? `<div style="color:var(--accent);font-weight:500;margin-top:0.2rem">${esc(kindLabel(p.kind || 'conference'))} · ${esc(t(p.event))}</div>` : ''}${PRIVATE && p.trip ? `<div class="pop-meta">${esc(tripLabel(p.trip))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="pop-meta">${esc(talkLabel(p.talk_type))}${p.talk ? (p.talk_type ? ': ' : '') + esc(p.talk) : ''}</div>` : ''}
       ${n ? `<button class="pop-btn" onclick="openLightbox('${esc(p.id)}',0)">${LANG === 'zh' ? `查看 ${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`} ↗</button>` : ''}`);
     m.on('mouseover', () => m.setStyle({ radius: 9, fillColor: '#3b7dd8' })).on('mouseout', () => m.setStyle({ radius: 7, fillColor: '#1b4f8a' }));
     MARKERS.set(p.id, m); bounds.push([p.lat, p.lon]);

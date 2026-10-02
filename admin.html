@@ -114,6 +114,9 @@
   .tv-acad { background: var(--highlight); border-radius: 8px; padding: 0.9rem 1rem 0.1rem; margin-bottom: 0.9rem; }
   .thumb.tv .ph { aspect-ratio: 4/3; background: var(--highlight); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
   .thumb.tv .ph img { aspect-ratio: 4/3; }
+  .btn.vis { margin-left: auto; font-size: 12px !important; padding: 0.1rem 0.45rem !important; }
+  .btn.vis.pub, .tagbtn.vis.pub { color: #2f7a4f; border-color: #b7dcc3; background: #e9f5ed; }
+  .tagbtn.vis { margin-left: 0.4rem; }
   .ph-sg { display: flex; flex-wrap: wrap; gap: 0.25rem; padding: 0 0.6rem 0.4rem; }
   .ph-sg .tagbtn { font-size: 11.5px; padding: 0.05rem 0.4rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tv-prog { font-size: 15px; color: var(--accent); }
@@ -1400,13 +1403,14 @@ function normalizeFP(d) {
   d.pub_title ||= { en: 'Academic *footprint*', zh: '学术足迹' }; d.pub_intro ||= { en: 'Conferences, workshops and research visits.', zh: '参加过的学术会议、研讨会与学术访问。' };
   d.places.forEach(p => { p.id ||= 'pl-' + rid(); p.photos ||= []; p.note ||= { en: '', zh: '' }; p.city ||= { en: '', zh: '' }; p.country ||= { en: '', zh: '' }; p.when ||= '';
     p.academic = !!p.academic; p.trip ||= ''; p.kind ||= 'conference'; p.event ||= { en: '', zh: '' }; p.talk ||= ''; p.talk_type ||= '';
-    p.sights ||= []; p.sights.forEach(g => { g.name ||= { en: '', zh: '' }; g.tags ||= []; }); });
+    p.sights ||= []; p.sights.forEach(g => { g.name ||= { en: '', zh: '' }; g.tags ||= []; });
+    p.pnote ||= { en: '', zh: '' }; });
   return d;
 }
 // The public file: academic entries only, public fields only, plain photos only
 function derivePublic(d) {
   return { v: 1, title: d.pub_title, intro: d.pub_intro, updated: new Date().toISOString().slice(0, 10),
-    places: d.places.filter(p => p.academic).map(p => ({ id: p.id, cc: p.cc, country: p.country, city: p.city, lat: p.lat, lon: p.lon, when: p.when, academic: true, kind: p.kind, event: p.event, talk: p.talk, talk_type: p.talk_type, note: p.note, sights: p.sights, photos: p.photos.filter(isPublicPhoto) })) };
+    places: d.places.filter(p => p.academic).map(p => ({ id: p.id, cc: p.cc, country: p.country, city: p.city, lat: p.lat, lon: p.lon, when: p.when, academic: true, kind: p.kind, event: p.event, talk: p.talk, talk_type: p.talk_type, note: p.note, sights: p.sights.filter(g => g.pub !== false), photos: p.photos.filter(isPublicPhoto).map(ph => ({ ...ph, sights: (ph.sights || []).filter(id => p.sights.some(g => g.id === id && g.pub !== false)) })) })) };
 }
 async function loadFootprints() {
   if (FP.loading) return; FP.loading = true;
@@ -1739,6 +1743,24 @@ async function findSights(p) {
   return { results: out.slice(0, 100), notes };
 }
 
+// Read a repo file as bytes (raw.githubusercontent first, Contents API as a fallback)
+async function repoBytes(path) {
+  try { const r = await fetch(rawUrl(path) + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) return new Uint8Array(await r.arrayBuffer()); } catch (e) {}
+  const g = await ghGetFile(path); if (!g.content) throw new Error(path + ' could not be read'); return u8(g.content.replace(/\n/g, ''));
+}
+// Re-store a photo as public (plain JPEG in academic/) or private (encrypted in travel/), then delete the old files
+async function setPhotoVisibility(ph, toPublic) {
+  if (toPublic === isPublicPhoto(ph)) return;
+  const conv = async path => { const b = await repoBytes(path); return toPublic ? new Uint8Array(await decryptBytes(FP.ckey, b)) : await encryptBytes(FP.ckey, b); };
+  const dir = toPublic ? 'academic' : 'travel', ext = toPublic ? 'jpg' : 'bin';
+  const nf = `${dir}/p-${ph.id}.${ext}`, nt = `${dir}/t-${ph.id}.${ext}`;
+  await ghPutFile(nf, bytesToB64(await conv(ph.full)), toPublic ? 'Make photo public' : 'Make photo private');
+  await ghPutFile(nt, bytesToB64(await conv(ph.thumb)), toPublic ? 'Make photo thumbnail public' : 'Make photo thumbnail private');
+  const of = ph.full, ot = ph.thumb;
+  const cached = FP.urls.get(ot); if (cached) { FP.urls.set(nt, cached); FP.urls.delete(ot); }
+  ph.full = nf; ph.thumb = nt;
+  await ghDeleteFile(of, 'Remove old photo copy'); await ghDeleteFile(ot, 'Remove old photo copy');
+}
 function viewFootprints(v) {
   const intro = `<h2>Footprints</h2><p class="lead">One list of places for two pages. <a href="travel.html" target="_blank">travel.html</a> shows everything and opens only with the <b>travel password</b> (share it with family and friends; it gives no access to this manager). Entries ticked as <b>academic visit</b> are also published, in clear, on the public <a href="academic.html" target="_blank">academic.html</a>.</p>`;
   if (!TOKEN) { v.innerHTML = intro + `<div class="card"><p class="hint">Sign in to edit the footprints.</p></div>`; return; }
@@ -1845,25 +1867,26 @@ function viewFootprints(v) {
         <div class="field"><label>Longitude</label>${bind(p, 'lon', 'number', 'step="any" placeholder="6.5665"')}</div>
         <div class="field"><label>When</label>${bind(p, 'when', 'text', 'placeholder="2025-07, 2018-2025, or blank" data-when="${i}"')}<div class="hint">A month (2025-07), a year or a range (2018-2025, 2025 - present). Several visits: separate with “;”, e.g. 2019-05; 2023-08. <a href="#" data-addvisit="${i}">+ Add another visit</a></div></div></div>
       <div class="row" style="grid-template-columns:auto 1fr;align-items:center;gap:1.2rem;margin-bottom:0.7rem"><label class="check" style="margin:0">${bind(p, 'academic', 'checkbox', 'data-acad')} Academic visit (also shown on the public academic page)</label>
-        ${p.academic ? '' : `<div class="field" style="margin:0;max-width:260px"><label>Trip type (private page label)</label>${bind(p, 'trip', 'select', 'data-trip')}</div>`}</div>
+        <div class="field" style="margin:0;max-width:260px"><label>${p.academic ? 'Also a private trip? (travel page only)' : 'Trip type (private page label)'}</label>${bind(p, 'trip', 'select', 'data-trip')}</div></div>
       ${p.academic ? `<div class="tv-acad">
         <div class="row" style="grid-template-columns:240px 1fr">
           <div class="field"><label>Type</label>${bind(p, 'kind', 'select', 'data-kind')}</div>
           <div class="field"><label>Presentation</label>${bind(p, 'talk_type', 'select', 'data-talk')}</div></div>
         ${biField(p.kind === 'visit' ? 'Host institution' : (p.kind === 'workshop' ? 'Workshop / school name' : 'Conference name'), p, 'event')}
         <div class="field"><label>${p.talk_type ? 'Title of your presentation' : 'Title of your presentation (optional)'}</label>${bind(p, 'talk', 'text', 'placeholder="e.g. Biodiversity footprints of global trade"')}</div>
-        <p class="hint" style="margin-bottom:0.8rem">Photos uploaded to an academic entry are stored as ordinary JPEGs and appear on the public page; the note is public too.</p></div>` : ''}
-      ${biField('Note (optional)', p, 'note')}
+        <p class="hint" style="margin-bottom:0.8rem">Only the academic part is public: the conference details, the public note, and the photos and sights marked <b>public</b>. Everything else (trip type, private note, private photos and sights) appears on the travel page only.</p></div>` : ''}
+      ${biField(p.academic ? 'Public note (academic page and travel page)' : 'Note (optional)', p, 'note')}
+      ${p.academic ? biField('Private note (travel page only)', p, 'pnote') : ''}
       <div class="field"><label>Sights &amp; landmarks (${p.sights.length})</label><div id="tv-sg-${i}"></div>
         <div class="toolbar" style="margin-top:0.5rem"><button class="btn sm" data-sg-find="${i}">Find landmarks nearby</button><input type="text" data-sg-q="${i}" placeholder="or search by name, e.g. 外滩" style="width:auto;flex:1;min-width:160px;padding:0.25rem 0.5rem"><button class="btn sm" data-sg-name="${i}">Find</button><button class="btn sm" data-sg-add="${i}">Add manually</button><span class="hint" id="tv-sg-msg-${i}"></span></div>
         <div id="tv-sg-res-${i}"></div></div>
       <div class="field"><label>Photos (${p.photos.length})</label><div class="thumbs" id="tv-ph-${i}"></div>
-        ${p.academic && p.photos.some(x => !isPublicPhoto(x)) ? `<p class="hint">${p.photos.filter(x => !isPublicPhoto(x)).length} photo(s) were uploaded while this entry was private, so they are encrypted and will not appear on the public page. Delete and re-upload them to publish.</p>` : ''}
-        ${!p.academic && p.photos.some(isPublicPhoto) ? `<p class="hint">${p.photos.filter(isPublicPhoto).length} photo(s) were uploaded while this entry was academic, so they are stored unencrypted in the repository.</p>` : ''}
-        <div class="toolbar"><input type="file" id="tv-up-${i}" accept="image/*" multiple style="display:none"><button class="btn sm" data-up="${i}">Upload photos…</button><span id="tv-upsg-${i}"></span><span class="tv-prog" id="tv-prog-${i}"></span></div></div></div></div>`; }).join('') || `<p class="hint">Nothing yet. Search for a city above.</p>`;
+        ${p.academic ? `<p class="hint">${p.photos.filter(isPublicPhoto).length} public (academic page) · ${p.photos.filter(x => !isPublicPhoto(x)).length} private (travel page only, encrypted). Use the 🌐 / 🔒 button on a photo to switch.</p>` : ''}
+        ${!p.academic && p.photos.some(isPublicPhoto) ? `<p class="hint">${p.photos.filter(isPublicPhoto).length} photo(s) are stored unencrypted (uploaded while this entry was academic). Use 🔒 to make them private.</p>` : ''}
+        <div class="toolbar"><input type="file" id="tv-up-${i}" accept="image/*" multiple style="display:none"><button class="btn sm" data-up="${i}">Upload photos…</button>${p.academic ? `<label class="hint" style="margin:0;display:inline-flex;gap:0.4rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:500">as <select data-up-vis="${i}" style="width:auto;padding:0.2rem 0.4rem"><option value="pub">🌐 public (academic)</option><option value="priv">🔒 private (travel only)</option></select></label>` : ''}<span id="tv-upsg-${i}"></span><span class="tv-prog" id="tv-prog-${i}"></span></div></div></div></div>`; }).join('') || `<p class="hint">Nothing yet. Search for a city above.</p>`;
     box.querySelectorAll('[data-toggle]').forEach(h => h.addEventListener('click', e => { if (e.target.closest('.tools')) return; const id = h.dataset.toggle; OPEN_PLACES.has(id) ? OPEN_PLACES.delete(id) : OPEN_PLACES.add(id); renderPlaces(); }));
     box.querySelectorAll('select[data-kind]').forEach((sel, k) => { const p = T.places.filter(x => x.academic)[k]; sel.innerHTML = KIND_OPTIONS.map(([val, lab]) => `<option value="${val}" ${p.kind === val ? 'selected' : ''}>${lab}</option>`).join(''); });
-    box.querySelectorAll('select[data-trip]').forEach((sel, k) => { const p = T.places.filter(x => !x.academic)[k]; sel.innerHTML = TRIP_OPTIONS.map(([val, lab]) => `<option value="${val}" ${p.trip === val ? 'selected' : ''}>${lab}</option>`).join(''); });
+    box.querySelectorAll('select[data-trip]').forEach(sel => { const p = T.places[Number(sel.closest('.item').dataset.i)]; sel.innerHTML = TRIP_OPTIONS.map(([val, lab]) => `<option value="${val}" ${p.trip === val ? 'selected' : ''}>${lab}</option>`).join(''); });
     box.querySelectorAll('select[data-talk]').forEach((sel, k) => { const p = T.places.filter(x => x.academic)[k]; sel.innerHTML = TALK_OPTIONS.map(([val, lab]) => `<option value="${val}" ${p.talk_type === val ? 'selected' : ''}>${lab}</option>`).join(''); });
     wireBindings(box); wireItemTools(box, T.places, renderPlaces);
     // Re-render when the academic flag or the type changes (labels and fields depend on them)
@@ -1883,14 +1906,15 @@ function viewFootprints(v) {
     const box = $('#tv-sg-' + i); if (!box) return;
     box.innerHTML = p.sights.map((g, k) => `<div class="sg-row" data-k="${k}"><input type="checkbox" checked title="Untick to remove" data-sg-un>
       <div>${bind(g.name, 'en', 'text', 'placeholder="Name (EN)"')}</div><div>${bind(g.name, 'zh', 'text', 'placeholder="名称（中文）"')}</div>
-      <div class="sg-tags">${TAG_DEFS.map(([key, lab]) => `<button type="button" class="tagbtn ${g.tags.includes(key) ? 'on' : ''}" data-tag="${key}">${lab}</button>`).join('')}</div>
+      <div class="sg-tags">${TAG_DEFS.map(([key, lab]) => `<button type="button" class="tagbtn ${g.tags.includes(key) ? 'on' : ''}" data-tag="${key}">${lab}</button>`).join('')}${p.academic ? `<button type="button" class="tagbtn vis ${g.pub !== false ? 'on pub' : ''}" data-sg-pub title="${g.pub !== false ? 'Shown on the academic page. Click to keep it on the travel page only.' : 'Travel page only. Click to show it on the academic page.'}">${g.pub !== false ? '🌐 public' : '🔒 private'}</button>` : ''}</div>
       <div class="sg-link"><span class="hint" style="margin:0">Webpage</span>${bind(g, 'url', 'text', 'placeholder="official site (optional; otherwise Baike / Wikipedia is used)"')}
         <span class="sg-open">${[[g.url, 'site'], [g.baike || baikeUrl(g.name.zh), 'Baike'], [g.zhwiki, '维基'], [g.enwiki, 'Wiki'], [g.amap, 'Amap']].filter(([u]) => u).map(([u, l]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${l}</a>`).join('')}</span></div></div>`).join('') || '<p class="hint">No sights yet. Search nearby or add one by hand; tick the ones you visited.</p>';
     wireBindings(box);
     box.querySelectorAll('.sg-row').forEach(row => {
       const k = Number(row.dataset.k), g = p.sights[k];
       row.querySelector('[data-sg-un]').onchange = () => { const gone = p.sights[k]?.id; p.sights.splice(k, 1); p.photos.forEach(ph => { if (ph.sights) ph.sights = ph.sights.filter(x => x !== gone); }); markDirty(); renderSights(p, i); renderResults(p, i); renderThumbs(p, i); };
-      row.querySelectorAll('.tagbtn').forEach(b => b.onclick = () => {
+      const pubBtn = row.querySelector('[data-sg-pub]'); if (pubBtn) pubBtn.onclick = () => { g.pub = g.pub === false; markDirty(); renderSights(p, i); };
+      row.querySelectorAll('.tagbtn:not([data-sg-pub])').forEach(b => b.onclick = () => {
         const key = b.dataset.tag;
         if (g.tags.includes(key)) g.tags = g.tags.filter(x => x !== key);
         else { if (WH_GROUP.has(key)) g.tags = g.tags.filter(x => !WH_GROUP.has(x)); g.tags.push(key); }
@@ -1905,7 +1929,7 @@ function viewFootprints(v) {
     box.innerHTML = res.length ? `<div class="sg-cands">${res.map((r, k) => `<label class="sg-cand"><input type="checkbox" data-k="${k}" ${p.sights.some(g => g.id === r.id) ? 'checked' : ''}><b>${esc(r.name.en)}</b>${r.name.zh && r.name.zh !== r.name.en ? `<span>${esc(r.name.zh)}</span>` : ''}${r.tags.map(tg => `<span class="tagbtn on" data-tag="${tg}">${TAG_LABEL[tg]}</span>`).join('')}<span class="m">${r.dist.toFixed(0)} km · ${esc(r.src)}${r.amapType ? ' · ' + esc(r.amapType.split(';').pop()) : ''}${r.url ? ' · 🔗 site' : ''}</span></label>`).join('')}</div>` : '<p class="hint">Nothing found within 50 km on Wikidata. Add the sight by hand.</p>';
     box.querySelectorAll('input[data-k]').forEach(cb => cb.onchange = () => {
       const r = res[Number(cb.dataset.k)];
-      if (cb.checked) { if (!p.sights.some(g => g.id === r.id)) p.sights.push({ id: r.id, name: { ...r.name }, lat: r.lat, lon: r.lon, tags: [...r.tags], enwiki: r.enwiki, zhwiki: r.zhwiki, url: r.url || '', amap: r.amap || '', baike: r.baike || '' }); }
+      if (cb.checked) { if (!p.sights.some(g => g.id === r.id)) p.sights.push({ pub: !p.academic ? undefined : false, id: r.id, name: { ...r.name }, lat: r.lat, lon: r.lon, tags: [...r.tags], enwiki: r.enwiki, zhwiki: r.zhwiki, url: r.url || '', amap: r.amap || '', baike: r.baike || '' }); }
       else { p.sights = p.sights.filter(g => g.id !== r.id); p.photos.forEach(ph => { if (ph.sights) ph.sights = ph.sights.filter(x => x !== r.id); }); }
       markDirty(); renderSights(p, i); renderResults(p, i); renderThumbs(p, i);
     });
@@ -1935,7 +1959,7 @@ function viewFootprints(v) {
     };
     $(`[data-sg-name="${i}"]`).onclick = byName;
     $(`[data-sg-q="${i}"]`).onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); byName(); } };
-    $(`[data-sg-add="${i}"]`).onclick = () => { p.sights.push({ id: 's-' + rid(), name: { en: '', zh: '' }, lat: null, lon: null, tags: [], enwiki: '', zhwiki: '' }); markDirty(); renderSights(p, i); renderThumbs(p, i); };
+    $(`[data-sg-add="${i}"]`).onclick = () => { p.sights.push({ pub: p.academic ? false : undefined, id: 's-' + rid(), name: { en: '', zh: '' }, lat: null, lon: null, tags: [], enwiki: '', zhwiki: '' }); markDirty(); renderSights(p, i); renderThumbs(p, i); };
     renderResults(p, i);
   };
   const renderThumbs = (p, i) => {
@@ -1943,7 +1967,7 @@ function viewFootprints(v) {
     box.innerHTML = p.photos.map((ph, j) => `<div class="thumb tv" data-j="${j}"><div class="ph"><img alt="" hidden>…</div>
       <div class="cap">${bind(ph.caption ||= { en: '', zh: '' }, 'en', 'text', 'placeholder="Caption (EN)"')}${bind(ph.caption, 'zh', 'text', 'placeholder="说明（中文）"')}</div>
       ${p.sights.length ? `<div class="ph-sg">${p.sights.map(g => `<button type="button" class="tagbtn ${(ph.sights || []).includes(g.id) ? 'on' : ''}" data-tag="5a" data-psg="${esc(g.id)}" title="Shown when visitors hover this sight">${esc(g.name.zh && g.name.zh !== g.name.en ? g.name.zh : g.name.en || 'sight')}</button>`).join('')}</div>` : ''}
-      <div class="tools"><button class="btn" title="Move left" data-pact="left" ${j === 0 ? 'disabled' : ''}>←</button><button class="btn" title="Move right" data-pact="right" ${j === p.photos.length - 1 ? 'disabled' : ''}>→</button><button class="btn danger" data-pact="del">✕</button>${isPublicPhoto(ph) ? '<span class="hint" style="margin:0 0 0 auto;align-self:center">public</span>' : ''}</div></div>`).join('') || '<p class="hint" style="grid-column:1/-1">No photos yet.</p>';
+      <div class="tools"><button class="btn" title="Move left" data-pact="left" ${j === 0 ? 'disabled' : ''}>←</button><button class="btn" title="Move right" data-pact="right" ${j === p.photos.length - 1 ? 'disabled' : ''}>→</button><button class="btn danger" data-pact="del">✕</button>${p.academic || isPublicPhoto(ph) ? `<button class="btn vis ${isPublicPhoto(ph) ? 'pub' : ''}" data-pact="vis" title="${isPublicPhoto(ph) ? 'Public: shown on the academic page. Click to make it private.' : 'Private: travel page only. Click to make it public.'}">${isPublicPhoto(ph) ? '🌐 public' : '🔒 private'}</button>` : ''}</div></div>`).join('') || '<p class="hint" style="grid-column:1/-1">No photos yet.</p>';
     wireBindings(box);
     box.querySelectorAll('.thumb').forEach(el => {
       const j = Number(el.dataset.j), ph = p.photos[j], img = el.querySelector('img');
@@ -1957,6 +1981,12 @@ function viewFootprints(v) {
         const act = b.dataset.pact;
         if (act === 'left' && j > 0) [p.photos[j - 1], p.photos[j]] = [p.photos[j], p.photos[j - 1]];
         if (act === 'right' && j < p.photos.length - 1) [p.photos[j + 1], p.photos[j]] = [p.photos[j], p.photos[j + 1]];
+        if (act === 'vis') {
+          b.disabled = true; b.textContent = '…';
+          try { await setPhotoVisibility(ph, !isPublicPhoto(ph)); await saveFootprints('Change photo visibility'); toast(isPublicPhoto(ph) ? 'Photo is now public.' : 'Photo is now private (encrypted).'); }
+          catch (e) { toast(e.message, true); }
+          markDirty(); renderPlaces(); return;
+        }
         if (act === 'del') {
           if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Delete?'; setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = '✕'; } }, 2500); return; }
           b.disabled = true; b.textContent = '…';
@@ -1973,7 +2003,7 @@ function viewFootprints(v) {
     input.onchange = async () => {
       const files = [...input.files]; input.value = ''; if (!files.length) return;
       btn.disabled = true; let n = 0;
-      const pub = p.academic; // academic entries get plain, public photos
+      const pub = p.academic && ($(`[data-up-vis="${i}"]`)?.value || 'pub') === 'pub'; // public JPEG only when chosen on an academic entry
       const forSight = $(`[data-up-sg="${i}"]`)?.value || '';
       try {
         for (const file of files) {
