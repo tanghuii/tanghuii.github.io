@@ -67,10 +67,10 @@
       "academic": true,
       "kind": "conference",
       "event": {
-        "en": "",
-        "zh": ""
+        "en": "RGS-IBG Annual International Conference 2024",
+        "zh": "英国皇家地理学年会2024"
       },
-      "talk": "",
+      "talk": "Regarding reference state to identify priority areas for ecological restoration in a karst region",
       "talk_type": "poster",
       "note": {
         "en": "",
@@ -84,7 +84,7 @@
           "w": 1600,
           "h": 900,
           "caption": {
-            "en": "",
+            "en": "Posters",
             "zh": ""
           }
         },
@@ -95,7 +95,7 @@
           "w": 1600,
           "h": 900,
           "caption": {
-            "en": "",
+            "en": "Posters and we",
             "zh": ""
           }
         }
@@ -127,7 +127,41 @@
         "en": "",
         "zh": ""
       },
-      "photos": []
+      "photos": [
+        {
+          "id": "f5400cb12b",
+          "full": "academic/p-f5400cb12b.jpg",
+          "thumb": "academic/t-f5400cb12b.jpg",
+          "w": 1600,
+          "h": 2133,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "b2d7d72090",
+          "full": "academic/p-b2d7d72090.jpg",
+          "thumb": "academic/t-b2d7d72090.jpg",
+          "w": 1600,
+          "h": 1067,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "44288760f4",
+          "full": "academic/p-44288760f4.jpg",
+          "thumb": "academic/t-44288760f4.jpg",
+          "w": 1600,
+          "h": 1067,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        }
+      ]
     }
   ]
 }
