@@ -181,6 +181,11 @@
   .sg-row:first-child { border-top: none; }
   .sg-link { grid-column: 2 / -1; display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem; align-items: center; }
   .sg-open { display: flex; gap: 0.35rem; }
+  .sg-wh { grid-column: 2 / -1; display: grid; grid-template-columns: auto minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; }
+  .sg-wh select { padding: 0.25rem 0.4rem; font-size: 14.5px; }
+  .sg-wh input[type=text] { padding: 0.3rem 0.5rem; font-size: 15px; }
+  @media (max-width: 760px) { .sg-wh { grid-column: 1 / -1; grid-template-columns: 1fr; } }
+  .wh-part { font-size: 12.5px; color: var(--accent); background: var(--highlight); border-radius: 4px; padding: 0.05rem 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
   .sg-open a { font-size: 12.5px; padding: 0.05rem 0.45rem; border: 1px solid var(--subtle); border-radius: 4px; text-decoration: none; white-space: nowrap; }
   .sg-open a:hover { border-color: var(--accent); background: var(--highlight); }
   @media (max-width: 760px) { .sg-row { grid-template-columns: auto 1fr; } .sg-row .sg-tags, .sg-link { grid-column: 1 / -1; } .sg-link { grid-template-columns: 1fr; } }
@@ -1606,6 +1611,28 @@ const haversine = (a, b, c, d) => { const r = Math.PI / 180, x = Math.sin((c - a
 // Offline datasets in the repo root: all UNESCO World Heritage sites (wh-sites.json) and China's 5A names (cn-5a.json)
 let WH_SITES = null, FIVE_A = null;
 async function loadWH() { if (!WH_SITES) { try { WH_SITES = await fetchJson('wh-sites.json'); } catch (e) { WH_SITES = []; } } return WH_SITES; }
+// World Heritage property of a sight: { id, name{en,zh}, cat, url } from the UNESCO list (+ a Chinese name when known)
+const whNum = v => { const m = String(v || '').match(/^\s*(\d+)/); return m ? m[1] : ''; };
+const whRef = (w, zh, en) => w ? { id: w.id, name: { en: en || w.name, zh: zh || w.zh || '' }, cat: w.cat, url: w.url } : undefined;
+const normEn = x => String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+// Same place by name (not just "contains"): equal, or one contains the other and they are of similar length
+function sameName(a, b) {
+  const close = (x, y) => x.length >= 2 && y.length >= 2 && (x === y || ((x.includes(y) || y.includes(x)) && Math.min(x.length, y.length) / Math.max(x.length, y.length) >= 0.6));
+  return close(normZh(a.zh), normZh(b.zh)) || close(normEn(a.en), normEn(b.en));
+}
+function nearestWH(lat, lon, list, maxKm = 25) { let best = null, bd = maxKm; for (const w of list) { const d = haversine(lat, lon, w.lat, w.lon); if (d < bd) { bd = d; best = w; } } return best; }
+// Older saved sights: tagged World Heritage but without a property yet. Returns true when something changed.
+function autoGroupWH(p, list) {
+  let changed = false;
+  for (const g of p.sights) {
+    if (g.whsite || !g.tags.some(t => WH_GROUP.has(t))) continue;
+    const id = String(g.id || '').startsWith('wh-') ? g.id.slice(3) : '';
+    const w = (id && list.find(x => x.id === id)) || (typeof g.lat === 'number' ? nearestWH(g.lat, g.lon, list) : null) || (typeof p.lat === 'number' ? nearestWH(p.lat, p.lon, list) : null);
+    if (!w) continue;
+    g.whsite = whRef(w); g.whroot = !!id || sameName(g.name, { en: w.name, zh: w.zh || '' }); changed = true;
+  }
+  return changed;
+}
 async function load5A() { if (!FIVE_A) { try { FIVE_A = await fetchJson('cn-5a.json'); } catch (e) { FIVE_A = []; } } return FIVE_A; }
 const SUFFIX_RE = /(国家级?|省级)?(风景名胜区|旅游风景区|旅游景区|风景区|景区|旅游区|度假区|名胜区|森林公园|地质公园|湿地公园|博物院|博物馆|纪念馆|纪念园|公园|古城|古镇|景点)$/;
 const normZh = x => String(x || '').replace(/\s*[（(].*$/, '').replace(/[\s·・，,。.]/g, '').replace(SUFFIX_RE, '');
@@ -1674,8 +1701,11 @@ async function sightsFromWikidata(lat, lon, radiusKm = 50) {
   if (!items.size) return [];
   // Query 2: labels, classes, designations, criteria and Wikipedia links for those items only
   const ids = [...items.keys()].map(x => 'wd:' + x).join(' ');
-  const q2 = `SELECT ?item ?en ?zh (GROUP_CONCAT(DISTINCT ?cls; separator="|") AS ?classes) (GROUP_CONCAT(DISTINCT ?des; separator="|") AS ?desigs) (GROUP_CONCAT(DISTINCT ?crit; separator="|") AS ?crits) (GROUP_CONCAT(DISTINCT ?critL; separator="|") AS ?critLs) (SAMPLE(?enw) AS ?enwiki) (SAMPLE(?zhw) AS ?zhwiki) WHERE {
+  const q2 = `SELECT ?item ?en ?zh (GROUP_CONCAT(DISTINCT ?cls; separator="|") AS ?classes) (GROUP_CONCAT(DISTINCT ?des; separator="|") AS ?desigs) (GROUP_CONCAT(DISTINCT ?crit; separator="|") AS ?crits) (GROUP_CONCAT(DISTINCT ?critL; separator="|") AS ?critLs) (SAMPLE(?enw) AS ?enwiki) (SAMPLE(?zhw) AS ?zhwiki) (SAMPLE(?whd) AS ?whDirect) (SAMPLE(?whp) AS ?whPart) (SAMPLE(?partZh) AS ?whZh) (SAMPLE(?partEn) AS ?whEn) WHERE {
   VALUES ?item { ${ids} }
+  OPTIONAL { ?item wdt:P757 ?whd . }
+  OPTIONAL { ?item (wdt:P361|wdt:P361/wdt:P361) ?part . ?part wdt:P757 ?whp .
+    OPTIONAL { ?part rdfs:label ?partZh FILTER(LANG(?partZh) = "zh") } OPTIONAL { ?part rdfs:label ?partEn FILTER(LANG(?partEn) = "en") } }
   OPTIONAL { ?item rdfs:label ?en FILTER(LANG(?en) = "en") }
   OPTIONAL { ?item rdfs:label ?zh FILTER(LANG(?zh) = "zh") }
   OPTIONAL { ?item wdt:P31 ?cls . }
@@ -1694,7 +1724,11 @@ async function sightsFromWikidata(lat, lon, radiusKm = 50) {
     const tags = [];
     if (P1435.includes('Q9259')) { if (/\(([ivx]+)\)/i.test(critLabels)) tags.push(whTag(critLabels)); else if (P2614.length) { tags.push('wh'); pending.push([tags, P2614]); } else tags.push('wh'); }
     if (P31.includes('Q46169')) tags.push('national-park');
-    out.push({ id, name: { en: en || zh, zh: zh || en }, lat: base.lat, lon: base.lon, links: base.links, tags, enwiki: b.enwiki?.value || '', zhwiki: b.zhwiki?.value || '', dist: haversine(lat, lon, base.lat, base.lon), src: 'Wikidata' });
+    // World Heritage property: own ID "600" = the property itself; "600-001" or an ID reached through "part of" = a component
+    const whD = b.whDirect?.value || '', whP = b.whPart?.value || '';
+    const wh = whD && !/-/.test(whD) ? { whid: whNum(whD), whroot: true, whZh: zh, whEn: en } : (whD || whP) ? { whid: whNum(whD || whP), whroot: false, whZh: b.whZh?.value || '', whEn: b.whEn?.value || '' } : {};
+    if (wh.whid && !tags.some(t => t.startsWith('wh'))) tags.push('wh');
+    out.push({ id, name: { en: en || zh, zh: zh || en }, lat: base.lat, lon: base.lon, links: base.links, tags, enwiki: b.enwiki?.value || '', zhwiki: b.zhwiki?.value || '', dist: haversine(lat, lon, base.lat, base.lon), src: 'Wikidata', ...wh });
     items.delete(id);
   }
   // Criteria without English labels in the query result: resolve through the entity API
@@ -1717,16 +1751,30 @@ async function sightsFromWikipedia(lat, lon) {
     entities.push(...Object.entries(ent.entities || {}));
   }
   await resolveCritLabels(entities.flatMap(([, e]) => (e.claims?.P2614 || []).map(c => c.mainsnak?.datavalue?.value?.id).filter(Boolean)));
+  const strv = (cl, P) => (cl?.[P] || []).map(c => c.mainsnak?.datavalue?.value).filter(v => typeof v === 'string');
+  const parentIds = [...new Set(entities.flatMap(([, e]) => strv(e.claims, 'P757').length ? [] : (e.claims?.P361 || []).map(c => c.mainsnak?.datavalue?.value?.id).filter(Boolean)))];
+  const parents = {};
+  for (let k = 0; k < parentIds.length; k += 50) {
+    try { const pe = await fetchJson(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${parentIds.slice(k, k + 50).join('|')}&props=claims|labels&languages=en|zh&format=json&origin=*`); Object.assign(parents, pe.entities || {}); } catch (e) {}
+  }
+  const whOf = e => {
+    const own = strv(e.claims, 'P757')[0];
+    if (own) return !/-/.test(own) ? { whid: whNum(own), whroot: true, whZh: e.labels?.zh?.value || '', whEn: e.labels?.en?.value || '' } : { whid: whNum(own), whroot: false };
+    for (const q of (e.claims?.P361 || []).map(c => c.mainsnak?.datavalue?.value?.id)) { const pe = parents[q]; const id = pe && strv(pe.claims, 'P757')[0]; if (id) return { whid: whNum(id), whroot: false, whZh: pe.labels?.zh?.value || '', whEn: pe.labels?.en?.value || '' }; }
+    return {};
+  };
   {
     for (const [id, e] of entities) {
       const cl = e.claims || {}; const vals = P => (cl[P] || []).map(c => c.mainsnak?.datavalue?.value?.id).filter(Boolean);
       const P31 = vals('P31'), P1435 = vals('P1435'), P2614 = vals('P2614');
-      const isSight = P1435.includes('Q9259') || P31.some(q => WD_CLASS_RE.test(q));
+      const wh = whOf(e);
+      const isSight = P1435.includes('Q9259') || !!wh.whid || P31.some(q => WD_CLASS_RE.test(q));
       if (!isSight) continue;
       const pg = pages.find(p => byTitle.get(p.title) === id) || {};
       const en = e.labels?.en?.value || pg.title || '', zh = e.labels?.zh?.value || '';
       const links = Object.keys(e.sitelinks || {}).length;
-      out.push({ id, name: { en: en || zh, zh: zh || en }, lat: pg.lat ?? lat, lon: pg.lon ?? lon, links, tags: wdTagsFromClaims({ P31, P1435, P2614 }), enwiki: e.sitelinks?.enwiki ? 'https://en.wikipedia.org/wiki/' + encodeURIComponent(e.sitelinks.enwiki.title.replace(/ /g, '_')) : '', zhwiki: e.sitelinks?.zhwiki ? 'https://zh.wikipedia.org/wiki/' + encodeURIComponent(e.sitelinks.zhwiki.title.replace(/ /g, '_')) : '', dist: haversine(lat, lon, pg.lat ?? lat, pg.lon ?? lon), src: 'Wikipedia' });
+      out.push({ id, name: { en: en || zh, zh: zh || en }, lat: pg.lat ?? lat, lon: pg.lon ?? lon, links, tags: wdTagsFromClaims({ P31, P1435, P2614 }), enwiki: e.sitelinks?.enwiki ? 'https://en.wikipedia.org/wiki/' + encodeURIComponent(e.sitelinks.enwiki.title.replace(/ /g, '_')) : '', zhwiki: e.sitelinks?.zhwiki ? 'https://zh.wikipedia.org/wiki/' + encodeURIComponent(e.sitelinks.zhwiki.title.replace(/ /g, '_')) : '', dist: haversine(lat, lon, pg.lat ?? lat, pg.lon ?? lon), src: 'Wikipedia', ...wh });
+      const last = out[out.length - 1]; if (last.whid && !last.tags.some(t => t.startsWith('wh'))) last.tags.push('wh');
     }
   }
   return out;
@@ -1816,6 +1864,8 @@ async function findSightByName(p, q) {
         out.push({ id, name: { en: en || zh, zh: zh || en }, lat: c.latitude, lon: c.longitude, links: Object.keys(e.sitelinks || {}).length, tags: wdTagsFromClaims({ P31: vals('P31'), P1435: vals('P1435'), P2614: vals('P2614') }),
           enwiki: e.sitelinks?.enwiki ? 'https://en.wikipedia.org/wiki/' + encodeURIComponent(e.sitelinks.enwiki.title.replace(/ /g, '_')) : '', zhwiki: e.sitelinks?.zhwiki ? 'https://zh.wikipedia.org/wiki/' + encodeURIComponent(e.sitelinks.zhwiki.title.replace(/ /g, '_')) : '',
           dist: haversine(lat, lon, c.latitude, c.longitude), src: 'Wikidata' });
+        const own = (e.claims?.P757 || []).map(x => x.mainsnak?.datavalue?.value).find(v => typeof v === 'string');
+        if (own) Object.assign(out[out.length - 1], { whid: whNum(own), whroot: !/-/.test(own), whZh: zh, whEn: en });
       }
     }
   } catch (e) { /* name search on Wikidata is optional */ }
@@ -1826,7 +1876,7 @@ async function findSightByName(p, q) {
 // Source 3: the offline World Heritage list within 60 km
 async function sightsFromWH(lat, lon, radiusKm = 60) {
   const list = await loadWH();
-  return list.filter(w => haversine(lat, lon, w.lat, w.lon) <= radiusKm).map(w => ({ id: 'wh-' + w.id, name: { en: w.name, zh: w.zh || w.name }, lat: w.lat, lon: w.lon, links: 50, tags: [WH_CAT[w.cat] || 'wh'], enwiki: w.url, zhwiki: '', dist: haversine(lat, lon, w.lat, w.lon), src: 'UNESCO' }));
+  return list.filter(w => haversine(lat, lon, w.lat, w.lon) <= radiusKm).map(w => ({ id: 'wh-' + w.id, name: { en: w.name, zh: w.zh || w.name }, lat: w.lat, lon: w.lon, links: 50, tags: [WH_CAT[w.cat] || 'wh'], enwiki: w.url, zhwiki: '', dist: haversine(lat, lon, w.lat, w.lon), src: 'UNESCO', whid: w.id, whroot: true }));
 }
 // Combine the sources: Amap (if a key is set) + Wikidata + offline UNESCO list; merge near-duplicates; refine tags; sort tagged first
 async function findSights(p) {
@@ -1843,8 +1893,8 @@ async function findSights(p) {
   const wh = await sightsFromWH(lat, lon); notes.push(`World Heritage list ${wh.length}`);
   // Merge: a UNESCO point within 3 km of an existing candidate only refines that candidate's WH tag
   for (const w of wh) {
-    const near = all.find(c => haversine(c.lat, c.lon, w.lat, w.lon) <= 3 && (c.tags.some(t => t.startsWith('wh')) || normZh(c.name.zh) && normZh(w.name.zh) && (normZh(c.name.zh).includes(normZh(w.name.zh)) || normZh(w.name.zh).includes(normZh(c.name.zh)))));
-    if (near) { near.tags = near.tags.filter(t => !t.startsWith('wh')).concat(w.tags[0]); if (!near.enwiki) near.enwiki = w.enwiki; if (near.src === 'Amap' && w.name.en !== w.name.zh) near.name.en = w.name.en; }
+    const near = all.find(c => (c.whid ? c.whid === w.whid && c.whroot : haversine(c.lat, c.lon, w.lat, w.lon) <= 30 && sameName(c.name, w.name)));
+    if (near) { near.tags = near.tags.filter(t => !t.startsWith('wh')).concat(w.tags[0]); if (!near.enwiki) near.enwiki = w.enwiki; if (near.src === 'Amap' && w.name.en !== w.name.zh) near.name.en = w.name.en; near.whid = w.whid; near.whroot = true; }
     else all.push(w);
   }
   // Amap "世界遗产" without a nearby UNESCO match: refine with the nearest UNESCO site within 25 km
@@ -1853,10 +1903,28 @@ async function findSights(p) {
   // Dedupe Amap vs Wikidata by proximity + name overlap
   const out = [];
   for (const c of all) {
-    const dup = out.find(o => haversine(o.lat, o.lon, c.lat, c.lon) <= 1.5 && (normZh(o.name.zh) === normZh(c.name.zh) || (normZh(o.name.zh).length >= 2 && normZh(c.name.zh).length >= 2 && (normZh(o.name.zh).includes(normZh(c.name.zh)) || normZh(c.name.zh).includes(normZh(o.name.zh))))));
+    const roleClash = (o, c) => (o.whroot && o.src === 'UNESCO') !== (c.whroot && c.src === 'UNESCO') && !sameName(o.name, c.name);
+    const dup = out.find(o => !roleClash(o, c) && haversine(o.lat, o.lon, c.lat, c.lon) <= 1.5 && (normZh(o.name.zh) === normZh(c.name.zh) || (normZh(o.name.zh).length >= 2 && normZh(c.name.zh).length >= 2 && (normZh(o.name.zh).includes(normZh(c.name.zh)) || normZh(c.name.zh).includes(normZh(o.name.zh))))));
+    if (dup && !dup.whid && c.whid) Object.assign(dup, { whid: c.whid, whroot: c.whroot, whZh: c.whZh, whEn: c.whEn });
     if (dup) { dup.tags = [...new Set([...dup.tags, ...c.tags.filter(t => !t.startsWith('wh') || !dup.tags.some(x => x.startsWith('wh')))])]; dup.enwiki ||= c.enwiki; dup.zhwiki ||= c.zhwiki; dup.url ||= c.url; dup.amap ||= c.amap; dup.baike ||= c.baike; if (c.src === 'Amap') dup.src = dup.src === 'Amap' ? 'Amap' : 'Amap + ' + dup.src; if (dup.name.en === dup.name.zh && c.name.en !== c.name.zh) dup.name.en = c.name.en; dup.links = Math.max(dup.links, c.links); }
     else out.push(c);
   }
+  const WHBYID = new Map(whList.map(w => [w.id, w]));
+  for (const c of out) {
+    let w = c.whid && WHBYID.get(c.whid);
+    if (!w && c.tags.some(t => t.startsWith('wh'))) { w = nearestWH(c.lat, c.lon, whList); if (w) c.whroot = sameName(c.name, { en: w.name, zh: w.zh || '' }); }
+    // Named in a nearby property's title ("宏村" in "皖南古村落：西递、宏村", "Buda Castle" in "Budapest, including … the Buda Castle Quarter …")
+    if (!w) {
+      const zh = normZh(c.name.zh), en = normEn(c.name.en);
+      w = whList.find(x => haversine(c.lat, c.lon, x.lat, x.lon) <= 30 && ((zh.length >= 2 && /[一-鿿]/.test(zh) && normZh(x.zh || '').includes(zh)) || (en.length >= 6 && normEn(x.name).includes(en))));
+      if (w) c.whroot = sameName(c.name, { en: w.name, zh: w.zh || '' });
+    }
+    if (!w) continue;
+    c.whsite = whRef(w, c.whZh, c.whEn); c.whroot = !!c.whroot;
+    c.tags = c.tags.filter(t => !t.startsWith('wh')).concat(WH_CAT[w.cat] || 'wh');
+  }
+  const whZh = {}; out.forEach(c => { if (c.whsite?.name.zh) whZh[c.whsite.id] ||= c.whsite.name.zh; if (c.whroot && c.whsite && /[\u4e00-\u9fff]/.test(c.name.zh) && c.name.zh !== c.name.en) whZh[c.whsite.id] ||= c.name.zh; });
+  out.forEach(c => { if (c.whsite && !c.whsite.name.zh && whZh[c.whsite.id]) c.whsite.name.zh = whZh[c.whsite.id]; if (c.whroot && c.whsite?.name.zh && c.name.zh === c.name.en) c.name.zh = c.whsite.name.zh; });
   // 5A from the offline list (Chinese places)
   if (['CN'].includes((p.cc || '').toUpperCase())) { const list = await load5A(); out.forEach(r => { if (!r.tags.includes('5a') && is5A(r.name.zh, list)) r.tags.push('5a'); }); }
   // In China, Amap results (alone or merged) rank above Wikidata-only ones
@@ -2025,18 +2093,37 @@ function viewFootprints(v) {
     const prev = holder.querySelector('select')?.value || '';
     holder.innerHTML = p.sights.length ? `<label class="hint" style="margin:0;display:inline-flex;gap:0.4rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:500">for sight <select data-up-sg="${i}" style="width:auto;padding:0.2rem 0.4rem">${['<option value="">none</option>'].concat(p.sights.map(g => `<option value="${esc(g.id)}" ${g.id === prev ? 'selected' : ''}>${esc(g.name.zh && g.name.zh !== g.name.en ? g.name.zh : g.name.en || 'sight')}</option>`)).join('')}</select></label>` : '';
   };
+  const whOptions = (p, g) => {
+    if (!WH_SITES) return '';
+    const ref = typeof g.lat === 'number' ? [g.lat, g.lon] : [p.lat, p.lon];
+    const near = typeof ref[0] === 'number' ? WH_SITES.map(w => [w, haversine(ref[0], ref[1], w.lat, w.lon)]).filter(([, d]) => d <= 80).sort((a, b) => a[1] - b[1]).slice(0, 10).map(([w]) => w) : [];
+    if (g.whsite && !near.some(w => w.id === g.whsite.id)) { const cur = WH_SITES.find(w => w.id === g.whsite.id); if (cur) near.unshift(cur); }
+    return `<option value="">Not part of a World Heritage property</option>` + near.map(w => `<option value="${esc(w.id)}" ${g.whsite?.id === w.id ? 'selected' : ''}>${esc((w.zh ? w.zh + ' · ' : '') + w.name)}</option>`).join('');
+  };
   const renderSights = (p, i) => {
     renderUploadSight(p, i);
     const box = $('#tv-sg-' + i); if (!box) return;
+    if (!WH_SITES) { loadWH().then(() => { if (autoGroupWH(p, WH_SITES)) markDirty(); renderSights(p, i); }); }
+    else if (autoGroupWH(p, WH_SITES)) markDirty();
     box.innerHTML = p.sights.map((g, k) => `<div class="sg-row" data-k="${k}"><input type="checkbox" checked title="Untick to remove" data-sg-un>
       <div>${bind(g.name, 'en', 'text', 'placeholder="Name (EN)"')}</div><div>${bind(g.name, 'zh', 'text', 'placeholder="名称（中文）"')}</div>
       <div class="sg-tags">${TAG_DEFS.map(([key, lab]) => `<button type="button" class="tagbtn ${g.tags.includes(key) ? 'on' : ''}" data-tag="${key}">${lab}</button>`).join('')}${p.academic ? `<button type="button" class="tagbtn vis ${g.pub !== false ? 'on pub' : ''}" data-sg-pub title="${g.pub !== false ? 'Shown on the academic page. Click to keep it on the travel page only.' : 'Travel page only. Click to show it on the academic page.'}">${g.pub !== false ? '🌐 public' : '🔒 private'}</button>` : ''}</div>
+      <div class="sg-wh"><span class="hint" style="margin:0">World Heritage</span><select data-sg-wh>${whOptions(p, g)}</select>
+        ${g.whsite ? `${bind(g.whsite.name, 'zh', 'text', 'placeholder="遗产中文名（可选）"')}<label class="hint" style="margin:0;display:inline-flex;gap:0.3rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:500"><input type="checkbox" data-sg-root ${g.whroot ? 'checked' : ''} style="width:auto"> is the property itself</label>` : ''}</div>
       <div class="sg-link"><span class="hint" style="margin:0">Webpage</span>${bind(g, 'url', 'text', 'placeholder="official site (optional; otherwise Baike / Wikipedia is used)"')}
         <span class="sg-open">${[[g.url, 'site'], [g.baike || baikeUrl(g.name.zh), 'Baike'], [g.zhwiki, '维基'], [g.enwiki, 'Wiki'], [g.amap, 'Amap']].filter(([u]) => u).map(([u, l]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${l}</a>`).join('')}</span></div></div>`).join('') || '<p class="hint">No sights yet. Search nearby or add one by hand; tick the ones you visited.</p>';
     wireBindings(box);
     box.querySelectorAll('.sg-row').forEach(row => {
       const k = Number(row.dataset.k), g = p.sights[k];
       row.querySelector('[data-sg-un]').onchange = () => { const gone = p.sights[k]?.id; p.sights.splice(k, 1); p.photos.forEach(ph => { if (ph.sights) ph.sights = ph.sights.filter(x => x !== gone); }); markDirty(); renderSights(p, i); renderResults(p, i); renderThumbs(p, i); };
+      const whSel = row.querySelector('[data-sg-wh]');
+      if (whSel) whSel.onchange = () => {
+        const w = WH_SITES.find(x => x.id === whSel.value);
+        if (!w) { delete g.whsite; delete g.whroot; g.tags = g.tags.filter(t => !WH_GROUP.has(t)); }
+        else { const zh = g.whsite?.id === w.id ? g.whsite.name.zh : ''; g.whsite = whRef(w, zh); g.whroot = sameName(g.name, { en: w.name, zh: w.zh || '' }); g.tags = g.tags.filter(t => !WH_GROUP.has(t)).concat(WH_CAT[w.cat] || 'wh'); }
+        markDirty(); renderSights(p, i);
+      };
+      const rootCb = row.querySelector('[data-sg-root]'); if (rootCb) rootCb.onchange = () => { g.whroot = rootCb.checked; markDirty(); };
       const pubBtn = row.querySelector('[data-sg-pub]'); if (pubBtn) pubBtn.onclick = () => { g.pub = g.pub === false; markDirty(); renderSights(p, i); };
       row.querySelectorAll('.tagbtn:not([data-sg-pub])').forEach(b => b.onclick = () => {
         const key = b.dataset.tag;
@@ -2050,10 +2137,10 @@ function viewFootprints(v) {
   const renderResults = (p, i) => {
     const box = $('#tv-sg-res-' + i); if (!box) return;
     const res = SIGHT_RESULTS.get(p.id); if (!res) { box.innerHTML = ''; return; }
-    box.innerHTML = res.length ? `<div class="sg-cands">${res.map((r, k) => `<label class="sg-cand"><input type="checkbox" data-k="${k}" ${p.sights.some(g => g.id === r.id) ? 'checked' : ''}><b>${esc(r.name.en)}</b>${r.name.zh && r.name.zh !== r.name.en ? `<span>${esc(r.name.zh)}</span>` : ''}${r.tags.map(tg => `<span class="tagbtn on" data-tag="${tg}">${TAG_LABEL[tg]}</span>`).join('')}<span class="m">${r.dist.toFixed(0)} km · ${esc(r.src)}${r.amapType ? ' · ' + esc(r.amapType.split(';').pop()) : ''}${r.url ? ' · 🔗 site' : ''}</span></label>`).join('')}</div>` : '<p class="hint">Nothing found within 50 km on Wikidata. Add the sight by hand.</p>';
+    box.innerHTML = res.length ? `<div class="sg-cands">${res.map((r, k) => `<label class="sg-cand"><input type="checkbox" data-k="${k}" ${p.sights.some(g => g.id === r.id) ? 'checked' : ''}><b>${esc(r.name.en)}</b>${r.name.zh && r.name.zh !== r.name.en ? `<span>${esc(r.name.zh)}</span>` : ''}${r.tags.map(tg => `<span class="tagbtn on" data-tag="${tg}">${TAG_LABEL[tg]}</span>`).join('')}${r.whsite && !r.whroot ? `<span class="wh-part" title="Counted once, under this World Heritage property">part of ${esc(r.whsite.name.zh || r.whsite.name.en)}</span>` : ''}<span class="m">${r.dist.toFixed(0)} km · ${esc(r.src)}${r.amapType ? ' · ' + esc(r.amapType.split(';').pop()) : ''}${r.url ? ' · 🔗 site' : ''}</span></label>`).join('')}</div>` : '<p class="hint">Nothing found within 50 km on Wikidata. Add the sight by hand.</p>';
     box.querySelectorAll('input[data-k]').forEach(cb => cb.onchange = () => {
       const r = res[Number(cb.dataset.k)];
-      if (cb.checked) { if (!p.sights.some(g => g.id === r.id)) p.sights.push({ pub: !p.academic ? undefined : false, id: r.id, name: { ...r.name }, lat: r.lat, lon: r.lon, tags: [...r.tags], enwiki: r.enwiki, zhwiki: r.zhwiki, url: r.url || '', amap: r.amap || '', baike: r.baike || '' }); }
+      if (cb.checked) { if (!p.sights.some(g => g.id === r.id)) p.sights.push({ pub: !p.academic ? undefined : false, id: r.id, name: { ...r.name }, lat: r.lat, lon: r.lon, tags: [...r.tags], enwiki: r.enwiki, zhwiki: r.zhwiki, url: r.url || '', amap: r.amap || '', baike: r.baike || '', ...(r.whsite ? { whsite: JSON.parse(JSON.stringify(r.whsite)), whroot: !!r.whroot } : {}) }); }
       else { p.sights = p.sights.filter(g => g.id !== r.id); p.photos.forEach(ph => { if (ph.sights) ph.sights = ph.sights.filter(x => x !== r.id); }); }
       markDirty(); renderSights(p, i); renderResults(p, i); renderThumbs(p, i);
     });

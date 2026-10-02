@@ -226,6 +226,14 @@
   .sight.si-culture svg.si { color: var(--accent); }
   .sight.si-5a svg.si { color: var(--gold); }
   a.sight:hover { border-color: var(--accent); background: var(--highlight); }
+  /* A World Heritage property with the components visited inside it */
+  .wh-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; max-width: 100%; padding: 0.3rem 0.5rem 0.3rem 0.3rem; border: 1px solid var(--subtle); border-radius: 20px; background: var(--highlight-2); }
+  .wh-group .sight.wh-head { border-color: rgba(var(--accent-light-rgb), 0.55); font-weight: 600; }
+  .wh-kids { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; padding-left: 0.55rem; border-left: 2px solid rgba(var(--accent-light-rgb), 0.6); }
+  .wh-kids::before { content: attr(data-label); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-right: 0.1rem; }
+  .sight.sight-child { font-size: 0.84rem; padding: 0.15rem 0.6rem 0.15rem 0.5rem; }
+  .sight.sight-child svg.si { width: 13px; height: 13px; }
+  .city:hover .wh-group { border-color: var(--hover-border); }
   .tag { white-space: nowrap; }
   .tag { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.02rem 0.4rem; border-radius: 4px; line-height: 1.5; text-transform: uppercase; }
   body.zh .tag { letter-spacing: 0.06em; font-size: 0.7rem; }
@@ -279,6 +287,10 @@
     .sight .sg-tags { grid-column: 2 / -1; grid-row: 2; }
     .sight:active { transform: scale(0.985); background: var(--highlight); }
     .sights-more { justify-self: start; }
+    .wh-group { display: grid; gap: 0.4rem; width: 100%; padding: 0.45rem; border-radius: 12px; }
+    .wh-kids { display: grid; gap: 0.35rem; margin-left: 0.5rem; padding-left: 0.6rem; }
+    .wh-kids::before { margin: 0.1rem 0 0; }
+    .sight.sight-child { font-size: 0.88rem; padding: 0.45rem 0.65rem; }
     /* Swipeable photo row */
     .strip { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0.5rem; margin: 0 -0.9rem 0 0; padding: 0 0.9rem 0.3rem 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .strip::-webkit-scrollbar { display: none; }
@@ -399,14 +411,44 @@ function sightIcon(tags) {
 const SIGHTS_SHOWN = 6;
 const sightPhotos = (p, sid) => (p.photos || []).filter(ph => (ph.sights || []).includes(sid));
 const CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
-function sightChip(sg, p) {
+// Sights grouped by World Heritage property: [{ wh, root, kids }] or { single } in first-seen order
+function sightGroups(sights) {
+  const out = [], byId = new Map();
+  for (const g of sights || []) {
+    const id = g.whsite && g.whsite.id;
+    if (!id) { out.push({ single: g }); continue; }
+    let grp = byId.get(id);
+    if (!grp) { grp = { wh: g.whsite, root: null, kids: [] }; byId.set(id, grp); out.push(grp); }
+    if (g.whroot && !grp.root) grp.root = g; else grp.kids.push(g);
+    if (!grp.wh.name.zh && g.whsite.name.zh) grp.wh = g.whsite;
+  }
+  return out;
+}
+const WH_CAT_TAG = { c: 'wh-cultural', n: 'wh-natural', m: 'wh-mixed' };
+const whName = wh => LANG === 'zh' ? (wh.name.zh || wh.name.en) : (wh.name.en || wh.name.zh);
+const whUrl = wh => LANG === 'zh' ? String(wh.url || '').replace('/en/list/', '/zh/list/') : (wh.url || '');
+// The property itself when it was not ticked: a chip built from the property's name, UNESCO link and category
+function whHeadChip(wh) {
+  const tag = WH_CAT_TAG[wh.cat] || 'wh', [kind, icon] = sightIcon([tag]), u = whUrl(wh);
+  const inner = `${icon}<span class="sg-name">${esc(whName(wh))}</span><span class="sg-tags">${tagHtml(tag)}</span>`;
+  return u ? `<a class="sight wh-head si-${kind}" href="${esc(u)}" target="_blank" rel="noopener">${inner}</a>` : `<span class="sight wh-head si-${kind}">${inner}</span>`;
+}
+function sightGroupHtml(grp, p) {
+  if (grp.single) return sightChip(grp.single, p);
+  if (!grp.kids.length) return sightChip(grp.root, p);
+  const head = grp.root ? sightChip(grp.root, p, { head: true }) : whHeadChip(grp.wh);
+  return `<span class="wh-group">${head}<span class="wh-kids" data-label="${LANG === 'zh' ? '包含' : 'includes'}">${grp.kids.map(g => sightChip(g, p, { child: true })).join('')}</span></span>`;
+}
+function sightChip(sg, p, opt = {}) {
   const [kind, icon] = sightIcon(sg.tags);
   const n = p ? sightPhotos(p, sg.id).length : 0;
-  const tags = (sg.tags || []).map(tagHtml).join('');
+  // Inside a group the property carries the World Heritage badge, so components drop theirs
+  const tags = (sg.tags || []).filter(k => !(opt.child && k.startsWith('wh'))).map(tagHtml).join('');
   const inner = `${icon}<span class="sg-name">${esc(t(sg.name))}</span>${tags ? `<span class="sg-tags">${tags}</span>` : ''}${n ? `<span class="sight-cam" title="${n} ${LANG === 'zh' ? '张照片' : (n === 1 ? 'photo' : 'photos')}">${CAM}${n}</span>` : ''}`;
   const u = sightUrl(sg);
   const data = p ? ` data-pid="${esc(p.id)}" data-sid="${esc(sg.id)}"${n ? ' data-has-photos="1"' : ''}` : '';
-  return u ? `<a class="sight si-${kind}${n ? ' has-photos' : ''}" href="${esc(u)}" target="_blank" rel="noopener"${data}>${inner}</a>` : `<span class="sight si-${kind}${n ? ' has-photos' : ''}"${data}${n ? ' tabindex="0"' : ''}>${inner}</span>`;
+  const cls = `sight si-${kind}${opt.child ? ' sight-child' : ''}${opt.head ? ' wh-head' : ''}`;
+  return u ? `<a class="${cls}${n ? ' has-photos' : ''}" href="${esc(u)}" target="_blank" rel="noopener"${data}>${inner}</a>` : `<span class="${cls}${n ? ' has-photos' : ''}"${data}${n ? ' tabindex="0"' : ''}>${inner}</span>`;
 }
 const CITY_ICONS = {
   lived: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>',
@@ -589,7 +631,7 @@ function renderHeader() {
   $('#intro').hidden = !t(DATA.intro);
   // Highlights: how many World Heritage sites and 5A scenic areas appear in the visited sights
   const sights = places.flatMap(p => p.sights || []);
-  const nWH = sights.filter(x => (x.tags || []).some(k => k.startsWith('wh'))).length, n5A = sights.filter(x => (x.tags || []).includes('5a')).length, nNP = sights.filter(x => (x.tags || []).includes('national-park')).length;
+  const nWH = new Set(sights.filter(x => x.whsite || (x.tags || []).some(k => k.startsWith('wh'))).map(x => x.whsite ? 'p' + x.whsite.id : 's' + x.id)).size, n5A = sights.filter(x => (x.tags || []).includes('5a')).length, nNP = sights.filter(x => (x.tags || []).includes('national-park')).length;
   const hl = [];
   if (nWH) hl.push(`<span class="tag tag-wh">${nWH} ${LANG === 'zh' ? '处世界遗产' : (nWH === 1 ? 'World Heritage site' : 'World Heritage sites')}</span>`);
   if (n5A) hl.push(`<span class="tag tag-5a">${n5A} ${LANG === 'zh' ? '个5A级景区' : (n5A === 1 ? '5A scenic area' : '5A scenic areas')}</span>`);
@@ -620,7 +662,7 @@ function renderList() {
           ${p.academic && t(p.event) ? `<div class="city-event">${esc(t(p.event))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="city-talk">${p.talk_type ? `<span class="talk-type">${esc(talkLabel(p.talk_type))}</span>` : ''}${p.talk ? `“${esc(p.talk)}”` : ''}</div>` : ''}${t(p.note) ? `<div class="city-note">${esc(t(p.note))}</div>` : ''}${PRIVATE && t(p.pnote) ? `<div class="city-note">${esc(t(p.pnote))}</div>` : ''}</div>
         <div class="city-actions"><button class="small-btn ghost" data-map="${esc(p.id)}"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${LANG === 'zh' ? '地图' : 'Map'}</button>
           ${ph.length ? `<button class="small-btn" data-gallery="${esc(p.id)}">${photosLabel(ph.length)}</button>` : ''}</div>
-        ${(p.sights || []).length ? `<div class="sights"><span class="sights-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.5L16 9.5"/></svg>${LANG === 'zh' ? '去过' : 'Visited'}</span>${p.sights.map((g, k) => k < SIGHTS_SHOWN ? sightChip(g, p) : sightChip(g, p).replace(/^<(a|span) class="sight/, '<$1 hidden data-more class="sight')).join('')}${p.sights.length > SIGHTS_SHOWN ? `<button type="button" class="sights-more" data-more-btn data-n="${p.sights.length - SIGHTS_SHOWN}">${LANG === 'zh' ? `再显示 ${p.sights.length - SIGHTS_SHOWN} 个` : `+ ${p.sights.length - SIGHTS_SHOWN} more`}</button>` : ''}</div>` : ''}${strip}</div>`;
+        ${(p.sights || []).length ? `<div class="sights"><span class="sights-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.5L16 9.5"/></svg>${LANG === 'zh' ? '去过' : 'Visited'}</span>${(() => { const gs = sightGroups(p.sights), more = gs.length - SIGHTS_SHOWN; return gs.map((grp, k) => k < SIGHTS_SHOWN ? sightGroupHtml(grp, p) : sightGroupHtml(grp, p).replace(/^<(a|span) class="/, '<$1 hidden data-more class="')).join('') + (more > 0 ? `<button type="button" class="sights-more" data-more-btn data-n="${more}">${LANG === 'zh' ? `再显示 ${more} 个` : `+ ${more} more`}</button>` : ''); })()}</div>` : ''}${strip}</div>`;
     }).join('')}</section>`).join('');
   list.querySelectorAll('[data-map]').forEach(b => b.onclick = () => focusPlace(b.dataset.map));
   list.querySelectorAll('[data-gallery]').forEach(b => b.onclick = () => openLightbox(b.dataset.gallery, 0));
