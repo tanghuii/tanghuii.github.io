@@ -20,7 +20,7 @@
     :root {
     /* Theme tokens (dark values below, under html[data-theme="dark"]) */
     --on-accent: #ffffff; --on-accent-2: #a9c8f0; --ink-2: #334155; --highlight-2: #eaf1fb; --hover-border: #b9cbe3; --card-2: #fbfcfe; --hint: #d3dce7;
-    --paper-rgb: 245, 247, 250; --card-rgb: 255, 255, 255; --highlight-rgb: 214, 227, 245; --subtle-rgb: 211, 220, 231;
+    --paper-rgb: 245, 247, 250; --card-rgb: 255, 255, 255; --accent-rgb: 27, 79, 138; --accent-light-rgb: 59, 125, 216; --cover-a: #1b4f8a; --cover-b: #0f3360; --highlight-rgb: 214, 227, 245; --subtle-rgb: 211, 220, 231;
     --warn: #8a5300; --warn-bg: #fcefd6; --ok: #2f7a4f; --ok-bg: #e6f3ea; --ok-border: #b7dcc3; --err: #b42318;
     --note-bg: #c8dbf5; --note-fg: #174a85; --badge-blue: #2f74e0; --gold: #b8860b; --tip-sub: #c9dbf3;
     --map-bg: #e9eef5; --map-ring: #ffffff; --map-dot: #1b4f8a; --map-line: #1b4f8a; --net-node: #9db4d0;
@@ -41,7 +41,7 @@
   /* Dark theme: deep blue-black paper, light ink, a lighter ocean blue for links and accents */
   html[data-theme="dark"] {
     --ink: #e3e9f1; --ink-2: #c5cfdb; --paper: #0e141c; --paper-rgb: 14, 20, 28;
-    --accent: #8fb9ef; --accent-light: #6fa3e6; --subtle: #2a3747; --subtle-rgb: 42, 55, 71; --muted: #97a5b7;
+    --accent: #8fb9ef; --accent-light: #6fa3e6; --accent-rgb: 143, 185, 239; --accent-light-rgb: 111, 163, 230; --subtle: #2a3747; --subtle-rgb: 42, 55, 71; --muted: #97a5b7;
     --highlight: #1c2d44; --highlight-rgb: 28, 45, 68; --highlight-2: #172438;
     --card-bg: #151e2a; --card: #151e2a; --card-2: #18222f; --card-rgb: 21, 30, 42; --hint: #53657c; --shadow: rgba(0, 0, 0, 0.35);
     --on-accent: #0b1320; --on-accent-2: #1f3d63; --hover-border: #3d5675;
@@ -481,13 +481,13 @@
     }
     .school-logo-wrap:hover .school-logo {
       transform: scale(1.08);
-      box-shadow: 0 8px 24px rgba(27, 79, 138, 0.18);
+      box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.18);
       border-color: var(--accent-light);
     }
     .school-logo-wrap .ripple {
       position: absolute;
       border-radius: 50%;
-      background: rgba(27, 79, 138, 0.25);
+      background: rgba(var(--accent-rgb), 0.25);
       transform: scale(0);
       animation: rippleAnim 0.55s linear;
       pointer-events: none;
@@ -579,7 +579,7 @@
     }
     .pub-link::after { content: '↗'; font-size: 0.95em; line-height: 1; }
     .pub-link:hover, .pub-link:focus-visible {
-      background: var(--card-bg); color: var(--accent); border-color: var(--accent); box-shadow: 0 4px 12px rgba(27, 79, 138, 0.2);
+      background: var(--card-bg); color: var(--accent); border-color: var(--accent); box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.2);
     }
 
     /* ── View All Button ── */
@@ -603,7 +603,7 @@
       background: var(--card-bg);
       color: var(--accent);
       transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(27, 79, 138, 0.18);
+      box-shadow: 0 6px 18px rgba(var(--accent-rgb), 0.18);
     }
 
     /* ── Collapsible Year Sections ── */
@@ -772,7 +772,7 @@
       vertical-align: middle;
     }
     .highlight-award {
-      background: linear-gradient(90deg, rgba(59, 125, 216, 0.2) 0%, rgba(59, 125, 216, 0.08) 100%);
+      background: linear-gradient(90deg, rgba(var(--accent-light-rgb), 0.2) 0%, rgba(var(--accent-light-rgb), 0.08) 100%);
     }
     .highlight-award .award-text { font-weight: 600; }
 
@@ -817,7 +817,7 @@
     .cv-download:hover {
       background: var(--accent-light);
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(27, 79, 138, 0.25);
+      box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.25);
     }
     .cv-download svg { width: 16px; height: 16px; }
 
@@ -984,14 +984,14 @@
       }
       .research-tags .tag:hover {
         background: var(--accent); color: var(--on-accent); border-color: var(--accent);
-        box-shadow: 0 6px 16px rgba(27, 79, 138, 0.25);
+        box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.25);
       }
       .collapsible-section .year-toggle:hover {
         background: var(--accent); color: var(--on-accent); border-color: var(--accent);
       }
       .contact-row .contact-btn.icon-btn:hover {
         background: var(--accent); color: var(--on-accent); border-color: var(--accent);
-        box-shadow: 0 6px 16px rgba(27, 79, 138, 0.25);
+        box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.25);
       }
       .contact-row .contact-btn.icon-btn:hover svg { opacity: 1; }
       /* Award rows */

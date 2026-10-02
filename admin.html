@@ -14,7 +14,7 @@
   :root {
     /* Theme tokens (dark values below, under html[data-theme="dark"]) */
     --on-accent: #ffffff; --on-accent-2: #a9c8f0; --ink-2: #334155; --highlight-2: #eaf1fb; --hover-border: #b9cbe3; --card-2: #fbfcfe; --hint: #d3dce7;
-    --paper-rgb: 245, 247, 250; --card-rgb: 255, 255, 255; --highlight-rgb: 214, 227, 245; --subtle-rgb: 211, 220, 231;
+    --paper-rgb: 245, 247, 250; --card-rgb: 255, 255, 255; --accent-rgb: 27, 79, 138; --accent-light-rgb: 59, 125, 216; --cover-a: #1b4f8a; --cover-b: #0f3360; --highlight-rgb: 214, 227, 245; --subtle-rgb: 211, 220, 231;
     --warn: #8a5300; --warn-bg: #fcefd6; --ok: #2f7a4f; --ok-bg: #e6f3ea; --ok-border: #b7dcc3; --err: #b42318;
     --note-bg: #c8dbf5; --note-fg: #174a85; --badge-blue: #2f74e0; --gold: #b8860b; --tip-sub: #c9dbf3;
     --map-bg: #e9eef5; --map-ring: #ffffff; --map-dot: #1b4f8a; --map-line: #1b4f8a; --net-node: #9db4d0;
@@ -31,7 +31,7 @@
   /* Dark theme: deep blue-black paper, light ink, a lighter ocean blue for links and accents */
   html[data-theme="dark"] {
     --ink: #e3e9f1; --ink-2: #c5cfdb; --paper: #0e141c; --paper-rgb: 14, 20, 28;
-    --accent: #8fb9ef; --accent-light: #6fa3e6; --subtle: #2a3747; --subtle-rgb: 42, 55, 71; --muted: #97a5b7;
+    --accent: #8fb9ef; --accent-light: #6fa3e6; --accent-rgb: 143, 185, 239; --accent-light-rgb: 111, 163, 230; --subtle: #2a3747; --subtle-rgb: 42, 55, 71; --muted: #97a5b7;
     --highlight: #1c2d44; --highlight-rgb: 28, 45, 68; --highlight-2: #172438;
     --card-bg: #151e2a; --card: #151e2a; --card-2: #18222f; --card-rgb: 21, 30, 42; --hint: #53657c; --shadow: rgba(0, 0, 0, 0.35);
     --on-accent: #0b1320; --on-accent-2: #1f3d63; --hover-border: #3d5675;
@@ -138,6 +138,16 @@
   .font-opt .fo-h { font-size: 1.3rem; font-weight: 600; line-height: 1.25; }
   .font-opt .fo-b { font-size: 14.5px; line-height: 1.5; }
   .font-opt .fo-n { font-size: 13px; color: var(--muted); }
+  .pal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0.6rem; margin: 0.3rem 0 0.4rem; }
+  .pal-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  .pal-mini { border: 1px solid; border-radius: 6px; padding: 0.55rem 0.6rem; display: grid; gap: 0.3rem; font-size: 12px; line-height: 1.3; text-align: left; }
+  .pal-mini .pm-h { font-family: var(--serif); font-size: 15px; font-weight: 600; }
+  .pal-mini .pm-a { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .pal-mini .pm-row { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+  .pal-mini .pm-tag { font-size: 10.5px; padding: 0.1rem 0.45rem; border-radius: 100px; font-weight: 600; }
+  .pal-mini .pm-badge { font-size: 10.5px; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600; color: #fff; }
+  .pal-mini .pm-card { border: 1px solid; border-radius: 5px; padding: 0.3rem 0.4rem; font-size: 11px; }
+  .pal-mini .pm-btn { text-align: center; border-radius: 5px; padding: 0.25rem; font-weight: 600; font-size: 11.5px; }
   .font-preview { border: 1px solid var(--subtle); border-radius: 10px; padding: 1.1rem 1.3rem; background: var(--paper); display: grid; gap: 0.5rem; }
   .font-preview .pv-h { font-family: var(--pv-head); font-size: 2.1rem; font-weight: 600; line-height: 1.15; }
   .font-preview .pv-h span { font-family: 'Ma Shan Zheng', var(--pv-head); font-weight: 400; color: var(--accent); margin-left: 0.4rem; }
@@ -1334,6 +1344,7 @@ function viewCV(v) {
     <div class="row two">
       ${field('GoatCounter site code', s, 'goatcounter_code', 'text', 'The <code>xxx</code> in xxx.goatcounter.com. Leave empty to disable. Pageviews only, no cookies, no personal data.')}
       ${field('Google Analytics ID', s, 'ga_id', 'text', 'Informational: the GA tag is in the page head.')}</div></div>
+  <div class="card" id="palette-card"></div>
   <div class="card" id="appearance"></div>
   <div class="card" id="acct"></div>`;
   uploader('#btn-up-cv', '#up-cv', '#up-cv-msg', async (file) => {
@@ -1342,6 +1353,27 @@ function viewCV(v) {
   });
   renderAccount();
   renderAppearance();
+  renderPalette();
+}
+
+// Colour palette for the public pages (and this Site Manager): content.json site.palette, published in site-fonts.js
+function sitePalette() { return C.site.palette || window.SITE_PALETTE || window.SiteTheme?.DEFAULT_PALETTE || 'ocean'; }
+function renderPalette() {
+  const box = $('#palette-card'); if (!box || !window.SiteTheme?.PALETTES) return;
+  const ST = window.SiteTheme, cur = sitePalette();
+  const mini = (id, mode) => { const t = ST.paletteTokens(id, mode); return `<span class="pal-mini" style="background:${t['--paper']};color:${t['--ink']};border-color:${t['--subtle']}">
+      <span class="pm-h">Hui Tang <span style="color:${t['--accent']}">唐辉</span></span>
+      <span class="pm-a" style="color:${t['--accent']}">${mode === 'dark' ? 'Dark mode' : 'Light mode'}</span>
+      <span class="pm-row"><span class="pm-tag" style="background:${t['--highlight']};color:${t['--accent']}">Biodiversity</span><span class="pm-badge" style="background:${t['--badge-blue']}">First author</span></span>
+      <span class="pm-card" style="background:${t['--card']};border-color:${t['--subtle']};color:${t['--muted']}">2026 · Landscape and Urban Planning</span>
+      <span class="pm-btn" style="background:${t['--accent']};color:${t['--on-accent']}">View publications</span></span>`; };
+  box.innerHTML = `<h3>Colours</h3>
+    <p class="hint">Colour scheme of every public page, in light and dark mode (and of this Site Manager, as a preview). Saved with <b>Publish changes</b>.</p>
+    <div class="pal-grid">${Object.entries(ST.PALETTES).map(([id, P]) => `<button type="button" class="font-opt pal-opt ${cur === id ? 'on' : ''}" data-pal="${id}" aria-pressed="${cur === id}">
+      <span class="fo-k">${esc(P.name)} · ${esc(P.zh)}${id === ST.DEFAULT_PALETTE ? ' · original' : ''}</span>
+      <span class="pal-pair">${mini(id, 'light')}${mini(id, 'dark')}</span><span class="fo-n">${esc(P.note)}</span></button>`).join('')}</div>`;
+  box.querySelectorAll('[data-pal]').forEach(b => b.onclick = () => { C.site.palette = b.dataset.pal; markDirty(); renderPalette(); });
+  ST.applyPalette(cur);
 }
 
 // Fonts for the public pages: the choice lives in content.json (site.fonts) and is published as site-fonts.js
@@ -1363,7 +1395,10 @@ function renderAppearance() {
     <div class="font-grid">${Object.entries(ST.FONTS.zh).map(([k, f]) => `<button type="button" class="font-opt ${sel.zh === k ? 'on' : ''}" data-fzh="${k}" aria-pressed="${sel.zh === k}">
       <span class="fo-k">${k}${k === '1' ? ' · original' : ''}</span><span class="fo-h" style="${st(f, 'head')}">生态规划与生物多样性保护</span>
       <span class="fo-b" style="${st(f, 'body')}">研究方向聚焦于生态规划、生物多样性保护以及全球贸易对生态系统的影响。</span><span class="fo-n">${esc(f.name)}。${esc(f.note)}</span></button>`).join('')}</div>
-    <label>Preview: ${sel.en} + ${sel.zh}</label>
+    <label>Text size</label>
+    <div class="seg" style="margin-bottom:0.3rem">${(ST.SIZES || [100]).map(n => `<button type="button" class="${(sel.size || 100) === n ? 'active' : ''}" data-fsize="${n}">${n}%</button>`).join('')}</div>
+    <p class="hint" style="margin-bottom:1rem">100% keeps body text as large as it looked with the original fonts (each pairing is compensated automatically). Scales all text on the public pages; layout and spacing stay the same.</p>
+    <label>Preview: ${sel.en} + ${sel.zh} · ${sel.size || 100}%</label>
     <div class="font-preview" style="--pv-head:${esc(pv.head)};--pv-body:${esc(pv.body)}">
       <div class="pv-h">${esc(pr.name_en || 'Hui Tang')}<span>${esc(pr.name_zh || '')}</span></div>
       <div class="pv-a">${esc(pr.affiliation?.en || '')}</div>
@@ -1374,12 +1409,15 @@ function renderAppearance() {
   const pick = (k, v) => { C.site.fonts = { ...siteFonts(), [k]: v }; markDirty(); renderAppearance(); };
   box.querySelectorAll('[data-fen]').forEach(b => b.onclick = () => pick('en', b.dataset.fen));
   box.querySelectorAll('[data-fzh]').forEach(b => b.onclick = () => pick('zh', b.dataset.fzh));
+  box.querySelectorAll('[data-fsize]').forEach(b => b.onclick = () => pick('size', Number(b.dataset.fsize)));
+  ST.applyFonts(sel);   // the preview uses the same size-adjusted faces as the public pages
 }
 async function publishFontsIfChanged() {
-  let before = null; try { before = JSON.parse(C_ORIG).site?.fonts || null; } catch (e) {}
-  const now = C.site?.fonts; if (!now || JSON.stringify(now) === JSON.stringify(before)) return;
-  const js = `// Font pairing for the whole site. Written by the Site Manager (CV & site settings → Fonts).\n// en: A–F, zh: 1–4 (see site-theme.js for the catalog).\nwindow.SITE_FONTS = ${JSON.stringify({ en: now.en, zh: now.zh })};\n`;
-  await ghPutFile('site-fonts.js', b64enc(js), `Set site fonts to ${now.en} + ${now.zh} via Site Manager`);
+  let before = {}; try { const o = JSON.parse(C_ORIG).site || {}; before = { fonts: o.fonts || null, palette: o.palette || null }; } catch (e) {}
+  if (JSON.stringify(C.site?.fonts || null) === JSON.stringify(before.fonts) && (C.site?.palette || null) === before.palette) return;
+  const now = siteFonts(), pal = sitePalette();
+  const js = `// Font pairing for the whole site. Written by the Site Manager (CV & site settings → Fonts).\n// en: A–F, zh: 1–4 (see site-theme.js for the catalog); size: text size in percent.\nwindow.SITE_FONTS = ${JSON.stringify({ en: now.en, zh: now.zh, size: now.size || 100 })};\n// palette: see SiteTheme.PALETTES (ocean, glacier, lagoon, forest, graphite, walnut, pku).\nwindow.SITE_PALETTE = ${JSON.stringify(pal)};\n`;
+  await ghPutFile('site-fonts.js', b64enc(js), `Set site fonts to ${now.en} + ${now.zh} at ${now.size || 100}%, palette ${pal}, via Site Manager`);
 }
 // The visitor map draws with computed colours: redraw it when the theme changes
 window.addEventListener('themechange', () => { if (C && $('#gc-map')) render(); });
