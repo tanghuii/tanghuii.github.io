@@ -323,7 +323,7 @@ async function gh(path, opts = {}) {
 async function ghGetFile(path) {
   return gh(`/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${REPO.branch}&t=${Date.now()}`, { cache: 'no-store' });
 }
-// PUT with the sha we know; on 409 ("does not match") re-read the current sha and try again
+// PUT with the sha we know; on 409 ("does not match") or 422 ("sha wasn't supplied") re-read the current sha and try again
 async function ghPutFile(path, base64Content, message, sha) {
   const url = `/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`;
   for (let attempt = 0; ; attempt++) {
@@ -331,7 +331,9 @@ async function ghPutFile(path, base64Content, message, sha) {
     if (sha) body.sha = sha;
     try { return await gh(url, { method: 'PUT', body: JSON.stringify(body) }); }
     catch (e) {
-      if (!/GitHub 409/.test(e.message) || attempt >= 3) throw e;
+      // 409: our sha is stale; 422 "sha wasn't supplied": the file exists but we did not know it. Both: re-read and retry.
+      const retryable = /GitHub 409/.test(e.message) || (/GitHub 422/.test(e.message) && /sha/i.test(e.message));
+      if (!retryable || attempt >= 3) throw e;
       await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
       try { sha = (await ghGetFile(path)).sha; } catch (err) { sha = null; }
     }
