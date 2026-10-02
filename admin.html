@@ -114,6 +114,8 @@
   .tv-acad { background: var(--highlight); border-radius: 8px; padding: 0.9rem 1rem 0.1rem; margin-bottom: 0.9rem; }
   .thumb.tv .ph { aspect-ratio: 4/3; background: var(--highlight); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
   .thumb.tv .ph img { aspect-ratio: 4/3; }
+  .ph-sg { display: flex; flex-wrap: wrap; gap: 0.25rem; padding: 0 0.6rem 0.4rem; }
+  .ph-sg .tagbtn { font-size: 11.5px; padding: 0.05rem 0.4rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tv-prog { font-size: 15px; color: var(--accent); }
   .pill.acad { background: var(--accent); color: #fff; }
   .item.place > .item-head { cursor: pointer; margin-bottom: 0; user-select: none; }
@@ -122,6 +124,11 @@
   .chev { display: inline-block; width: 1em; color: var(--muted); }
   .sg-row { display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 0.5rem; align-items: center; padding: 0.4rem 0; border-top: 1px dashed var(--subtle); }
   .sg-row:first-child { border-top: none; }
+  .sg-link { grid-column: 2 / -1; display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem; align-items: center; }
+  .sg-open { display: flex; gap: 0.35rem; }
+  .sg-open a { font-size: 12.5px; padding: 0.05rem 0.45rem; border: 1px solid var(--subtle); border-radius: 4px; text-decoration: none; white-space: nowrap; }
+  .sg-open a:hover { border-color: var(--accent); background: var(--highlight); }
+  @media (max-width: 760px) { .sg-row { grid-template-columns: auto 1fr; } .sg-row .sg-tags, .sg-link { grid-column: 1 / -1; } .sg-link { grid-template-columns: 1fr; } }
   .sg-row input[type=text] { padding: 0.3rem 0.5rem; font-size: 15px; }
   .sg-tags { display: flex; gap: 0.25rem; flex-wrap: wrap; }
   .tagbtn { font-size: 12px; font-weight: 600; padding: 0.1rem 0.45rem; border-radius: 4px; border: 1px solid var(--subtle); background: var(--card); color: var(--muted); cursor: pointer; letter-spacing: 0.02em; }
@@ -1358,7 +1365,7 @@ function renderAccount() {
 const TRAVEL_MIN_PW = 8;
 const FP = { file: 'travel/travel.enc', pubFile: 'academic/academic.json', data: null, orig: '', remote: undefined, sha: null, pubOrig: null, pubSha: null, key: null, ckey: null, loading: false, err: '', urls: new Map() };
 const KIND_OPTIONS = [['conference', 'Conference'], ['visit', 'Research visit'], ['workshop', 'Workshop / summer school']];
-const TRIP_OPTIONS = [['', 'No label'], ['leisure', 'Leisure trip'], ['nature', 'Hiking & nature'], ['family', 'Family & friends'], ['business', 'Business trip'], ['transit', 'Transit / stopover']];
+const TRIP_OPTIONS = [['', 'No label'], ['lived', 'Lived here'], ['leisure', 'Leisure trip'], ['nature', 'Hiking & nature'], ['family', 'Family & friends'], ['business', 'Business trip'], ['transit', 'Transit / stopover']];
 const TALK_OPTIONS = [['', 'No presentation'], ['oral', 'Oral presentation'], ['poster', 'Poster presentation'], ['invited', 'Invited talk'], ['keynote', 'Keynote']];
 const tvFlagEmoji = cc => /^[A-Z]{2}$/.test(cc || '') ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : '📍';
 // Flag image (Windows shows letters instead of emoji flags); emoji as the fallback
@@ -1617,10 +1624,18 @@ function gcj02ToWgs84(lng, lat) {
   return [lng - dlng, lat - dlat];
 }
 const amapKey = () => SESSION?.amap || '';
+// Amap "website" can be "", [], "a.com;b.com" or without a scheme: keep the first one as an https URL
+function cleanWebsite(w) {
+  const v = (Array.isArray(w) ? w.join(';') : String(w || '')).split(/[;；,，\s]+/).map(x => x.trim()).find(x => /\.[a-z]{2,}/i.test(x));
+  if (!v) return '';
+  return /^https?:\/\//i.test(v) ? v : 'https://' + v.replace(/^\/+/, '');
+}
+// Baidu Baike resolves /item/<name> to the entry when one exists (search page otherwise)
+const baikeUrl = zh => zh && /[\u4e00-\u9fff]/.test(zh) ? `https://baike.baidu.com/item/${encodeURIComponent(String(zh).replace(/\s*[（(].*$/, '').replace(/(风景名胜区|风景区|景区|旅游区)$/, '') || zh)}` : '';
 async function sightsFromAmap(lat, lon) {
   const out = [], seen = new Set();
   for (let page = 1; page <= 3; page++) {
-    const d = await jsonp(`https://restapi.amap.com/v3/place/around?key=${encodeURIComponent(amapKey())}&location=${lon.toFixed(6)},${lat.toFixed(6)}&radius=50000&types=110200|110101|140100&offset=25&page=${page}&extensions=base&output=json`);
+    const d = await jsonp(`https://restapi.amap.com/v3/place/around?key=${encodeURIComponent(amapKey())}&location=${lon.toFixed(6)},${lat.toFixed(6)}&radius=50000&types=110200|110101|140100&offset=25&page=${page}&extensions=all&output=json`);
     if (d.status !== '1') throw new Error('Amap: ' + (d.info || 'error'));
     for (const poi of d.pois || []) {
       if (seen.has(poi.id)) continue; seen.add(poi.id);
@@ -1628,8 +1643,14 @@ async function sightsFromAmap(lat, lon) {
       const [lo, la] = gcj02ToWgs84(lo0, la0);
       const tags = []; const tc = String(poi.typecode || ''), ty = String(poi.type || '');
       if (tc.startsWith('110201') || /世界遗产/.test(ty)) tags.push('wh');
+      // Amap's own labels ("5A景区", "AAAAA", "国家级景点" …) live in tag / biz_ext / type
+      const extra = [poi.tag, poi.biz_type, poi.alias, JSON.stringify(poi.biz_ext || {})].map(x => Array.isArray(x) ? x.join(' ') : String(x || '')).join(' ');
+      if (/5A|AAAAA/i.test(extra + ' ' + ty)) tags.push('5a');
+      if (/国家公园/.test(poi.name + ' ' + ty)) tags.push('national-park');
       const rank = tc.startsWith('110201') ? 0 : tc.startsWith('110202') ? 1 : /风景名胜/.test(ty) ? 2 : 3;
-      out.push({ id: 'amap-' + poi.id, name: { en: poi.name, zh: poi.name }, lat: la, lon: lo, links: 0, tags, enwiki: '', zhwiki: '', dist: haversine(lat, lon, la, lo), src: 'Amap', rank, amapType: ty });
+      out.push({ id: 'amap-' + poi.id, name: { en: poi.name, zh: poi.name }, lat: la, lon: lo, links: 0, tags, enwiki: '', zhwiki: '',
+        url: cleanWebsite(poi.website), amap: `https://www.amap.com/place/${encodeURIComponent(poi.id)}`, baike: baikeUrl(poi.name),
+        dist: haversine(lat, lon, la, lo), src: 'Amap', rank, amapType: ty });
     }
     if ((d.pois || []).length < 25) break;
   }
@@ -1643,7 +1664,9 @@ async function sightsFromWH(lat, lon, radiusKm = 60) {
 // Combine the sources: Amap (if a key is set) + Wikidata + offline UNESCO list; merge near-duplicates; refine tags; sort tagged first
 async function findSights(p) {
   const lat = p.lat, lon = p.lon, notes = [], all = [];
+  const inChina = (p.cc || '').toUpperCase() === 'CN';
   if (amapKey()) { try { const r = await sightsFromAmap(lat, lon); all.push(...r); notes.push(`Amap ${r.length}`); } catch (e) { notes.push('Amap failed: ' + e.message); } }
+  else if (inChina) notes.push('no Amap key: add one below for better results in China');
   try { const r = await sightsFromWikidata(lat, lon); all.push(...r); notes.push(`Wikidata ${r.length}`); }
   catch (e) {
     console.warn('Wikidata SPARQL failed', e);
@@ -1664,12 +1687,15 @@ async function findSights(p) {
   const out = [];
   for (const c of all) {
     const dup = out.find(o => haversine(o.lat, o.lon, c.lat, c.lon) <= 1.5 && (normZh(o.name.zh) === normZh(c.name.zh) || (normZh(o.name.zh).length >= 2 && normZh(c.name.zh).length >= 2 && (normZh(o.name.zh).includes(normZh(c.name.zh)) || normZh(c.name.zh).includes(normZh(o.name.zh))))));
-    if (dup) { dup.tags = [...new Set([...dup.tags, ...c.tags.filter(t => !t.startsWith('wh') || !dup.tags.some(x => x.startsWith('wh')))])]; dup.enwiki ||= c.enwiki; dup.zhwiki ||= c.zhwiki; if (dup.name.en === dup.name.zh && c.name.en !== c.name.zh) dup.name.en = c.name.en; dup.links = Math.max(dup.links, c.links); }
+    if (dup) { dup.tags = [...new Set([...dup.tags, ...c.tags.filter(t => !t.startsWith('wh') || !dup.tags.some(x => x.startsWith('wh')))])]; dup.enwiki ||= c.enwiki; dup.zhwiki ||= c.zhwiki; dup.url ||= c.url; dup.amap ||= c.amap; dup.baike ||= c.baike; if (c.src === 'Amap') dup.src = dup.src === 'Amap' ? 'Amap' : 'Amap + ' + dup.src; if (dup.name.en === dup.name.zh && c.name.en !== c.name.zh) dup.name.en = c.name.en; dup.links = Math.max(dup.links, c.links); }
     else out.push(c);
   }
   // 5A from the offline list (Chinese places)
   if (['CN'].includes((p.cc || '').toUpperCase())) { const list = await load5A(); out.forEach(r => { if (!r.tags.includes('5a') && is5A(r.name.zh, list)) r.tags.push('5a'); }); }
-  const score = r => (r.tags.some(t => t.startsWith('wh')) ? 1000 : 0) + (r.tags.includes('5a') ? 500 : 0) + (r.tags.includes('national-park') ? 200 : 0) + (r.rank === 1 ? 100 : 0) + Math.min(r.links, 150) - r.dist * 0.5;
+  // In China, Amap results (alone or merged) rank above Wikidata-only ones
+  out.forEach(r => { if (inChina && !r.baike) r.baike = baikeUrl(r.name.zh); });
+  const amapBonus = r => inChina && /Amap/.test(r.src) ? 2000 : 0;
+  const score = r => amapBonus(r) + (r.tags.some(t => t.startsWith('wh')) ? 1000 : 0) + (r.tags.includes('5a') ? 500 : 0) + (r.tags.includes('national-park') ? 200 : 0) + (r.rank === 1 ? 100 : 0) + Math.min(r.links, 150) - r.dist * 0.5;
   out.sort((a, b) => score(b) - score(a));
   return { results: out.slice(0, 80), notes };
 }
@@ -1772,13 +1798,13 @@ function viewFootprints(v) {
   // Places
   const renderPlaces = () => {
     const box = $('#tv-places');
-    box.innerHTML = T.places.map((p, i) => { const open = OPEN_PLACES.has(p.id); return `<div class="item place ${open ? 'open' : ''}" data-i="${i}"><div class="item-head" data-toggle="${esc(p.id)}" title="${open ? 'Collapse' : 'Expand to edit'}"><div class="title"><span class="chev">${open ? '▾' : '▸'}</span><span class="tv-flag">${tvFlag(p.cc)}</span> ${esc(p.city.en || 'New place')}${p.country.en ? `, ${esc(p.country.en)}` : ''}${p.when ? ` <span class="hint" style="display:inline">· ${esc(p.when)}</span>` : ''}${p.academic ? ` <span class="pill acad">${esc(KIND_OPTIONS.find(k => k[0] === p.kind)?.[1] || 'Academic')}</span>` : (p.trip ? ` <span class="pill muted">${esc(TRIP_OPTIONS.find(k => k[0] === p.trip)?.[1] || p.trip)}</span>` : '')}${!open ? ` <span class="hint" style="display:inline;font-weight:400">· ${p.photos.length} photo${p.photos.length === 1 ? '' : 's'}${p.sights.length ? `, ${p.sights.length} sight${p.sights.length === 1 ? '' : 's'}` : ''}</span>` : ''}</div>${itemTools(T.places, i)}</div><div class="pbody" ${open ? '' : 'hidden'}>
+    box.innerHTML = T.places.map((p, i) => { const open = OPEN_PLACES.has(p.id); return `<div class="item place ${open ? 'open' : ''}" data-i="${i}"><div class="item-head" data-toggle="${esc(p.id)}" title="${open ? 'Collapse' : 'Expand to edit'}"><div class="title"><span class="chev">${open ? '▾' : '▸'}</span><span class="tv-flag">${tvFlag(p.cc)}</span> ${esc(p.city.en || 'New place')}${p.country.en ? `, ${esc(p.country.en)}` : ''}${p.when ? ` <span class="hint" style="display:inline">· ${esc(p.when)}${p.when.split(/\s*[;,，、|；]\s*/).filter(Boolean).length > 1 ? ` (${p.when.split(/\s*[;,，、|；]\s*/).filter(Boolean).length} visits)` : ''}</span>` : ''}${p.academic ? ` <span class="pill acad">${esc(KIND_OPTIONS.find(k => k[0] === p.kind)?.[1] || 'Academic')}</span>` : (p.trip ? ` <span class="pill muted">${esc(TRIP_OPTIONS.find(k => k[0] === p.trip)?.[1] || p.trip)}</span>` : '')}${!open ? ` <span class="hint" style="display:inline;font-weight:400">· ${p.photos.length} photo${p.photos.length === 1 ? '' : 's'}${p.sights.length ? `, ${p.sights.length} sight${p.sights.length === 1 ? '' : 's'}` : ''}</span>` : ''}</div>${itemTools(T.places, i)}</div><div class="pbody" ${open ? '' : 'hidden'}>
       ${biField('City', p, 'city')}${biField('Country', p, 'country')}
       <div class="row" style="grid-template-columns:90px 1fr 1fr 1fr">
         <div class="field"><label>Code</label>${bind(p, 'cc', 'text', 'placeholder="NL" maxlength="2" style="text-transform:uppercase"')}</div>
         <div class="field"><label>Latitude</label>${bind(p, 'lat', 'number', 'step="any" placeholder="53.2194"')}</div>
         <div class="field"><label>Longitude</label>${bind(p, 'lon', 'number', 'step="any" placeholder="6.5665"')}</div>
-        <div class="field"><label>When</label>${bind(p, 'when', 'text', 'placeholder="YYYY-MM, or leave blank" pattern="\\\\d{4}(-\\\\d{2})?"')}<div class="hint">Year and month, e.g. 2025-07. Shown as “Jul 2025 / 2025年7月”.</div></div></div>
+        <div class="field"><label>When</label>${bind(p, 'when', 'text', 'placeholder="2025-07, 2018-2025, or blank" data-when="${i}"')}<div class="hint">A month (2025-07), a year or a range (2018-2025, 2025 - present). Several visits: separate with “;”, e.g. 2019-05; 2023-08. <a href="#" data-addvisit="${i}">+ Add another visit</a></div></div></div></div>
       <div class="row" style="grid-template-columns:auto 1fr;align-items:center;gap:1.2rem;margin-bottom:0.7rem"><label class="check" style="margin:0">${bind(p, 'academic', 'checkbox', 'data-acad')} Academic visit (also shown on the public academic page)</label>
         ${p.academic ? '' : `<div class="field" style="margin:0;max-width:260px"><label>Trip type (private page label)</label>${bind(p, 'trip', 'select', 'data-trip')}</div>`}</div>
       ${p.academic ? `<div class="tv-acad">
@@ -1795,7 +1821,7 @@ function viewFootprints(v) {
       <div class="field"><label>Photos (${p.photos.length})</label><div class="thumbs" id="tv-ph-${i}"></div>
         ${p.academic && p.photos.some(x => !isPublicPhoto(x)) ? `<p class="hint">${p.photos.filter(x => !isPublicPhoto(x)).length} photo(s) were uploaded while this entry was private, so they are encrypted and will not appear on the public page. Delete and re-upload them to publish.</p>` : ''}
         ${!p.academic && p.photos.some(isPublicPhoto) ? `<p class="hint">${p.photos.filter(isPublicPhoto).length} photo(s) were uploaded while this entry was academic, so they are stored unencrypted in the repository.</p>` : ''}
-        <div class="toolbar"><input type="file" id="tv-up-${i}" accept="image/*" multiple style="display:none"><button class="btn sm" data-up="${i}">Upload photos…</button><span class="tv-prog" id="tv-prog-${i}"></span></div></div></div></div>`; }).join('') || `<p class="hint">Nothing yet. Search for a city above.</p>`;
+        <div class="toolbar"><input type="file" id="tv-up-${i}" accept="image/*" multiple style="display:none"><button class="btn sm" data-up="${i}">Upload photos…</button><span id="tv-upsg-${i}"></span><span class="tv-prog" id="tv-prog-${i}"></span></div></div></div></div>`; }).join('') || `<p class="hint">Nothing yet. Search for a city above.</p>`;
     box.querySelectorAll('[data-toggle]').forEach(h => h.addEventListener('click', e => { if (e.target.closest('.tools')) return; const id = h.dataset.toggle; OPEN_PLACES.has(id) ? OPEN_PLACES.delete(id) : OPEN_PLACES.add(id); renderPlaces(); }));
     box.querySelectorAll('select[data-kind]').forEach((sel, k) => { const p = T.places.filter(x => x.academic)[k]; sel.innerHTML = KIND_OPTIONS.map(([val, lab]) => `<option value="${val}" ${p.kind === val ? 'selected' : ''}>${lab}</option>`).join(''); });
     box.querySelectorAll('select[data-trip]').forEach((sel, k) => { const p = T.places.filter(x => !x.academic)[k]; sel.innerHTML = TRIP_OPTIONS.map(([val, lab]) => `<option value="${val}" ${p.trip === val ? 'selected' : ''}>${lab}</option>`).join(''); });
@@ -1803,19 +1829,28 @@ function viewFootprints(v) {
     wireBindings(box); wireItemTools(box, T.places, renderPlaces);
     // Re-render when the academic flag or the type changes (labels and fields depend on them)
     box.querySelectorAll('[data-acad], select[data-kind], select[data-talk]').forEach(el => el.addEventListener('change', () => setTimeout(renderPlaces, 0)));
+    box.querySelectorAll('[data-addvisit]').forEach(a => a.onclick = e => { e.preventDefault(); const inp = box.querySelector(`[data-when="${a.dataset.addvisit}"]`); if (!inp) return; inp.value = inp.value.trim() ? inp.value.trim().replace(/;?\s*$/, '; ') : ''; inp.dispatchEvent(new Event('input')); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); });
     box.querySelectorAll('input[maxlength="2"]').forEach(inp => inp.addEventListener('change', () => { inp.value = inp.value.toUpperCase(); inp.dispatchEvent(new Event('input')); }));
     T.places.forEach((p, i) => { renderThumbs(p, i); wireUpload(p, i); renderSights(p, i); wireSights(p, i); });
   };
   // Saved sights of a place: name EN/ZH, tag toggles, untick to remove
+  const renderUploadSight = (p, i) => {
+    const holder = $('#tv-upsg-' + i); if (!holder) return;
+    const prev = holder.querySelector('select')?.value || '';
+    holder.innerHTML = p.sights.length ? `<label class="hint" style="margin:0;display:inline-flex;gap:0.4rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:500">for sight <select data-up-sg="${i}" style="width:auto;padding:0.2rem 0.4rem">${['<option value="">none</option>'].concat(p.sights.map(g => `<option value="${esc(g.id)}" ${g.id === prev ? 'selected' : ''}>${esc(g.name.zh && g.name.zh !== g.name.en ? g.name.zh : g.name.en || 'sight')}</option>`)).join('')}</select></label>` : '';
+  };
   const renderSights = (p, i) => {
+    renderUploadSight(p, i);
     const box = $('#tv-sg-' + i); if (!box) return;
     box.innerHTML = p.sights.map((g, k) => `<div class="sg-row" data-k="${k}"><input type="checkbox" checked title="Untick to remove" data-sg-un>
       <div>${bind(g.name, 'en', 'text', 'placeholder="Name (EN)"')}</div><div>${bind(g.name, 'zh', 'text', 'placeholder="名称（中文）"')}</div>
-      <div class="sg-tags">${TAG_DEFS.map(([key, lab]) => `<button type="button" class="tagbtn ${g.tags.includes(key) ? 'on' : ''}" data-tag="${key}">${lab}</button>`).join('')}</div></div>`).join('') || '<p class="hint">No sights yet. Search nearby or add one by hand; tick the ones you visited.</p>';
+      <div class="sg-tags">${TAG_DEFS.map(([key, lab]) => `<button type="button" class="tagbtn ${g.tags.includes(key) ? 'on' : ''}" data-tag="${key}">${lab}</button>`).join('')}</div>
+      <div class="sg-link"><span class="hint" style="margin:0">Webpage</span>${bind(g, 'url', 'text', 'placeholder="official site (optional; otherwise Baike / Wikipedia is used)"')}
+        <span class="sg-open">${[[g.url, 'site'], [g.baike || baikeUrl(g.name.zh), 'Baike'], [g.zhwiki, '维基'], [g.enwiki, 'Wiki'], [g.amap, 'Amap']].filter(([u]) => u).map(([u, l]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${l}</a>`).join('')}</span></div></div>`).join('') || '<p class="hint">No sights yet. Search nearby or add one by hand; tick the ones you visited.</p>';
     wireBindings(box);
     box.querySelectorAll('.sg-row').forEach(row => {
       const k = Number(row.dataset.k), g = p.sights[k];
-      row.querySelector('[data-sg-un]').onchange = () => { p.sights.splice(k, 1); markDirty(); renderSights(p, i); renderResults(p, i); };
+      row.querySelector('[data-sg-un]').onchange = () => { const gone = p.sights[k]?.id; p.sights.splice(k, 1); p.photos.forEach(ph => { if (ph.sights) ph.sights = ph.sights.filter(x => x !== gone); }); markDirty(); renderSights(p, i); renderResults(p, i); renderThumbs(p, i); };
       row.querySelectorAll('.tagbtn').forEach(b => b.onclick = () => {
         const key = b.dataset.tag;
         if (g.tags.includes(key)) g.tags = g.tags.filter(x => x !== key);
@@ -1828,12 +1863,12 @@ function viewFootprints(v) {
   const renderResults = (p, i) => {
     const box = $('#tv-sg-res-' + i); if (!box) return;
     const res = SIGHT_RESULTS.get(p.id); if (!res) { box.innerHTML = ''; return; }
-    box.innerHTML = res.length ? `<div class="sg-cands">${res.map((r, k) => `<label class="sg-cand"><input type="checkbox" data-k="${k}" ${p.sights.some(g => g.id === r.id) ? 'checked' : ''}><b>${esc(r.name.en)}</b>${r.name.zh && r.name.zh !== r.name.en ? `<span>${esc(r.name.zh)}</span>` : ''}${r.tags.map(tg => `<span class="tagbtn on" data-tag="${tg}">${TAG_LABEL[tg]}</span>`).join('')}<span class="m">${r.dist.toFixed(0)} km · ${esc(r.src)}${r.amapType ? ' · ' + esc(r.amapType.split(';').pop()) : ''}</span></label>`).join('')}</div>` : '<p class="hint">Nothing found within 50 km on Wikidata. Add the sight by hand.</p>';
+    box.innerHTML = res.length ? `<div class="sg-cands">${res.map((r, k) => `<label class="sg-cand"><input type="checkbox" data-k="${k}" ${p.sights.some(g => g.id === r.id) ? 'checked' : ''}><b>${esc(r.name.en)}</b>${r.name.zh && r.name.zh !== r.name.en ? `<span>${esc(r.name.zh)}</span>` : ''}${r.tags.map(tg => `<span class="tagbtn on" data-tag="${tg}">${TAG_LABEL[tg]}</span>`).join('')}<span class="m">${r.dist.toFixed(0)} km · ${esc(r.src)}${r.amapType ? ' · ' + esc(r.amapType.split(';').pop()) : ''}${r.url ? ' · 🔗 site' : ''}</span></label>`).join('')}</div>` : '<p class="hint">Nothing found within 50 km on Wikidata. Add the sight by hand.</p>';
     box.querySelectorAll('input[data-k]').forEach(cb => cb.onchange = () => {
       const r = res[Number(cb.dataset.k)];
-      if (cb.checked) { if (!p.sights.some(g => g.id === r.id)) p.sights.push({ id: r.id, name: { ...r.name }, lat: r.lat, lon: r.lon, tags: [...r.tags], enwiki: r.enwiki, zhwiki: r.zhwiki }); }
-      else p.sights = p.sights.filter(g => g.id !== r.id);
-      markDirty(); renderSights(p, i); renderResults(p, i);
+      if (cb.checked) { if (!p.sights.some(g => g.id === r.id)) p.sights.push({ id: r.id, name: { ...r.name }, lat: r.lat, lon: r.lon, tags: [...r.tags], enwiki: r.enwiki, zhwiki: r.zhwiki, url: r.url || '', amap: r.amap || '', baike: r.baike || '' }); }
+      else { p.sights = p.sights.filter(g => g.id !== r.id); p.photos.forEach(ph => { if (ph.sights) ph.sights = ph.sights.filter(x => x !== r.id); }); }
+      markDirty(); renderSights(p, i); renderResults(p, i); renderThumbs(p, i);
     });
   };
   const wireSights = (p, i) => {
@@ -1848,18 +1883,24 @@ function viewFootprints(v) {
       } catch (err) { msg.textContent = 'Search failed: ' + err.message; }
       e.target.disabled = false;
     };
-    $(`[data-sg-add="${i}"]`).onclick = () => { p.sights.push({ id: 's-' + rid(), name: { en: '', zh: '' }, lat: null, lon: null, tags: [], enwiki: '', zhwiki: '' }); markDirty(); renderSights(p, i); };
+    $(`[data-sg-add="${i}"]`).onclick = () => { p.sights.push({ id: 's-' + rid(), name: { en: '', zh: '' }, lat: null, lon: null, tags: [], enwiki: '', zhwiki: '' }); markDirty(); renderSights(p, i); renderThumbs(p, i); };
     renderResults(p, i);
   };
   const renderThumbs = (p, i) => {
     const box = $('#tv-ph-' + i); if (!box) return;
     box.innerHTML = p.photos.map((ph, j) => `<div class="thumb tv" data-j="${j}"><div class="ph"><img alt="" hidden>…</div>
       <div class="cap">${bind(ph.caption ||= { en: '', zh: '' }, 'en', 'text', 'placeholder="Caption (EN)"')}${bind(ph.caption, 'zh', 'text', 'placeholder="说明（中文）"')}</div>
+      ${p.sights.length ? `<div class="ph-sg">${p.sights.map(g => `<button type="button" class="tagbtn ${(ph.sights || []).includes(g.id) ? 'on' : ''}" data-tag="5a" data-psg="${esc(g.id)}" title="Shown when visitors hover this sight">${esc(g.name.zh && g.name.zh !== g.name.en ? g.name.zh : g.name.en || 'sight')}</button>`).join('')}</div>` : ''}
       <div class="tools"><button class="btn" title="Move left" data-pact="left" ${j === 0 ? 'disabled' : ''}>←</button><button class="btn" title="Move right" data-pact="right" ${j === p.photos.length - 1 ? 'disabled' : ''}>→</button><button class="btn danger" data-pact="del">✕</button>${isPublicPhoto(ph) ? '<span class="hint" style="margin:0 0 0 auto;align-self:center">public</span>' : ''}</div></div>`).join('') || '<p class="hint" style="grid-column:1/-1">No photos yet.</p>';
     wireBindings(box);
     box.querySelectorAll('.thumb').forEach(el => {
       const j = Number(el.dataset.j), ph = p.photos[j], img = el.querySelector('img');
       Promise.resolve(fpThumbUrl(ph)).then(u => { img.src = u; img.hidden = false; img.parentElement.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = ''; }); }).catch(() => { el.querySelector('.ph').textContent = 'not on GitHub yet'; });
+      el.querySelectorAll('[data-psg]').forEach(b => b.onclick = () => {
+        const sid = b.dataset.psg; ph.sights ||= [];
+        ph.sights = ph.sights.includes(sid) ? ph.sights.filter(x => x !== sid) : [...ph.sights, sid];
+        markDirty(); b.classList.toggle('on', ph.sights.includes(sid));
+      });
       el.querySelectorAll('[data-pact]').forEach(b => b.onclick = async () => {
         const act = b.dataset.pact;
         if (act === 'left' && j > 0) [p.photos[j - 1], p.photos[j]] = [p.photos[j], p.photos[j - 1]];
@@ -1881,13 +1922,14 @@ function viewFootprints(v) {
       const files = [...input.files]; input.value = ''; if (!files.length) return;
       btn.disabled = true; let n = 0;
       const pub = p.academic; // academic entries get plain, public photos
+      const forSight = $(`[data-up-sg="${i}"]`)?.value || '';
       try {
         for (const file of files) {
           n++; prog.textContent = `Uploading ${n} of ${files.length}: ${file.name}…`;
           if (!/^image\//.test(file.type)) throw new Error(`${file.name} is not an image.`);
           const full = await resizeJpeg(file, 1600, 0.85), thumb = await resizeJpeg(file, 480, 0.8);
           const id = rid(), dir = pub ? 'academic' : 'travel', ext = pub ? 'jpg' : 'bin';
-          const ph = { id, full: `${dir}/p-${id}.${ext}`, thumb: `${dir}/t-${id}.${ext}`, w: full.w, h: full.h, caption: { en: '', zh: '' } };
+          const ph = { id, full: `${dir}/p-${id}.${ext}`, thumb: `${dir}/t-${id}.${ext}`, w: full.w, h: full.h, caption: { en: '', zh: '' }, sights: forSight ? [forSight] : [] };
           const pack = async bytes => bytesToB64(pub ? bytes : await encryptBytes(FP.ckey, bytes));
           await ghPutFile(ph.full, await pack(full.bytes), `Add photo (${p.city.en || 'place'})`);
           await ghPutFile(ph.thumb, await pack(thumb.bytes), 'Add photo thumbnail');

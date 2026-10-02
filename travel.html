@@ -99,9 +99,28 @@
   body.zh .country-head h3 { font-family: 'Noto Serif SC', serif; }
   .country-head .n { color: var(--muted); font-size: 0.88rem; margin-left: auto; white-space: nowrap; }
   .city { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 0.9rem 1.5rem; padding: 1.1rem 1.3rem 1.1rem 1.5rem; margin-top: 0.8rem; align-items: center; background: linear-gradient(135deg, #fbfcfe 0%, var(--card-bg) 60%); border: 1px solid var(--subtle); border-radius: 10px; transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; }
+  .city-ic { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: var(--highlight); color: var(--accent); flex-shrink: 0; transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), background 0.25s, color 0.25s; }
+  .city-ic svg { width: 17px; height: 17px; }
+  .city-ic-lived { background: #e1f1e6; color: #2f7a4f; }
+  .visits-n { font-weight: 700; font-size: 0.78rem; color: #fff; background: var(--accent-light); padding: 0.05rem 0.45rem; border-radius: 100px; letter-spacing: 0.02em; }
+  /* Scroll reveal: cards rise in as they enter the viewport */
+  .js-reveal .city { opacity: 0; transform: translateY(22px) scale(0.985); }
+  .js-reveal .city.in { opacity: 1; transform: none; transition: opacity 0.55s ease var(--d, 0s), transform 0.6s cubic-bezier(.22,1,.36,1) var(--d, 0s), box-shadow 0.25s ease, border-color 0.25s ease; }
+  .js-reveal .city.in.settled { transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; }
   .city::before { content: ''; position: absolute; left: 0; top: 14%; bottom: 14%; width: 4px; border-radius: 0 4px 4px 0; background: var(--accent-light); transform: scaleY(0); transform-origin: center; transition: transform 0.3s ease; }
   .city .city-name > span:first-child, .city .city-title { transition: color 0.25s; }
+  /* Touch screens: the card in the middle of the screen is lifted while you scroll, and cards give way under the finger */
+  @media (hover: none) {
+    .city.focus { box-shadow: 0 10px 26px rgba(13, 27, 42, 0.10); border-color: #b9cbe3; }
+    .city.focus::before { transform: scaleY(1); }
+    .city.focus .city-title { color: var(--accent); }
+    .city.focus .city-ic { transform: scale(1.12) rotate(-6deg); background: var(--accent); color: #fff; }
+    .city.focus .city-ic-lived { background: #2f7a4f; }
+    .city:active { transform: scale(0.985) !important; }
+  }
   @media (hover: hover) and (pointer: fine) {
+    .city:hover .city-ic { transform: scale(1.12) rotate(-6deg); background: var(--accent); color: #fff; }
+    .city:hover .city-ic-lived { background: #2f7a4f; }
     .city:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(13, 27, 42, 0.10); border-color: #b9cbe3; }
     .city:hover::before { transform: scaleY(1); }
     .city:hover .city-title { color: var(--accent); }
@@ -119,6 +138,7 @@
   body.zh .city-talk { font-family: 'Noto Serif SC', serif; font-style: normal; }
   .city-name .role { font-weight: 600; color: #fff; background: var(--accent); font-size: 0.78rem; padding: 0.05rem 0.55rem; border-radius: 100px; letter-spacing: 0.03em; }
   .city-name .role.trip { color: var(--accent); background: var(--card-bg); box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .city-name .role.trip-lived { color: #fff; background: #2f7a4f; box-shadow: none; }
   .city-actions { display: flex; gap: 0.5rem; align-items: center; }
   .small-btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.8rem; border-radius: 5px; border: 1.5px solid var(--accent); background: var(--accent); color: #fff; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; transition: all 0.2s; }
   .small-btn:hover { background: #fff; color: var(--accent); }
@@ -134,10 +154,33 @@
   body.zh .sights-label { letter-spacing: 0.12em; }
   .sight { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem 0.2rem 0.55rem; border: 1px solid var(--subtle); border-radius: 100px; background: var(--card-bg); font-size: 0.88rem; color: var(--ink); text-decoration: none; transition: border-color 0.2s, background 0.2s; }
   .sight svg.si { width: 15px; height: 15px; flex-shrink: 0; color: var(--accent-light); }
+  .sight-cam { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-left: 0.1rem; }
+  .sight-cam svg { width: 14px; height: 14px; }
+  .sight.has-photos { cursor: pointer; }
+  .sight.has-photos.active { border-color: var(--accent); background: var(--highlight); }
+  .sg-pop { position: fixed; z-index: 90; width: 320px; max-width: calc(100vw - 24px); background: var(--card-bg); border: 1px solid var(--subtle); border-radius: 12px; box-shadow: 0 18px 44px rgba(13, 27, 42, 0.22); overflow: hidden; opacity: 0; transform: translateY(6px) scale(0.98); transition: opacity 0.18s ease, transform 0.22s cubic-bezier(.22,1,.36,1); pointer-events: none; }
+  .sg-pop.show { opacity: 1; transform: none; pointer-events: auto; }
+  .sg-pop .stage { position: relative; aspect-ratio: 4 / 3; background: #0d1b2a; cursor: zoom-in; overflow: hidden; }
+  .sg-pop .stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform: scale(1.04); transition: opacity 0.45s ease, transform 3.2s ease-out; }
+  .sg-pop .stage img.on { opacity: 1; transform: scale(1); }
+  .sg-pop .nav { position: absolute; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 100px; border: none; background: rgba(255,255,255,0.85); color: var(--ink); font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; z-index: 2; }
+  .sg-pop:hover .nav, .sg-pop.touch .nav { opacity: 1; }
+  .sg-pop .nav.prev { left: 8px; } .sg-pop .nav.next { right: 8px; }
+  .sg-pop .dots { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; justify-content: center; gap: 5px; z-index: 2; }
+  .sg-pop .dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); transition: background 0.2s, transform 0.2s; }
+  .sg-pop .dots i.on { background: #fff; transform: scale(1.3); }
+  .sg-pop .meta { padding: 0.6rem 0.8rem 0.7rem; display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; }
+  .sg-pop .meta b { font-size: 0.95rem; }
+  .sg-pop .meta .cap { display: block; color: var(--muted); font-size: 0.82rem; margin-top: 0.1rem; }
+  .sg-pop .meta a { font-size: 0.8rem; font-weight: 600; white-space: nowrap; text-decoration: none; }
+  .sg-pop .bar { position: absolute; left: 0; top: 0; height: 2px; background: var(--accent-light); width: 0; z-index: 3; }
+  .sg-pop .bar.run { width: 100%; transition-property: width; transition-timing-function: linear; }
   .sight.si-nature svg.si, .sight.si-park svg.si { color: #2f7a4f; }
   .sight.si-culture svg.si { color: var(--accent); }
   .sight.si-5a svg.si { color: #b8860b; }
   a.sight:hover { border-color: var(--accent); background: var(--highlight); }
+  .sight { flex-wrap: wrap; row-gap: 0.25rem; }
+  .tag { white-space: nowrap; }
   .tag { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.02rem 0.4rem; border-radius: 4px; line-height: 1.5; text-transform: uppercase; }
   body.zh .tag { letter-spacing: 0.06em; font-size: 0.7rem; }
   .tag-5a { background: #fcefd6; color: #8a5300; }
@@ -179,10 +222,19 @@
     .stat-num { font-size: 1.6rem; }
     #map { height: 50vh; min-height: 300px; border-radius: 10px; }
     .city { grid-template-columns: 1fr; gap: 0.6rem; padding: 0.9rem 0.9rem 0.9rem 1.1rem; }
-    .strip { grid-template-columns: repeat(3, 1fr); }
+    /* Swipeable photo row */
+    .strip { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0.5rem; margin: 0 -0.9rem 0 0; padding: 0 0.9rem 0.3rem 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .strip::-webkit-scrollbar { display: none; }
+    .strip .ph { flex: 0 0 62%; scroll-snap-align: start; }
+    .city-ic { width: 26px; height: 26px; }
+    .city-ic svg { width: 15px; height: 15px; }
     .lb-prev, .lb-next { width: 36px; height: 36px; top: auto; bottom: 1rem; transform: none; }
     .lb-prev { left: 1rem; } .lb-next { right: 1rem; }
     .lb img { max-height: calc(100vh - 9rem); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .js-reveal .city { opacity: 1 !important; transform: none !important; transition: none !important; }
+    .city-ic { transition: none; }
   }
 </style>
 </head>
@@ -246,6 +298,7 @@
 </div>
 
 <div id="lb-root"></div>
+<div class="sg-pop" id="sg-pop" role="dialog" aria-live="polite" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin=""></script>
 <script>
@@ -261,13 +314,14 @@ const SS_KEY = 'tv_key', LS_KEY = 'tv_key_persist';
 const KINDS = { conference: ['Conference', '学术会议'], visit: ['Research visit', '学术访问'], workshop: ['Workshop / summer school', '研讨会 / 暑期学校'] };
 const TALKS = { oral: ['Oral presentation', '口头报告'], poster: ['Poster presentation', '海报报告'], invited: ['Invited talk', '特邀报告'], keynote: ['Keynote', '主旨报告'] };
 const kindLabel = k => KINDS[k] ? KINDS[k][LANG === 'zh' ? 1 : 0] : (k || '');
-const TRIPS = { leisure: ['Leisure trip', '休闲旅游'], nature: ['Hiking & nature', '徒步自然'], family: ['Family & friends', '探亲访友'], business: ['Business trip', '出差'], transit: ['Transit', '中转'] };
+const TRIPS = { lived: ['Lived here', '曾居住'], leisure: ['Leisure trip', '休闲旅游'], nature: ['Hiking & nature', '徒步自然'], family: ['Family & friends', '探亲访友'], business: ['Business trip', '出差'], transit: ['Transit', '中转'] };
 const tripLabel = k => TRIPS[k] ? TRIPS[k][LANG === 'zh' ? 1 : 0] : (k || '');
 const talkLabel = k => TALKS[k] ? TALKS[k][LANG === 'zh' ? 1 : 0] : (k || '');
 const TAGS = { '5a': ['5A scenic area', '5A级景区'], 'wh-cultural': ['World Heritage · cultural', '世界文化遗产'], 'wh-natural': ['World Heritage · natural', '世界自然遗产'], 'wh-mixed': ['World Heritage · mixed', '世界文化与自然双遗产'], 'wh': ['World Heritage', '世界遗产'], 'national-park': ['National park', '国家公园'] };
 const tagLabel = k => TAGS[k] ? TAGS[k][LANG === 'zh' ? 1 : 0] : k;
 const tagHtml = k => `<span class="tag tag-${esc(k)}">${esc(tagLabel(k))}</span>`;
-const sightUrl = sg => (LANG === 'zh' && sg.zhwiki) || sg.enwiki || sg.zhwiki || '';
+// Chinese view: official site > Baidu Baike > zh Wikipedia > en Wikipedia/UNESCO > Amap; English view: en Wikipedia/UNESCO > official site > zh Wikipedia > Baike > Amap
+const sightUrl = sg => LANG === 'zh' ? (sg.url || sg.baike || sg.zhwiki || sg.enwiki || sg.amap || '') : (sg.enwiki || sg.url || sg.zhwiki || sg.baike || sg.amap || '');
 // Small icon per sight, chosen from its tags: mountains for natural heritage / national parks / mixed sites, a pavilion for cultural heritage, a star for 5A, a pin otherwise
 const SIGHT_ICONS = {
   nature: '<svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18L14 7l-3.5 6L8 10z"/><path d="M17 20l-3-5"/><circle cx="18" cy="6" r="2"/></svg>',
@@ -284,19 +338,63 @@ function sightIcon(tags) {
   if (tags.includes('5a')) return ['5a', SIGHT_ICONS.star];
   return ['pin', SIGHT_ICONS.pin];
 }
-function sightChip(sg) {
+const sightPhotos = (p, sid) => (p.photos || []).filter(ph => (ph.sights || []).includes(sid));
+const CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+function sightChip(sg, p) {
   const [kind, icon] = sightIcon(sg.tags);
-  const inner = `${icon}<span>${esc(t(sg.name))}</span>${(sg.tags || []).map(tagHtml).join('')}`;
+  const n = p ? sightPhotos(p, sg.id).length : 0;
+  const inner = `${icon}<span>${esc(t(sg.name))}</span>${(sg.tags || []).map(tagHtml).join('')}${n ? `<span class="sight-cam" title="${n} ${LANG === 'zh' ? '张照片' : (n === 1 ? 'photo' : 'photos')}">${CAM}${n}</span>` : ''}`;
   const u = sightUrl(sg);
-  return u ? `<a class="sight si-${kind}" href="${esc(u)}" target="_blank" rel="noopener">${inner}</a>` : `<span class="sight si-${kind}">${inner}</span>`;
+  const data = p ? ` data-pid="${esc(p.id)}" data-sid="${esc(sg.id)}"${n ? ' data-has-photos="1"' : ''}` : '';
+  return u ? `<a class="sight si-${kind}${n ? ' has-photos' : ''}" href="${esc(u)}" target="_blank" rel="noopener"${data}>${inner}</a>` : `<span class="sight si-${kind}${n ? ' has-photos' : ''}"${data}${n ? ' tabindex="0"' : ''}>${inner}</span>`;
+}
+const CITY_ICONS = {
+  lived: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>',
+  academic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/><path d="M22 9v6"/></svg>',
+  city: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l5-3v16"/><path d="M10 21V11h9v10"/><path d="M13 14h3M13 17h3M7 10v.01M7 13v.01M7 16v.01"/></svg>',
+};
+function cityIcon(p) {
+  const k = p.trip === 'lived' && !p.academic ? 'lived' : p.academic ? 'academic' : 'city';
+  return `<span class="city-ic city-ic-${k}" aria-hidden="true">${CITY_ICONS[k]}</span>`;
 }
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-// "2024-09" -> "Sep 2024" / "2024年9月"; "2024" stays; anything else is shown as typed
-function fmtWhen(w) {
-  const m = String(w || '').trim().match(/^(\d{4})(?:[-/.](\d{1,2}))?$/); if (!m) return w || '';
+// One date: "2024-09" -> "Sep 2024" / "2024年9月"; "2024" stays; "present"/"now"/"至今" -> present / 至今
+function fmtOne(w) {
+  w = String(w || '').trim();
+  if (/^(present|now|today|至今|现在)$/i.test(w)) return LANG === 'zh' ? '至今' : 'present';
+  const m = w.match(/^(\d{4})(?:[-/.](\d{1,2}))?$/); if (!m) return w;
   if (!m[2]) return m[1];
   const mo = Number(m[2]); if (mo < 1 || mo > 12) return w;
   return LANG === 'zh' ? `${m[1]}年${mo}月` : `${MONTHS[mo - 1]} ${m[1]}`;
+}
+// Split a range: "2018-2025", "2018-09 - 2025-07", "2018.9~2025.7", "2025 - present"
+function splitWhen(w) {
+  w = String(w || '').trim();
+  const m = w.match(/^(\d{4}(?:[-/.]\d{1,2})?)\s*(?:[-–—~]|to|至)\s*(\d{4}(?:[-/.]\d{1,2})?|present|now|today|至今|现在)$/i);
+  if (m) return [m[1], m[2]];
+  return [w, null];
+}
+// Several visits: "2019-05; 2023-08; 2025-06" (";" "," "，" "、" or "|" separate visits; each visit may itself be a range)
+const visitsOf = w => String(w || '').split(/\s*[;,，、|；]\s*/).map(x => x.trim()).filter(Boolean);
+function fmtVisit(w) {
+  const [a, b] = splitWhen(w);
+  return b ? `${fmtOne(a)} – ${fmtOne(b)}` : fmtOne(a);
+}
+function fmtWhen(w) { return visitsOf(w).map(fmtVisit).join(' · '); }
+// Sort key of one visit: the end of a range (ongoing stays on top), else the date itself
+function visitKey(w) {
+  const [a, b] = splitWhen(w); const end = b || a;
+  if (/^(present|now|today|至今|现在)$/i.test(end)) return '9999';
+  return String(end).replace(/[/.]/g, '-').replace(/-(\d)$/, '-0$1');
+}
+// Sort key of a place: its most recent visit
+function whenKey(w) { const v = visitsOf(w).map(visitKey).sort(); return v.length ? v[v.length - 1] : ''; }
+// Date pills for a place; several visits get one pill each (newest first) and a "×N" counter
+function whenHtml(w) {
+  const v = visitsOf(w); if (!v.length) return '';
+  if (v.length === 1) return `<span class="when">${esc(fmtVisit(v[0]))}</span>`;
+  const sorted = [...v].sort((a, b) => visitKey(b).localeCompare(visitKey(a)));
+  return `<span class="visits-n" title="${LANG === 'zh' ? `去过 ${v.length} 次` : `Visited ${v.length} times`}">×${v.length}</span>${sorted.map(x => `<span class="when">${esc(fmtVisit(x))}</span>`).join('')}`;
 }
 const WORLD_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json';
 const TOPO_URL = 'https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js';
@@ -417,7 +515,7 @@ function groupByCountry(places) {
     if (!g.has(k)) g.set(k, { cc, name, places: [] }); g.get(k).places.push(p);
   }
   const arr = [...g.values()];
-  arr.forEach(c => c.places.sort((a, b) => String(b.when || '').localeCompare(String(a.when || ''))));
+  arr.forEach(c => c.places.sort((a, b) => whenKey(b.when).localeCompare(whenKey(a.when))));
   arr.sort((a, b) => t(a.name).localeCompare(t(b.name), LANG === 'zh' ? 'zh' : 'en'));
   return arr;
 }
@@ -458,11 +556,11 @@ function renderList() {
       const ph = p.photos || [];
       const strip = ph.length ? `<div class="strip" data-pid="${esc(p.id)}">${ph.slice(0, 6).map((x, i) => `<div class="ph" data-i="${i}" data-thumb="${esc(x.thumb)}"><img alt="${esc(t(x.caption))}">${i === 5 && ph.length > 6 ? `<div class="more">+${ph.length - 6}</div>` : ''}</div>`).join('')}</div>` : '';
       return `<div class="city" data-pid="${esc(p.id)}">
-        <div><div class="city-name"><span class="city-title">${esc(t(p.city))}</span>${p.when ? `<span class="when">${esc(fmtWhen(p.when))}</span>` : ''}${p.academic ? `<span class="role">${esc(kindLabel(p.kind || 'conference'))}</span>` : (p.trip ? `<span class="role trip">${esc(tripLabel(p.trip))}</span>` : '')}</div>
+        <div><div class="city-name">${cityIcon(p)}<span class="city-title">${esc(t(p.city))}</span>${whenHtml(p.when)}${p.academic ? `<span class="role">${esc(kindLabel(p.kind || 'conference'))}</span>` : (p.trip ? `<span class="role trip trip-${esc(p.trip)}">${esc(tripLabel(p.trip))}</span>` : '')}</div>
           ${p.academic && t(p.event) ? `<div class="city-event">${esc(t(p.event))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="city-talk">${p.talk_type ? `<span class="talk-type">${esc(talkLabel(p.talk_type))}</span>` : ''}${p.talk ? `“${esc(p.talk)}”` : ''}</div>` : ''}${t(p.note) ? `<div class="city-note">${esc(t(p.note))}</div>` : ''}</div>
         <div class="city-actions"><button class="small-btn ghost" data-map="${esc(p.id)}"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${LANG === 'zh' ? '地图' : 'Map'}</button>
           ${ph.length ? `<button class="small-btn" data-gallery="${esc(p.id)}">${photosLabel(ph.length)}</button>` : ''}</div>
-        ${(p.sights || []).length ? `<div class="sights"><span class="sights-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.5L16 9.5"/></svg>${LANG === 'zh' ? '去过' : 'Visited'}</span>${p.sights.map(sightChip).join('')}</div>` : ''}${strip}</div>`;
+        ${(p.sights || []).length ? `<div class="sights"><span class="sights-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.5L16 9.5"/></svg>${LANG === 'zh' ? '去过' : 'Visited'}</span>${p.sights.map(g => sightChip(g, p)).join('')}</div>` : ''}${strip}</div>`;
     }).join('')}</section>`).join('');
   list.querySelectorAll('[data-map]').forEach(b => b.onclick = () => focusPlace(b.dataset.map));
   list.querySelectorAll('[data-gallery]').forEach(b => b.onclick = () => openLightbox(b.dataset.gallery, 0));
@@ -474,6 +572,35 @@ function renderList() {
     try { img.src = await photoUrl(en.target.dataset.thumb); img.onload = () => img.classList.add('ready'); } catch (e) { en.target.style.opacity = 0.4; }
   }), { rootMargin: '600px' });
   list.querySelectorAll('.strip .ph').forEach(el => io.observe(el));
+  animateCards(list);
+  wireSightPopovers(list);
+}
+// Cards rise in once (staggered within a country); on touch screens the card crossing the middle band gets the focus style
+const REVEALED = new Set();
+let REVEAL_IO = null;
+function animateCards(root) {
+  const cards = [...root.querySelectorAll('.city')];
+  if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) { cards.forEach(c => c.classList.add('in', 'settled')); return; }
+  document.body.classList.add('js-reveal');
+  REVEAL_IO?.disconnect();
+  root.querySelectorAll('.country').forEach(sec => sec.querySelectorAll('.city').forEach((c, k) => c.style.setProperty('--d', Math.min(k, 5) * 0.07 + 's')));
+  REVEAL_IO = new IntersectionObserver(entries => entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    const c = en.target; REVEAL_IO.unobserve(c); c.classList.add('in'); REVEALED.add(c.dataset.pid);
+    setTimeout(() => c.classList.add('settled'), 1000);
+  }), { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+  cards.forEach(c => { if (REVEALED.has(c.dataset.pid)) c.classList.add('in', 'settled'); else REVEAL_IO.observe(c); });
+  if (matchMedia('(hover: none)').matches) {
+    // Exactly one focused card: the one whose centre is closest to the middle of the screen
+    let raf = 0;
+    const pick = () => { raf = 0; const mid = innerHeight / 2; let best = null, bd = Infinity;
+      for (const c of cards) { const r = c.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) continue; const d = Math.abs((r.top + r.bottom) / 2 - mid); if (d < bd) { bd = d; best = c; } }
+      cards.forEach(c => c.classList.toggle('focus', c === best && bd < innerHeight * 0.38)); };
+    window.removeEventListener('scroll', animateCards._onScroll);
+    animateCards._onScroll = () => { if (!raf) raf = requestAnimationFrame(pick); };
+    window.addEventListener('scroll', animateCards._onScroll, { passive: true });
+    pick();
+  }
 }
 function placeById(id) { return (DATA.places || []).find(p => p.id === id); }
 function focusPlace(id) {
@@ -583,15 +710,88 @@ async function renderMap() {
   }
 }
 
+// ── Sight photo popover: hover a sight (tap on touch screens) to see its photos; auto-advances; click to enlarge ──
+const POP = { el: null, chip: null, list: [], i: 0, timer: 0, hide: 0, p: null, sid: '' };
+const POP_MS = 2800;
+function popRender() {
+  const { el, list, i, p, sid } = POP; const sg = (p.sights || []).find(g => g.id === sid) || {};
+  const ph = list[i]; const u = sightUrl(sg);
+  el.querySelectorAll('.stage img').forEach((im, k) => im.classList.toggle('on', k === i));
+  el.querySelectorAll('.dots i').forEach((d, k) => d.classList.toggle('on', k === i));
+  el.querySelector('.meta').innerHTML = `<div><b>${esc(t(sg.name))}</b><span class="cap">${esc(t(ph.caption)) || `${i + 1} / ${list.length}`}</span></div>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${LANG === 'zh' ? '了解更多' : 'Read more'} ↗</a>` : ''}`;
+  // Load this image and the next one
+  [i, (i + 1) % list.length].forEach(k => { const im = el.querySelectorAll('.stage img')[k]; if (im && !im.getAttribute('src')) photoUrl(list[k].thumb).then(src => { im.src = src; }).catch(() => {}); });
+  const bar = el.querySelector('.bar'); bar.classList.remove('run'); bar.style.transitionDuration = '0ms'; bar.style.width = '0';
+  if (list.length > 1) requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = ''; bar.style.transitionDuration = POP_MS + 'ms'; bar.classList.add('run'); }));
+}
+function popStep(d) { if (!POP.list.length) return; POP.i = (POP.i + d + POP.list.length) % POP.list.length; popRender(); popAuto(); }
+function popAuto() { clearInterval(POP.timer); if (POP.list.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches) POP.timer = setInterval(() => { POP.i = (POP.i + 1) % POP.list.length; popRender(); }, POP_MS); }
+function popPlace() {
+  const { el, chip } = POP; if (!chip) return; const r = chip.getBoundingClientRect(); const w = el.offsetWidth, h = el.offsetHeight;
+  const x = Math.min(Math.max(12, r.left + r.width / 2 - w / 2), innerWidth - w - 12);
+  let y = r.top - h - 10; if (y < 70) y = r.bottom + 10;
+  el.style.left = x + 'px'; el.style.top = Math.max(12, Math.min(y, innerHeight - h - 12)) + 'px';
+}
+function popOpen(chip, touch) {
+  const p = placeById(chip.dataset.pid), sid = chip.dataset.sid; if (!p) return;
+  const list = sightPhotos(p, sid); if (!list.length) return;
+  clearTimeout(POP.hide);
+  if (POP.chip === chip && POP.el.classList.contains('show')) return;
+  POP.chip?.classList.remove('active');
+  Object.assign(POP, { chip, list, i: 0, p, sid });
+  chip.classList.add('active');
+  const el = POP.el; el.hidden = false; el.classList.toggle('touch', !!touch);
+  el.innerHTML = `<div class="bar"></div><div class="stage">${list.map(() => '<img alt="">').join('')}
+    ${list.length > 1 ? `<button class="nav prev" aria-label="Previous">‹</button><button class="nav next" aria-label="Next">›</button><div class="dots">${list.map(() => '<i></i>').join('')}</div>` : ''}</div><div class="meta"></div>`;
+  const stage = el.querySelector('.stage');
+  stage.onclick = e => { if (e.target.closest('.nav')) return; const k = POP.i; popClose(true); openLightbox(p.id, k, sid); };
+  el.querySelector('.prev')?.addEventListener('click', e => { e.stopPropagation(); popStep(-1); });
+  el.querySelector('.next')?.addEventListener('click', e => { e.stopPropagation(); popStep(1); });
+  // Swipe on touch screens
+  let sx = null;
+  stage.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+  stage.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 35) { e.preventDefault(); popStep(dx < 0 ? 1 : -1); } });
+  popRender(); popPlace(); requestAnimationFrame(() => el.classList.add('show')); popAuto();
+}
+function popClose(now) {
+  const go = () => { clearInterval(POP.timer); POP.el.classList.remove('show'); POP.chip?.classList.remove('active'); POP.chip = null; setTimeout(() => { if (!POP.chip) POP.el.hidden = true; }, 220); };
+  clearTimeout(POP.hide); if (now) go(); else POP.hide = setTimeout(go, 220);
+}
+function wireSightPopovers(root) {
+  POP.el ||= $('#sg-pop');
+  const hoverable = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  root.querySelectorAll('.sight[data-has-photos]').forEach(chip => {
+    if (hoverable) {
+      chip.addEventListener('mouseenter', () => popOpen(chip));
+      chip.addEventListener('mouseleave', () => popClose());
+      chip.addEventListener('focus', () => popOpen(chip));
+      chip.addEventListener('blur', () => popClose());
+    } else {
+      // First tap shows the photos; the webpage link lives inside the popover
+      chip.addEventListener('click', e => { e.preventDefault(); if (POP.chip === chip) popClose(true); else popOpen(chip, true); });
+    }
+  });
+  if (!POP.wired) {
+    POP.wired = true;
+    POP.el.addEventListener('mouseenter', () => clearTimeout(POP.hide));
+    POP.el.addEventListener('mouseleave', () => popClose());
+    document.addEventListener('click', e => { if (POP.chip && !e.target.closest('.sg-pop') && !e.target.closest('.sight.has-photos')) popClose(true); });
+    window.addEventListener('scroll', () => { if (POP.chip) { if (matchMedia('(hover: none)').matches) popClose(true); else popPlace(); } }, { passive: true });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && POP.chip) popClose(true); });
+  }
+}
+
 // ── Lightbox ──
 let LB = null;
-async function openLightbox(pid, i) {
+async function openLightbox(pid, i, sid) {
   const p = placeById(pid); if (!p || !(p.photos || []).length) return;
-  LB = { p, i };
+  const list = sid ? sightPhotos(p, sid) : p.photos; if (!list.length) return;
+  const sg = sid ? (p.sights || []).find(g => g.id === sid) : null;
+  LB = { p, i, list, sg };
   $('#lb-root').innerHTML = `<div class="lb" role="dialog" aria-modal="true">
     <span class="lb-count" id="lb-count"></span>
     <button class="lb-x" id="lb-x" aria-label="Close">✕</button>
-    ${p.photos.length > 1 ? '<button class="lb-prev" id="lb-prev" aria-label="Previous">‹</button><button class="lb-next" id="lb-next" aria-label="Next">›</button>' : ''}
+    ${list.length > 1 ? '<button class="lb-prev" id="lb-prev" aria-label="Previous">‹</button><button class="lb-next" id="lb-next" aria-label="Next">›</button>' : ''}
     <div class="spinner" id="lb-spin"></div>
     <img id="lb-img" alt="">
     <div class="lb-cap" id="lb-cap"></div></div>`;
@@ -602,20 +802,20 @@ async function openLightbox(pid, i) {
   showLightbox();
 }
 async function showLightbox() {
-  const { p, i } = LB; const ph = p.photos[i];
+  const { p, i, list, sg } = LB; const ph = list[i];
   const img = $('#lb-img'), spin = $('#lb-spin'); img.classList.remove('ready'); spin.hidden = false;
-  $('#lb-count').textContent = `${i + 1} / ${p.photos.length}`;
-  $('#lb-cap').innerHTML = `<b>${esc(t(p.city))}${p.when ? ', ' + esc(fmtWhen(p.when)) : ''}</b>${esc(t(ph.caption))}`;
+  $('#lb-count').textContent = `${i + 1} / ${list.length}`;
+  $('#lb-cap').innerHTML = `<b>${sg ? esc(t(sg.name)) + ' · ' : ''}${esc(t(p.city))}${p.when && !sg ? ', ' + esc(fmtWhen(p.when)) : ''}</b>${esc(t(ph.caption))}`;
   try {
     // Thumbnail first (usually cached), then the full-size image
     if (URLS.has(ph.thumb)) { img.src = await photoUrl(ph.thumb); img.classList.add('ready'); }
     const url = await photoUrl(ph.full);
-    if (LB && LB.p === p && LB.i === i) { img.src = url; img.onload = () => { img.classList.add('ready'); spin.hidden = true; }; }
+    if (LB && LB.p === p && LB.i === i && LB.list === list) { img.src = url; img.onload = () => { img.classList.add('ready'); spin.hidden = true; }; }
   } catch (e) { spin.hidden = true; $('#lb-cap').textContent = (LANG === 'zh' ? '照片无法加载：' : 'Could not load this photo: ') + e.message; }
   // Prefetch neighbours
-  [i + 1, i - 1].forEach(j => { const q = p.photos[j]; if (q) photoUrl(q.full).catch(() => {}); });
+  [i + 1, i - 1].forEach(j => { const q = list[j]; if (q) photoUrl(q.full).catch(() => {}); });
 }
-function stepLightbox(d) { if (!LB) return; const n = LB.p.photos.length; LB.i = (LB.i + d + n) % n; showLightbox(); }
+function stepLightbox(d) { if (!LB) return; const n = LB.list.length; LB.i = (LB.i + d + n) % n; showLightbox(); }
 function closeLightbox() { LB = null; $('#lb-root').innerHTML = ''; document.body.style.overflow = ''; }
 document.addEventListener('keydown', e => { if (!LB) return; if (e.key === 'Escape') closeLightbox(); if (e.key === 'ArrowRight') stepLightbox(1); if (e.key === 'ArrowLeft') stepLightbox(-1); });
 
