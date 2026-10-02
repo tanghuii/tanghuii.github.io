@@ -76,7 +76,30 @@
         "en": "",
         "zh": ""
       },
-      "photos": []
+      "photos": [
+        {
+          "id": "32a34d189a",
+          "full": "academic/p-32a34d189a.jpg",
+          "thumb": "academic/t-32a34d189a.jpg",
+          "w": 1600,
+          "h": 900,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        },
+        {
+          "id": "76d265410f",
+          "full": "academic/p-76d265410f.jpg",
+          "thumb": "academic/t-76d265410f.jpg",
+          "w": 1600,
+          "h": 900,
+          "caption": {
+            "en": "",
+            "zh": ""
+          }
+        }
+      ]
     },
     {
       "id": "pl-be769a8845",
