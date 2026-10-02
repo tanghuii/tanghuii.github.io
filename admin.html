@@ -103,16 +103,18 @@
   .map-tip[hidden] { display: none; }
   .map-tip span { color: #c9dbf3; font-variant-numeric: tabular-nums; }
 
-  /* Footprint editors (Academic footprint / Travel map) */
+  /* Footprints editor */
   .tv-results { display: grid; gap: 0.3rem; margin-top: 0.6rem; }
   .tv-res { display: flex; justify-content: space-between; gap: 0.8rem; align-items: center; text-align: left; padding: 0.5rem 0.8rem; border: 1px solid var(--subtle); border-radius: 6px; background: var(--card); cursor: pointer; }
   .tv-res:hover { border-color: var(--accent); background: var(--highlight); }
   .tv-res .m { color: var(--muted); font-size: 15px; white-space: nowrap; }
   .tv-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
   .tv-flag { font-size: 1.4rem; line-height: 1; }
+  .tv-acad { background: var(--highlight); border-radius: 8px; padding: 0.9rem 1rem 0.1rem; margin-bottom: 0.9rem; }
   .thumb.tv .ph { aspect-ratio: 4/3; background: var(--highlight); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
   .thumb.tv .ph img { aspect-ratio: 4/3; }
   .tv-prog { font-size: 15px; color: var(--accent); }
+  .pill.acad { background: var(--accent); color: #fff; }
   .yearhead { font-family: var(--serif); font-weight: 600; color: var(--accent); margin: 1.1rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px dashed var(--subtle); }
   .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.8rem; }
   .thumb { border: 1px solid var(--subtle); border-radius: 8px; overflow: hidden; background: var(--card); }
@@ -412,8 +414,8 @@ function setCorrespondingMark(authors, on) {
   return a;
 }
 function contentDirty() { return !!C && JSON.stringify(C) !== C_ORIG; }
-function footDirty(f) { return !!f.data && JSON.stringify(f.data) !== f.orig; }
-function isDirty() { return contentDirty() || Object.values(FOOT).some(footDirty); }
+function fpDirty() { return !!FP.data && JSON.stringify(FP.data) !== FP.orig; }
+function isDirty() { return contentDirty() || fpDirty(); }
 function setStatus(msg, kind) {
   const el = $('#status');
   if (msg) { el.innerHTML = `<span class="pill ${kind || 'muted'}">${esc(msg)}</span>`; return; }
@@ -429,7 +431,7 @@ async function saveContent() {
   if (!TOKEN) return toast('Sign in with a GitHub token to publish.', true);
   const btn = $('#btn-save'); btn.disabled = true; btn.textContent = 'Publishing…';
   try {
-    for (const f of Object.values(FOOT)) if (footDirty(f)) await saveFoot(f);
+    if (fpDirty()) await saveFootprints();
     if (contentDirty()) {
       // Re-read the file: if the cover workflow (or another device) changed it, keep the covers it added
       try {
@@ -737,14 +739,13 @@ const TABS = [
   ['publications', 'Publications'],
   ['awards', 'Awards'],
   ['photos', 'Photos'],
-  ['academic', 'Academic footprint'],
-  ['travel', 'Travel map'],
+  ['travel', 'Footprints'],
   ['cv', 'CV & site settings'],
   ['json', 'Raw JSON'],
 ];
 function tabCount(id) {
   if (!C) return '';
-  return { research: C.research_interests.length, education: C.education.length, publications: C.publications.length, awards: C.awards.length, photos: C.carousels.flat().length, academic: FOOT.academic.data ? FOOT.academic.data.places.length : '', travel: FOOT.travel.data ? FOOT.travel.data.places.length : '' }[id] ?? '';
+  return { research: C.research_interests.length, education: C.education.length, publications: C.publications.length, awards: C.awards.length, photos: C.carousels.flat().length, travel: FP.data ? FP.data.places.length : '' }[id] ?? '';
 }
 function renderNav() {
   $('#nav').innerHTML = TABS.map(([id, label]) => `<button data-tab="${id}" class="${TAB === id ? 'active' : ''}">${label}<span class="count">${tabCount(id)}</span></button>`).join('');
@@ -816,7 +817,7 @@ function render() {
   BIND.clear();
   renderNav();
   const v = $('#view');
-  const fn = { overview: viewOverview, profile: viewProfile, research: viewResearch, education: viewEducation, publications: viewPublications, awards: viewAwards, photos: viewPhotos, academic: v => viewFootprint(v, FOOT.academic), travel: v => viewFootprint(v, FOOT.travel), cv: viewCV, json: viewJSON }[TAB];
+  const fn = { overview: viewOverview, profile: viewProfile, research: viewResearch, education: viewEducation, publications: viewPublications, awards: viewAwards, photos: viewPhotos, travel: viewFootprints, cv: viewCV, json: viewJSON }[TAB];
   v.innerHTML = ''; fn(v); wireBindings(v);
 }
 
@@ -1314,25 +1315,20 @@ function renderAccount() {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Footprint maps. Two pages share one editor:
-//  - academic.html (public): academic/academic.json + plain JPEG photos
-//  - travel.html (private): travel/travel.enc, AES-256-GCM with a key derived
-//    from the travel password; inside is a random content key that encrypts
-//    every photo (travel/p-*.bin full size, travel/t-*.bin thumbnail).
+// Footprints. One list of places, stored encrypted in travel/travel.enc
+// (AES-256-GCM, key derived from the travel password) for travel.html.
+// Entries flagged "academic" are also exported in clear to
+// academic/academic.json for the public academic.html. Photos of academic
+// entries are plain JPEGs (academic/*.jpg); all other photos are encrypted
+// with a content key kept inside travel.enc (travel/*.bin).
 // ─────────────────────────────────────────────────────────────────────────────
 const TRAVEL_MIN_PW = 8;
-const ROLE_OPTIONS = [['', '—'], ['talk', 'Oral presentation'], ['poster', 'Poster'], ['invited', 'Invited talk'], ['keynote', 'Keynote'], ['chair', 'Session chair'], ['organizer', 'Organizer'], ['attendee', 'Attendee']];
-function footState(id, label, page, dir, file, encrypted, defaults) {
-  return { id, label, page, dir, file, encrypted, defaults, data: null, orig: '', remote: undefined, sha: null, key: null, ckey: null, loading: false, err: '', urls: new Map() };
-}
-const FOOT = {
-  academic: footState('academic', 'Academic footprint', 'academic.html', 'academic', 'academic/academic.json', false,
-    { title: { en: 'Academic *footprint*', zh: '学术足迹' }, intro: { en: 'Conferences, workshops and research visits.', zh: '参加过的学术会议、研讨会与访问。' } }),
-  travel: footState('travel', 'Travel map', 'travel.html', 'travel', 'travel/travel.enc', true,
-    { title: { en: 'Places I have *been*', zh: '我的旅行足迹' }, intro: { en: '', zh: '' } }),
-};
+const FP = { file: 'travel/travel.enc', pubFile: 'academic/academic.json', data: null, orig: '', remote: undefined, sha: null, pubOrig: null, key: null, ckey: null, loading: false, err: '', urls: new Map() };
+const KIND_OPTIONS = [['conference', 'Conference'], ['visit', 'Research visit'], ['workshop', 'Workshop / summer school']];
+const TALK_OPTIONS = [['', 'No presentation'], ['oral', 'Oral presentation'], ['poster', 'Poster'], ['invited', 'Invited talk'], ['keynote', 'Keynote']];
 const tvFlag = cc => /^[A-Z]{2}$/.test(cc || '') ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : '📍';
 const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(5)), b => b.toString(16).padStart(2, '0')).join('');
+const isPublicPhoto = ph => /\.jpe?g$/i.test(ph.full || '');
 function bytesToB64(bytes) { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); }
 async function importContentKey(b64) { return crypto.subtle.importKey('raw', u8(b64), 'AES-GCM', false, ['encrypt', 'decrypt']); }
 async function encryptBytes(key, bytes) {
@@ -1355,39 +1351,45 @@ async function ghDeleteFile(path, message) {
   try { sha = (await ghGetFile(path)).sha; } catch (e) { return; }
   await gh(`/repos/${REPO.owner}/${REPO.name}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`, { method: 'DELETE', body: JSON.stringify({ message, sha, branch: REPO.branch }) });
 }
-function normalizeFoot(f, d) {
-  d.v ||= 1; d.places ||= []; d.title ||= { ...f.defaults.title }; d.intro ||= { ...f.defaults.intro };
-  d.places.forEach(p => { p.id ||= 'pl-' + rid(); p.photos ||= []; p.note ||= { en: '', zh: '' }; p.city ||= { en: '', zh: '' }; p.country ||= { en: '', zh: '' }; if (!f.encrypted) { p.event ||= { en: '', zh: '' }; p.role ||= ''; p.talk ||= ''; } });
+function normalizeFP(d) {
+  d.v ||= 1; d.places ||= [];
+  d.title ||= { en: 'Places I have *been*', zh: '我的旅行足迹' }; d.intro ||= { en: '', zh: '' };
+  d.pub_title ||= { en: 'Academic *footprint*', zh: '学术足迹' }; d.pub_intro ||= { en: 'Conferences, workshops and research visits.', zh: '参加过的学术会议、研讨会与学术访问。' };
+  d.places.forEach(p => { p.id ||= 'pl-' + rid(); p.photos ||= []; p.note ||= { en: '', zh: '' }; p.city ||= { en: '', zh: '' }; p.country ||= { en: '', zh: '' }; p.when ||= '';
+    p.academic = !!p.academic; p.kind ||= 'conference'; p.event ||= { en: '', zh: '' }; p.talk ||= ''; p.talk_type ||= ''; });
   return d;
 }
-async function loadFoot(f) {
-  if (f.loading) return; f.loading = true;
-  try {
-    const r = await ghGetFile(f.file); f.sha = r.sha;
-    if (f.encrypted) f.remote = JSON.parse(b64dec(r.content));
-    else { f.data = normalizeFoot(f, JSON.parse(b64dec(r.content))); f.orig = JSON.stringify(f.data); f.remote = true; }
-  } catch (e) {
-    if (/404/.test(e.message)) { f.sha = null; if (f.encrypted) f.remote = null; else { f.remote = null; f.data = normalizeFoot(f, {}); f.orig = JSON.stringify(f.data); } }
-    else { f.remote = undefined; f.err = e.message; }
+// The public file: academic entries only, public fields only, plain photos only
+function derivePublic(d) {
+  return { v: 1, title: d.pub_title, intro: d.pub_intro, updated: new Date().toISOString().slice(0, 10),
+    places: d.places.filter(p => p.academic).map(p => ({ id: p.id, cc: p.cc, country: p.country, city: p.city, lat: p.lat, lon: p.lon, when: p.when, academic: true, kind: p.kind, event: p.event, talk: p.talk, talk_type: p.talk_type, note: p.note, photos: p.photos.filter(isPublicPhoto) })) };
+}
+async function loadFootprints() {
+  if (FP.loading) return; FP.loading = true;
+  try { const r = await ghGetFile(FP.file); FP.sha = r.sha; FP.remote = JSON.parse(b64dec(r.content)); }
+  catch (e) { if (/404/.test(e.message)) { FP.sha = null; FP.remote = null; } else { FP.remote = undefined; FP.err = e.message; } }
+  try { const r = await ghGetFile(FP.pubFile); FP.pubOrig = b64dec(r.content); } catch (e) { FP.pubOrig = ''; }
+  FP.loading = false;
+  if (TAB === 'travel') render();
+}
+async function unlockFootprints(password) {
+  const { bundle, key, salt, iter } = await decryptBundle(FP.remote, password);
+  FP.data = normalizeFP(bundle); FP.orig = JSON.stringify(FP.data); FP.key = { key, salt, iter }; FP.ckey = await importContentKey(FP.data.key);
+}
+async function saveFootprints(message = 'Update footprints via Site Manager') {
+  const file = await encryptBundle(FP.data, FP.key.key, FP.key.salt, FP.key.iter);
+  file.note = 'Private travel map for travel.html: AES-256-GCM, key derived from the travel password. Photos in this folder are encrypted with a content key stored inside.';
+  try { FP.sha = (await ghGetFile(FP.file)).sha; } catch (e) { FP.sha = null; }
+  const r = await ghPutFile(FP.file, b64enc(JSON.stringify(file, null, 2) + '\n'), message, FP.sha);
+  FP.sha = r.content.sha; FP.remote = file; FP.orig = JSON.stringify(FP.data);
+  // Public export, only when it changed (the "updated" date is ignored for the comparison)
+  const pub = JSON.stringify(derivePublic(FP.data), null, 2) + '\n';
+  const strip = x => (x || '').replace(/"updated": "[^"]*",?\n?/, '');
+  if (strip(pub) !== strip(FP.pubOrig)) {
+    let sha = null; try { sha = (await ghGetFile(FP.pubFile)).sha; } catch (e) {}
+    await ghPutFile(FP.pubFile, b64enc(pub), 'Update academic footprint (public export)', sha);
+    FP.pubOrig = pub;
   }
-  f.loading = false;
-  if (TAB === f.id) render();
-}
-async function unlockFoot(f, password) {
-  const { bundle, key, salt, iter } = await decryptBundle(f.remote, password);
-  f.data = normalizeFoot(f, bundle); f.orig = JSON.stringify(f.data); f.key = { key, salt, iter }; f.ckey = await importContentKey(f.data.key);
-}
-async function saveFoot(f, message) {
-  message ||= `Update ${f.label.toLowerCase()} via Site Manager`;
-  let body;
-  if (f.encrypted) {
-    const file = await encryptBundle(f.data, f.key.key, f.key.salt, f.key.iter);
-    file.note = 'Private travel map for travel.html: AES-256-GCM, key derived from the travel password. Photos in this folder are encrypted with a content key stored inside.';
-    body = file;
-  } else body = f.data;
-  try { f.sha = (await ghGetFile(f.file)).sha; } catch (e) { f.sha = null; }
-  const r = await ghPutFile(f.file, b64enc(JSON.stringify(body, null, 2) + '\n'), message, f.sha);
-  f.sha = r.content.sha; f.orig = JSON.stringify(f.data); if (f.encrypted) f.remote = body; else f.remote = true;
 }
 async function rememberTravelPassword(pw) {
   SESSION ||= { gh: TOKEN, gc: '' }; SESSION.tp = pw; saveSession();
@@ -1399,41 +1401,42 @@ async function geocode(q) {
   const [en, zh] = await Promise.all([fetchJson(base + '&language=en'), fetchJson(base + '&language=zh').catch(() => null)]);
   return (en.results || []).map(r => {
     const z = (zh?.results || []).find(x => x.id === r.id);
-    return { city: { en: r.name, zh: z?.name || r.name }, country: { en: r.country || '', zh: z?.country || r.country || '' }, cc: (r.country_code || '').toUpperCase(), admin: r.admin1 || '', lat: Math.round(r.latitude * 1e4) / 1e4, lon: Math.round(r.longitude * 1e4) / 1e4 };
+    let cc = (r.country_code || '').toUpperCase(), country = { en: r.country || '', zh: z?.country || r.country || '' }, admin = r.admin1 || '';
+    // One China on the map: Taiwan, Hong Kong and Macau entries are filed under China (the region name stays visible here)
+    if (['TW', 'HK', 'MO'].includes(cc)) { admin = admin || country.en; cc = 'CN'; country = { en: 'China', zh: '中国' }; }
+    return { city: { en: r.name, zh: z?.name || r.name }, country, cc, admin, lat: Math.round(r.latitude * 1e4) / 1e4, lon: Math.round(r.longitude * 1e4) / 1e4 };
   });
 }
 const rawUrl = path => `https://raw.githubusercontent.com/${REPO.owner}/${REPO.name}/${REPO.branch}/${path}`;
-async function footThumbUrl(f, ph) {
-  if (f.urls.has(ph.thumb)) return f.urls.get(ph.thumb);
-  if (!f.encrypted) return rawUrl(ph.thumb) + '?t=' + Date.now();
+async function fpThumbUrl(ph) {
+  if (FP.urls.has(ph.thumb)) return FP.urls.get(ph.thumb);
+  if (isPublicPhoto(ph)) return rawUrl(ph.thumb) + '?t=' + Date.now();
   const p = (async () => {
     let buf;
     try { const r = await fetch(rawUrl(ph.thumb), { cache: 'no-store' }); if (!r.ok) throw 0; buf = await r.arrayBuffer(); }
     catch (e) { const g = await ghGetFile(ph.thumb); buf = u8(g.content.replace(/\n/g, '')).buffer; }
-    return URL.createObjectURL(new Blob([await decryptBytes(f.ckey, buf)], { type: 'image/jpeg' }));
+    return URL.createObjectURL(new Blob([await decryptBytes(FP.ckey, buf)], { type: 'image/jpeg' }));
   })();
-  f.urls.set(ph.thumb, p); p.catch(() => f.urls.delete(ph.thumb));
+  FP.urls.set(ph.thumb, p); p.catch(() => FP.urls.delete(ph.thumb));
   return p;
 }
 
-function viewFootprint(v, f) {
-  const intro = f.encrypted
-    ? `<h2>Travel map</h2><p class="lead">A private page (<a href="travel.html" target="_blank">travel.html</a>) with the countries and cities you have visited on an online map, plus your photos. It opens only with the <b>travel password</b>, which you can share with family and friends without giving them access to this manager.</p>`
-    : `<h2>Academic footprint</h2><p class="lead">A public page (<a href="academic.html" target="_blank">academic.html</a>) with the conferences, workshops and research visits you have attended on an online map, with optional photos. Everything here is visible to anyone.</p>`;
-  if (!TOKEN) { v.innerHTML = intro + `<div class="card"><p class="hint">Sign in to edit this page.</p></div>`; return; }
-  if (f.remote === undefined) {
-    if (f.err) { v.innerHTML = intro + `<div class="card"><p class="hint">Could not load ${esc(f.file)}: ${esc(f.err)}</p><div class="toolbar"><button class="btn sm" id="tv-retry">Try again</button></div></div>`; $('#tv-retry').onclick = () => { f.err = ''; render(); }; return; }
-    v.innerHTML = intro + `<div class="card"><p class="hint">Loading ${esc(f.file)} from GitHub…</p></div>`; loadFoot(f); return;
+function viewFootprints(v) {
+  const intro = `<h2>Footprints</h2><p class="lead">One list of places for two pages. <a href="travel.html" target="_blank">travel.html</a> shows everything and opens only with the <b>travel password</b> (share it with family and friends; it gives no access to this manager). Entries ticked as <b>academic visit</b> are also published, in clear, on the public <a href="academic.html" target="_blank">academic.html</a>.</p>`;
+  if (!TOKEN) { v.innerHTML = intro + `<div class="card"><p class="hint">Sign in to edit the footprints.</p></div>`; return; }
+  if (FP.remote === undefined) {
+    if (FP.err) { v.innerHTML = intro + `<div class="card"><p class="hint">Could not load ${esc(FP.file)}: ${esc(FP.err)}</p><div class="toolbar"><button class="btn sm" id="tv-retry">Try again</button></div></div>`; $('#tv-retry').onclick = () => { FP.err = ''; render(); }; return; }
+    v.innerHTML = intro + `<div class="card"><p class="hint">Loading from GitHub…</p></div>`; loadFootprints(); return;
   }
 
-  // Encrypted page, first time: choose the travel password
-  if (f.encrypted && f.remote === null) {
-    v.innerHTML = intro + `<div class="card"><h3>Set up the travel page</h3>
-      <p style="margin-bottom:0.9rem">Choose a <b>travel password</b>. Everything on the travel page (places, dates, notes and photos) is encrypted with it before it is uploaded to GitHub, so the public repository only ever contains ciphertext. ${SESSION_KEY ? 'It is saved inside your encrypted admin sign-in, so you will not have to type it here again.' : 'You are signed in with a token only, so you will be asked for it each time you open this tab. Turn on password sign-in (CV &amp; site settings) to have it remembered.'}</p>
+  // First time: choose the travel password
+  if (FP.remote === null) {
+    v.innerHTML = intro + `<div class="card"><h3>Set up the footprint pages</h3>
+      <p style="margin-bottom:0.9rem">Choose a <b>travel password</b>. The full list (places, dates, notes, private photos) is encrypted with it before it is uploaded to GitHub, so the public repository only ever contains ciphertext. ${SESSION_KEY ? 'It is saved inside your encrypted admin sign-in, so you will not have to type it here again.' : 'You are signed in with a token only, so you will be asked for it each time you open this tab. Turn on password sign-in (CV &amp; site settings) to have it remembered.'}</p>
       <form id="f-tv-setup" autocomplete="off"><div class="row two">
         <div class="field"><label for="tv-pw">Travel password</label><input id="tv-pw" type="password" minlength="${TRAVEL_MIN_PW}" required autocomplete="new-password"><div class="hint">At least ${TRAVEL_MIN_PW} characters. Use one that is different from your admin password.</div></div>
         <div class="field"><label for="tv-pw2">Repeat password</label><input id="tv-pw2" type="password" required autocomplete="new-password"></div></div>
-        <div class="toolbar"><button class="btn primary sm" type="submit" id="tv-go">Create travel page</button><span class="hint" id="tv-msg"></span></div></form></div>`;
+        <div class="toolbar"><button class="btn primary sm" type="submit" id="tv-go">Create</button><span class="hint" id="tv-msg"></span></div></form></div>`;
     $('#f-tv-setup').onsubmit = async e => {
       e.preventDefault();
       const p1 = $('#tv-pw').value, p2 = $('#tv-pw2').value, m = $('#tv-msg'), btn = $('#tv-go');
@@ -1442,25 +1445,25 @@ function viewFootprint(v, f) {
       btn.disabled = true; m.textContent = 'Encrypting and saving…';
       try {
         const salt = crypto.getRandomValues(new Uint8Array(16));
-        f.key = { key: await deriveKey(p1, salt, AUTH_ITER), salt, iter: AUTH_ITER };
+        FP.key = { key: await deriveKey(p1, salt, AUTH_ITER), salt, iter: AUTH_ITER };
         const ck = b64u8(crypto.getRandomValues(new Uint8Array(32)));
-        f.data = normalizeFoot(f, { key: ck }); f.ckey = await importContentKey(ck);
-        await saveFoot(f, 'Create encrypted travel map');
+        FP.data = normalizeFP({ key: ck }); FP.ckey = await importContentKey(ck);
+        await saveFootprints('Create encrypted footprints');
         await rememberTravelPassword(p1);
-        toast('Travel page created. Add your first place below.'); render();
+        toast('Created. Add your first place below.'); render();
       } catch (err) { m.textContent = err.message; btn.disabled = false; }
     };
     return;
   }
 
-  // Encrypted page, locked: try the remembered password, otherwise ask
-  if (f.encrypted && !f.data) {
-    v.innerHTML = intro + `<div class="card"><h3>Unlock the travel map</h3>
+  // Locked: try the remembered password, otherwise ask
+  if (!FP.data) {
+    v.innerHTML = intro + `<div class="card"><h3>Unlock</h3>
       <form id="f-tv-unlock" autocomplete="off"><div class="row two"><div class="field"><label for="tv-upw">Travel password</label><input id="tv-upw" type="password" required autocomplete="current-password"></div></div>
       <div class="toolbar"><button class="btn primary sm" type="submit" id="tv-ugo">Unlock</button><span class="hint" id="tv-umsg"></span></div></form></div>`;
     const go = async pw => {
       const m = $('#tv-umsg'); m.textContent = 'Unlocking…';
-      try { await unlockFoot(f, pw); if (SESSION && SESSION.tp !== pw) await rememberTravelPassword(pw); render(); }
+      try { await unlockFootprints(pw); if (SESSION && SESSION.tp !== pw) await rememberTravelPassword(pw); render(); }
       catch (err) { m.textContent = err.message + (SESSION?.tp ? ' The saved travel password no longer matches: enter the current one.' : ''); if (SESSION?.tp === pw) { SESSION.tp = ''; saveSession(); } }
     };
     $('#f-tv-unlock').onsubmit = e => { e.preventDefault(); go($('#tv-upw').value); };
@@ -1469,24 +1472,25 @@ function viewFootprint(v, f) {
   }
 
   // Editor
-  const T = f.data;
-  const nPhotos = T.places.reduce((n, p) => n + (p.photos || []).length, 0);
-  const noun = f.encrypted ? 'place' : 'entry';
-  v.innerHTML = intro + `<div class="card"><div class="tv-head">${f.remote ? `<span class="pill ok">${f.encrypted ? 'Travel page on' : 'Published'}</span>` : `<span class="pill warn">Not published yet</span>`}<span class="hint">${T.places.length} ${T.places.length === 1 ? noun : (noun === 'entry' ? 'entries' : 'places')}, ${nPhotos} photo${nPhotos === 1 ? '' : 's'}. Text changes are saved with <b>Publish changes</b>; photos upload immediately.</span></div>
-    ${biField('Page title (use *asterisks* for the italic blue word)', T, 'title')}${biField('Introduction (optional)', T, 'intro', 'textarea')}
-    <div class="toolbar"><a class="btn sm" href="${f.page}" target="_blank">Open ${esc(f.page)} ↗</a></div></div>
-  <div class="card"><h3>${f.encrypted ? 'Add a place' : 'Add a conference or visit'}</h3>
+  const T = FP.data;
+  const nAcad = T.places.filter(p => p.academic).length, nPhotos = T.places.reduce((n, p) => n + p.photos.length, 0);
+  v.innerHTML = intro + `<div class="card"><div class="tv-head"><span class="pill ok">${T.places.length} place${T.places.length === 1 ? '' : 's'}</span><span class="pill acad">${nAcad} academic</span><span class="hint">${nPhotos} photo${nPhotos === 1 ? '' : 's'}. Text changes are saved with <b>Publish changes</b> (both pages at once); photos upload immediately.</span></div>
+    <div class="row two">
+      <div><h3 style="font-size:1.1rem">Travel page (private)</h3>${biField('Title (use *asterisks* for the italic blue word)', T, 'title')}${biField('Introduction', T, 'intro', 'textarea')}</div>
+      <div><h3 style="font-size:1.1rem">Academic page (public)</h3>${biField('Title', T, 'pub_title')}${biField('Introduction', T, 'pub_intro', 'textarea')}</div></div>
+    <div class="toolbar"><a class="btn sm" href="travel.html" target="_blank">Open travel.html ↗</a><a class="btn sm" href="academic.html" target="_blank">Open academic.html ↗</a></div></div>
+  <div class="card"><h3>Add a place</h3>
     <div class="row" style="grid-template-columns:1fr auto auto;align-items:end">
       <div class="field" style="margin:0"><label for="tv-q">City or town</label><input id="tv-q" type="text" placeholder="e.g. Groningen, Lhasa, Kyoto" autocomplete="off"></div>
       <button class="btn primary" id="tv-search">Search</button><button class="btn" id="tv-manual">Add manually</button></div>
     <div class="tv-results" id="tv-results"></div><p class="hint" id="tv-smsg"></p></div>
-  <h3 class="yearhead">${f.encrypted ? 'Places' : 'Conferences and visits'}</h3><div id="tv-places"></div>
-  ${f.encrypted ? `<div class="card"><h3>Travel password</h3>
-    <p class="hint" style="margin-bottom:0.8rem">Share this password with the people who may see the page. Changing it only re-encrypts the place list; the photos stay as they are.</p>
+  <h3 class="yearhead">Places</h3><div id="tv-places"></div>
+  <div class="card"><h3>Travel password</h3>
+    <p class="hint" style="margin-bottom:0.8rem">Share this password with the people who may see travel.html. Changing it only re-encrypts the list; the photos stay as they are.</p>
     <form id="f-tv-chpw" autocomplete="off"><div class="row two">
       <div class="field"><label for="tv-npw">New travel password</label><input id="tv-npw" type="password" minlength="${TRAVEL_MIN_PW}" required autocomplete="new-password"></div>
       <div class="field"><label for="tv-npw2">Repeat</label><input id="tv-npw2" type="password" required autocomplete="new-password"></div></div>
-      <div class="toolbar"><button class="btn sm" type="submit" id="tv-chgo">Change travel password</button><span class="hint" id="tv-chmsg"></span></div></form></div>` : ''}`;
+      <div class="toolbar"><button class="btn sm" type="submit" id="tv-chgo">Change travel password</button><span class="hint" id="tv-chmsg"></span></div></form></div>`;
 
   // Search
   const doSearch = async () => {
@@ -1503,28 +1507,38 @@ function viewFootprint(v, f) {
   $('#tv-q').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } };
   $('#tv-manual').onclick = () => addPlace({ city: { en: '', zh: '' }, country: { en: '', zh: '' }, cc: '', lat: null, lon: null });
   const addPlace = r => {
-    const p = { id: 'pl-' + rid(), cc: r.cc, country: r.country, city: r.city, lat: r.lat, lon: r.lon, when: '', note: { en: '', zh: '' }, photos: [] };
-    if (!f.encrypted) { p.event = { en: '', zh: '' }; p.role = ''; p.talk = ''; }
-    T.places.unshift(p); markDirty(); renderPlaces();
+    T.places.unshift(normalizeFP({ places: [{ id: 'pl-' + rid(), cc: r.cc, country: r.country, city: r.city, lat: r.lat, lon: r.lon }] }).places[0]);
+    markDirty(); renderPlaces();
   };
 
   // Places
   const renderPlaces = () => {
     const box = $('#tv-places');
-    box.innerHTML = T.places.map((p, i) => `<div class="item" data-i="${i}"><div class="item-head"><div class="title"><span class="tv-flag">${tvFlag(p.cc)}</span> ${esc(p.city.en || 'New ' + noun)}${p.country.en ? `, ${esc(p.country.en)}` : ''}${p.when ? ` <span class="hint" style="display:inline">· ${esc(p.when)}</span>` : ''}${!f.encrypted && p.event?.en ? ` <span class="hint" style="display:inline">· ${esc(p.event.en)}</span>` : ''}</div>${itemTools(T.places, i)}</div>
-      ${f.encrypted ? '' : biField('Conference / event', p, 'event')}
-      ${f.encrypted ? '' : `<div class="row" style="grid-template-columns:220px 1fr"><div class="field"><label>Role</label>${bind(p, 'role', 'select')}</div><div class="field"><label>Talk or poster title (optional)</label>${bind(p, 'talk', 'text', 'placeholder="Title of your presentation"')}</div></div>`}
+    box.innerHTML = T.places.map((p, i) => `<div class="item" data-i="${i}"><div class="item-head"><div class="title"><span class="tv-flag">${tvFlag(p.cc)}</span> ${esc(p.city.en || 'New place')}${p.country.en ? `, ${esc(p.country.en)}` : ''}${p.when ? ` <span class="hint" style="display:inline">· ${esc(p.when)}</span>` : ''}${p.academic ? ` <span class="pill acad">${esc(KIND_OPTIONS.find(k => k[0] === p.kind)?.[1] || 'Academic')}</span>` : ''}</div>${itemTools(T.places, i)}</div>
       ${biField('City', p, 'city')}${biField('Country', p, 'country')}
       <div class="row" style="grid-template-columns:90px 1fr 1fr 1fr">
         <div class="field"><label>Code</label>${bind(p, 'cc', 'text', 'placeholder="NL" maxlength="2" style="text-transform:uppercase"')}</div>
         <div class="field"><label>Latitude</label>${bind(p, 'lat', 'number', 'step="any" placeholder="53.2194"')}</div>
         <div class="field"><label>Longitude</label>${bind(p, 'lon', 'number', 'step="any" placeholder="6.5665"')}</div>
-        <div class="field"><label>When</label>${bind(p, 'when', 'text', 'placeholder="2024-09 or Sep 2024"')}</div></div>
+        <div class="field"><label>When</label>${bind(p, 'when', 'text', 'placeholder="YYYY-MM, or leave blank" pattern="\\\\d{4}(-\\\\d{2})?"')}<div class="hint">Year and month, e.g. 2025-07. Shown as “Jul 2025 / 2025年7月”.</div></div></div>
+      <label class="check" style="margin-bottom:0.7rem">${bind(p, 'academic', 'checkbox', 'data-acad')} Academic visit (also shown on the public academic page)</label>
+      ${p.academic ? `<div class="tv-acad">
+        <div class="row" style="grid-template-columns:240px 1fr">
+          <div class="field"><label>Type</label>${bind(p, 'kind', 'select', 'data-kind')}</div>
+          <div class="field"><label>Presentation</label>${bind(p, 'talk_type', 'select', 'data-talk')}</div></div>
+        ${biField(p.kind === 'visit' ? 'Host institution' : (p.kind === 'workshop' ? 'Workshop / school name' : 'Conference name'), p, 'event')}
+        <div class="field"><label>${p.talk_type ? 'Title of your presentation' : 'Title of your presentation (optional)'}</label>${bind(p, 'talk', 'text', 'placeholder="e.g. Biodiversity footprints of global trade"')}</div>
+        <p class="hint" style="margin-bottom:0.8rem">Photos uploaded to an academic entry are stored as ordinary JPEGs and appear on the public page; the note is public too.</p></div>` : ''}
       ${biField('Note (optional)', p, 'note')}
       <div class="field"><label>Photos (${p.photos.length})</label><div class="thumbs" id="tv-ph-${i}"></div>
+        ${p.academic && p.photos.some(x => !isPublicPhoto(x)) ? `<p class="hint">${p.photos.filter(x => !isPublicPhoto(x)).length} photo(s) were uploaded while this entry was private, so they are encrypted and will not appear on the public page. Delete and re-upload them to publish.</p>` : ''}
+        ${!p.academic && p.photos.some(isPublicPhoto) ? `<p class="hint">${p.photos.filter(isPublicPhoto).length} photo(s) were uploaded while this entry was academic, so they are stored unencrypted in the repository.</p>` : ''}
         <div class="toolbar"><input type="file" id="tv-up-${i}" accept="image/*" multiple style="display:none"><button class="btn sm" data-up="${i}">Upload photos…</button><span class="tv-prog" id="tv-prog-${i}"></span></div></div></div>`).join('') || `<p class="hint">Nothing yet. Search for a city above.</p>`;
-    box.querySelectorAll('select').forEach((sel, i) => { sel.innerHTML = ROLE_OPTIONS.map(([val, lab]) => `<option value="${val}" ${T.places[i].role === val ? 'selected' : ''}>${lab}</option>`).join(''); });
+    box.querySelectorAll('select[data-kind]').forEach((sel, k) => { const p = T.places.filter(x => x.academic)[k]; sel.innerHTML = KIND_OPTIONS.map(([val, lab]) => `<option value="${val}" ${p.kind === val ? 'selected' : ''}>${lab}</option>`).join(''); });
+    box.querySelectorAll('select[data-talk]').forEach((sel, k) => { const p = T.places.filter(x => x.academic)[k]; sel.innerHTML = TALK_OPTIONS.map(([val, lab]) => `<option value="${val}" ${p.talk_type === val ? 'selected' : ''}>${lab}</option>`).join(''); });
     wireBindings(box); wireItemTools(box, T.places, renderPlaces);
+    // Re-render when the academic flag or the type changes (labels and fields depend on them)
+    box.querySelectorAll('[data-acad], select[data-kind], select[data-talk]').forEach(el => el.addEventListener('change', () => setTimeout(renderPlaces, 0)));
     box.querySelectorAll('input[maxlength="2"]').forEach(inp => inp.addEventListener('change', () => { inp.value = inp.value.toUpperCase(); inp.dispatchEvent(new Event('input')); }));
     T.places.forEach((p, i) => { renderThumbs(p, i); wireUpload(p, i); });
   };
@@ -1532,11 +1546,11 @@ function viewFootprint(v, f) {
     const box = $('#tv-ph-' + i); if (!box) return;
     box.innerHTML = p.photos.map((ph, j) => `<div class="thumb tv" data-j="${j}"><div class="ph"><img alt="" hidden>…</div>
       <div class="cap">${bind(ph.caption ||= { en: '', zh: '' }, 'en', 'text', 'placeholder="Caption (EN)"')}${bind(ph.caption, 'zh', 'text', 'placeholder="说明（中文）"')}</div>
-      <div class="tools"><button class="btn" title="Move left" data-pact="left" ${j === 0 ? 'disabled' : ''}>←</button><button class="btn" title="Move right" data-pact="right" ${j === p.photos.length - 1 ? 'disabled' : ''}>→</button><button class="btn danger" data-pact="del">✕</button></div></div>`).join('') || '<p class="hint" style="grid-column:1/-1">No photos yet.</p>';
+      <div class="tools"><button class="btn" title="Move left" data-pact="left" ${j === 0 ? 'disabled' : ''}>←</button><button class="btn" title="Move right" data-pact="right" ${j === p.photos.length - 1 ? 'disabled' : ''}>→</button><button class="btn danger" data-pact="del">✕</button>${isPublicPhoto(ph) ? '<span class="hint" style="margin:0 0 0 auto;align-self:center">public</span>' : ''}</div></div>`).join('') || '<p class="hint" style="grid-column:1/-1">No photos yet.</p>';
     wireBindings(box);
     box.querySelectorAll('.thumb').forEach(el => {
       const j = Number(el.dataset.j), ph = p.photos[j], img = el.querySelector('img');
-      Promise.resolve(footThumbUrl(f, ph)).then(u => { img.src = u; img.hidden = false; img.parentElement.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = ''; }); }).catch(() => { el.querySelector('.ph').textContent = 'not on GitHub yet'; });
+      Promise.resolve(fpThumbUrl(ph)).then(u => { img.src = u; img.hidden = false; img.parentElement.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = ''; }); }).catch(() => { el.querySelector('.ph').textContent = 'not on GitHub yet'; });
       el.querySelectorAll('[data-pact]').forEach(b => b.onclick = async () => {
         const act = b.dataset.pact;
         if (act === 'left' && j > 0) [p.photos[j - 1], p.photos[j]] = [p.photos[j], p.photos[j - 1]];
@@ -1544,7 +1558,7 @@ function viewFootprint(v, f) {
         if (act === 'del') {
           if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Delete?'; setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = '✕'; } }, 2500); return; }
           b.disabled = true; b.textContent = '…';
-          try { await ghDeleteFile(ph.full, 'Remove photo'); await ghDeleteFile(ph.thumb, 'Remove photo'); p.photos.splice(j, 1); await saveFoot(f, 'Remove photo'); toast('Photo deleted.'); }
+          try { await ghDeleteFile(ph.full, 'Remove photo'); await ghDeleteFile(ph.thumb, 'Remove photo'); p.photos.splice(j, 1); await saveFootprints('Remove photo'); toast('Photo deleted.'); }
           catch (e) { toast(e.message, true); }
         }
         markDirty(); renderThumbs(p, i);
@@ -1557,21 +1571,22 @@ function viewFootprint(v, f) {
     input.onchange = async () => {
       const files = [...input.files]; input.value = ''; if (!files.length) return;
       btn.disabled = true; let n = 0;
+      const pub = p.academic; // academic entries get plain, public photos
       try {
         for (const file of files) {
           n++; prog.textContent = `Uploading ${n} of ${files.length}: ${file.name}…`;
           if (!/^image\//.test(file.type)) throw new Error(`${file.name} is not an image.`);
           const full = await resizeJpeg(file, 1600, 0.85), thumb = await resizeJpeg(file, 480, 0.8);
-          const id = rid(), ext = f.encrypted ? 'bin' : 'jpg';
-          const ph = { id, full: `${f.dir}/p-${id}.${ext}`, thumb: `${f.dir}/t-${id}.${ext}`, w: full.w, h: full.h, caption: { en: '', zh: '' } };
-          const pack = async bytes => bytesToB64(f.encrypted ? await encryptBytes(f.ckey, bytes) : bytes);
-          await ghPutFile(ph.full, await pack(full.bytes), `Add photo (${p.city.en || noun})`);
+          const id = rid(), dir = pub ? 'academic' : 'travel', ext = pub ? 'jpg' : 'bin';
+          const ph = { id, full: `${dir}/p-${id}.${ext}`, thumb: `${dir}/t-${id}.${ext}`, w: full.w, h: full.h, caption: { en: '', zh: '' } };
+          const pack = async bytes => bytesToB64(pub ? bytes : await encryptBytes(FP.ckey, bytes));
+          await ghPutFile(ph.full, await pack(full.bytes), `Add photo (${p.city.en || 'place'})`);
           await ghPutFile(ph.thumb, await pack(thumb.bytes), 'Add photo thumbnail');
-          f.urls.set(ph.thumb, Promise.resolve(URL.createObjectURL(thumb.blob)));
+          FP.urls.set(ph.thumb, Promise.resolve(URL.createObjectURL(thumb.blob)));
           p.photos.push(ph);
         }
         prog.textContent = 'Saving…';
-        await saveFoot(f, `Add ${files.length} photo${files.length === 1 ? '' : 's'}`);
+        await saveFootprints(`Add ${files.length} photo${files.length === 1 ? '' : 's'}`);
         toast(`Uploaded ${files.length} photo${files.length === 1 ? '' : 's'}.`);
       } catch (e) { toast(e.message, true); }
       prog.textContent = ''; btn.disabled = false; markDirty(); renderPlaces();
@@ -1579,8 +1594,8 @@ function viewFootprint(v, f) {
   };
   renderPlaces();
 
-  // Change travel password (encrypted page only)
-  if ($('#f-tv-chpw')) $('#f-tv-chpw').onsubmit = async e => {
+  // Change travel password
+  $('#f-tv-chpw').onsubmit = async e => {
     e.preventDefault();
     const p1 = $('#tv-npw').value, p2 = $('#tv-npw2').value, m = $('#tv-chmsg'), btn = $('#tv-chgo');
     if (p1.length < TRAVEL_MIN_PW) return m.textContent = `The password needs at least ${TRAVEL_MIN_PW} characters.`;
@@ -1588,10 +1603,10 @@ function viewFootprint(v, f) {
     btn.disabled = true; m.textContent = 'Re-encrypting…';
     try {
       const salt = crypto.getRandomValues(new Uint8Array(16));
-      f.key = { key: await deriveKey(p1, salt, AUTH_ITER), salt, iter: AUTH_ITER };
-      await saveFoot(f, 'Change travel password');
+      FP.key = { key: await deriveKey(p1, salt, AUTH_ITER), salt, iter: AUTH_ITER };
+      await saveFootprints('Change travel password');
       await rememberTravelPassword(p1);
-      m.textContent = ''; $('#tv-npw').value = ''; $('#tv-npw2').value = ''; toast('Travel password changed. Anyone with the old password can no longer open the page.');
+      m.textContent = ''; $('#tv-npw').value = ''; $('#tv-npw2').value = ''; toast('Travel password changed. Anyone with the old password can no longer open travel.html.');
     } catch (err) { m.textContent = err.message; }
     btn.disabled = false;
   };

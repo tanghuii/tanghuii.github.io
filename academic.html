@@ -72,6 +72,7 @@
 
   #map { width: 100%; height: 62vh; min-height: 380px; border-radius: 12px; border: 1px solid var(--subtle); background: #e9eef5; box-shadow: 0 6px 24px var(--shadow); z-index: 1; }
   .leaflet-container { font-family: inherit; }
+  .leaflet-tile-pane { filter: grayscale(0.55) saturate(0.85) brightness(1.04) contrast(0.95); }
   .leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 8px 24px rgba(13,27,42,0.18); }
   .leaflet-popup-content { margin: 0.8rem 1rem; line-height: 1.5; font-size: 0.95rem; }
   .pop-city { font-weight: 600; font-size: 1.05rem; color: var(--ink); }
@@ -101,6 +102,8 @@
   .city-note { color: var(--muted); font-size: 0.95rem; margin-top: 0.15rem; }
   .city-event { color: var(--accent); font-weight: 500; margin-top: 0.1rem; }
   .city-talk { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 1.02rem; color: var(--ink); margin-top: 0.1rem; }
+  .talk-type { font-family: 'DM Sans', sans-serif; font-style: normal; font-size: 0.82rem; font-weight: 600; color: var(--accent); margin-right: 0.45rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  body.zh .talk-type { font-family: 'Noto Serif SC', serif; letter-spacing: 0.1em; }
   body.zh .city-talk { font-family: 'Noto Serif SC', serif; font-style: normal; }
   .city-name .role { font-weight: 600; color: #fff; background: var(--accent); font-size: 0.78rem; padding: 0.05rem 0.55rem; border-radius: 100px; letter-spacing: 0.03em; }
   .city-actions { display: flex; gap: 0.5rem; align-items: center; }
@@ -196,7 +199,7 @@
     </div>
     <div id="map" role="region" aria-label="Map of visited places"></div>
     <div class="map-note">
-      <span><span class="legend"><i></i> <span data-en="Visited country" data-zh="到访过的国家">Visited country</span></span> &nbsp; <span class="legend"><b></b> <span data-en="City" data-zh="城市">City</span></span></span>
+      <span><span class="legend"><i></i> <span data-en="Visited country / province" data-zh="到访过的国家 / 省份">Visited country / province</span></span> &nbsp; <span class="legend"><b></b> <span data-en="City" data-zh="城市">City</span></span></span>
       <span data-en="Click a marker or a country to jump to its entry." data-zh="点击标记或国家可跳转到对应条目。">Click a marker or a country to jump to its entry.</span>
     </div>
     <div class="places">
@@ -220,11 +223,49 @@ const MODE = 'academic';                 // 'travel' (encrypted, password) or 'a
 const PRIVATE = MODE === 'travel';
 const TRAVEL_FILE = PRIVATE ? 'travel/travel.enc' : 'academic/academic.json';
 const SS_KEY = 'tv_key', LS_KEY = 'tv_key_persist';
-const ROLES = { talk: ['Oral presentation', '口头报告'], poster: ['Poster', '海报'], invited: ['Invited talk', '特邀报告'], keynote: ['Keynote', '主旨报告'], attendee: ['Attendee', '参会'], organizer: ['Organizer', '组织者'], chair: ['Session chair', '分会主席'] };
-const roleLabel = r => ROLES[r] ? ROLES[r][LANG === 'zh' ? 1 : 0] : (r || '');
+const KINDS = { conference: ['Conference', '学术会议'], visit: ['Research visit', '学术访问'], workshop: ['Workshop / summer school', '研讨会 / 暑期学校'] };
+const TALKS = { oral: ['Oral presentation', '口头报告'], poster: ['Poster', '海报展示'], invited: ['Invited talk', '特邀报告'], keynote: ['Keynote', '主旨报告'] };
+const kindLabel = k => KINDS[k] ? KINDS[k][LANG === 'zh' ? 1 : 0] : (k || '');
+const talkLabel = k => TALKS[k] ? TALKS[k][LANG === 'zh' ? 1 : 0] : (k || '');
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// "2024-09" -> "Sep 2024" / "2024年9月"; "2024" stays; anything else is shown as typed
+function fmtWhen(w) {
+  const m = String(w || '').trim().match(/^(\d{4})(?:[-/.](\d{1,2}))?$/); if (!m) return w || '';
+  if (!m[2]) return m[1];
+  const mo = Number(m[2]); if (mo < 1 || mo > 12) return w;
+  return LANG === 'zh' ? `${m[1]}年${mo}月` : `${MONTHS[mo - 1]} ${m[1]}`;
+}
 const WORLD_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json';
 const TOPO_URL = 'https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js';
 const ISO_A2_TO_NUM = {"AW":"533","AF":"004","AO":"024","AI":"660","AX":"248","AL":"008","AD":"020","AE":"784","AR":"032","AM":"051","AS":"016","AQ":"010","TF":"260","AG":"028","AU":"036","AT":"040","AZ":"031","BI":"108","BE":"056","BJ":"204","BQ":"535","BF":"854","BD":"050","BG":"100","BH":"048","BS":"044","BA":"070","BL":"652","BY":"112","BZ":"084","BM":"060","BO":"068","BR":"076","BB":"052","BN":"096","BT":"064","BV":"074","BW":"072","CF":"140","CA":"124","CC":"166","CH":"756","CL":"152","CN":"156","CI":"384","CM":"120","CD":"180","CG":"178","CK":"184","CO":"170","KM":"174","CV":"132","CR":"188","CU":"192","CW":"531","CX":"162","KY":"136","CY":"196","CZ":"203","DE":"276","DJ":"262","DM":"212","DK":"208","DO":"214","DZ":"012","EC":"218","EG":"818","ER":"232","EH":"732","ES":"724","EE":"233","ET":"231","FI":"246","FJ":"242","FK":"238","FR":"250","FO":"234","FM":"583","GA":"266","GB":"826","GE":"268","GG":"831","GH":"288","GI":"292","GN":"324","GP":"312","GM":"270","GW":"624","GQ":"226","GR":"300","GD":"308","GL":"304","GT":"320","GF":"254","GU":"316","GY":"328","HK":"344","HM":"334","HN":"340","HR":"191","HT":"332","HU":"348","ID":"360","IM":"833","IN":"356","IO":"086","IE":"372","IR":"364","IQ":"368","IS":"352","IL":"376","IT":"380","JM":"388","JE":"832","JO":"400","JP":"392","KZ":"398","KE":"404","KG":"417","KH":"116","KI":"296","KN":"659","KR":"410","KW":"414","LA":"418","LB":"422","LR":"430","LY":"434","LC":"662","LI":"438","LK":"144","LS":"426","LT":"440","LU":"442","LV":"428","MO":"446","MF":"663","MA":"504","MC":"492","MD":"498","MG":"450","MV":"462","MX":"484","MH":"584","MK":"807","ML":"466","MT":"470","MM":"104","ME":"499","MN":"496","MP":"580","MZ":"508","MR":"478","MS":"500","MQ":"474","MU":"480","MW":"454","MY":"458","YT":"175","NA":"516","NC":"540","NE":"562","NF":"574","NG":"566","NI":"558","NU":"570","NL":"528","NO":"578","NP":"524","NR":"520","NZ":"554","OM":"512","PK":"586","PA":"591","PN":"612","PE":"604","PH":"608","PW":"585","PG":"598","PL":"616","PR":"630","KP":"408","PT":"620","PY":"600","PS":"275","PF":"258","QA":"634","RE":"638","RO":"642","RU":"643","RW":"646","SA":"682","SD":"729","SN":"686","SG":"702","GS":"239","SH":"654","SJ":"744","SB":"090","SL":"694","SV":"222","SM":"674","SO":"706","PM":"666","RS":"688","SS":"728","ST":"678","SR":"740","SK":"703","SI":"705","SE":"752","SZ":"748","SX":"534","SC":"690","SY":"760","TC":"796","TD":"148","TG":"768","TH":"764","TJ":"762","TK":"772","TM":"795","TL":"626","TO":"776","TT":"780","TN":"788","TR":"792","TV":"798","TW":"158","TZ":"834","UG":"800","UA":"804","UM":"581","UY":"858","US":"840","UZ":"860","VA":"336","VC":"670","VE":"862","VG":"092","VI":"850","VN":"704","VU":"548","WF":"876","WS":"882","YE":"887","ZA":"710","ZM":"894","ZW":"716","XK":"-99"};
+// Shown as one country: Taiwan, Hong Kong and Macau are grouped with China, and the
+// world-atlas polygon for Taiwan (id 158) is highlighted together with China (156).
+const CC_ALIAS = { TW: 'CN', HK: 'CN', MO: 'CN' };
+const normCC = cc => { cc = String(cc || '').toUpperCase(); return CC_ALIAS[cc] || cc; };
+const FEATURE_MERGE = { '158': '156' };
+// China is drawn by province (cn-provinces.json, 34 features incl. Taiwan, Hong Kong, Macau) instead of as one block
+const PROVINCE_CC = { CN: { url: 'cn-provinces.json', skip: new Set(['156', '158']) } };
+let PROVINCE_LAYER = null;
+// Ray casting against the outer ring of every polygon of a (Multi)Polygon feature
+function pointInFeature(lon, lat, f) {
+  const polys = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
+  for (const poly of polys) {
+    const ring = poly[0]; let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    if (inside) return true;
+  }
+  return false;
+}
+// Nearest feature by vertex distance (fallback for coastal points that fall just outside every polygon)
+function nearestFeature(lon, lat, feats) {
+  let best = null, bd = Infinity;
+  for (const f of feats) { const polys = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
+    for (const poly of polys) for (const [x, y] of poly[0]) { const d = (x - lon) ** 2 + (y - lat) ** 2; if (d < bd) { bd = d; best = f; } } }
+  return bd < 1 ? best : null;   // within about 1 degree
+}
 
 let LANG = 'en', DATA = null, CKEY = null, MAP = null, MARKERS = new Map(), COUNTRY_LAYERS = new Map();
 const URLS = new Map();   // encrypted file path -> object URL (decrypted)
@@ -254,7 +295,7 @@ async function unlockWith(key, file) {
 }
 // Decrypt a photo file into an object URL (12-byte IV + ciphertext)
 async function photoUrl(path) {
-  if (!PRIVATE) return path;                 // public photos are plain files
+  if (!PRIVATE || /\.jpe?g$/i.test(path)) return path;   // public photos are plain files (also on the private page)
   if (URLS.has(path)) return URLS.get(path);
   const p = (async () => {
     const r = await fetch(path, { cache: 'force-cache' });
@@ -304,7 +345,11 @@ $('#btn-lock').onclick = () => { ssSet(SS_KEY, null); lsSet(LS_KEY, null); URLS.
 // ─────────────────────────────────────────────────────────────────────────────
 function groupByCountry(places) {
   const g = new Map();
-  for (const p of places) { const k = p.cc || t(p.country) || '?'; if (!g.has(k)) g.set(k, { cc: p.cc, name: p.country, places: [] }); g.get(k).places.push(p); }
+  for (const p of places) {
+    const cc = normCC(p.cc), k = cc || t(p.country) || '?';
+    const name = CC_ALIAS[String(p.cc || '').toUpperCase()] ? { en: 'China', zh: '中国' } : p.country;
+    if (!g.has(k)) g.set(k, { cc, name, places: [] }); g.get(k).places.push(p);
+  }
   const arr = [...g.values()];
   arr.forEach(c => c.places.sort((a, b) => String(b.when || '').localeCompare(String(a.when || ''))));
   arr.sort((a, b) => t(a.name).localeCompare(t(b.name), LANG === 'zh' ? 'zh' : 'en'));
@@ -312,18 +357,19 @@ function groupByCountry(places) {
 }
 function renderHeader() {
   const places = DATA.places || [];
-  const nCountries = new Set(places.map(p => p.cc || t(p.country))).size;
+  const nCountries = new Set(places.map(p => normCC(p.cc) || t(p.country))).size;
   const nPhotos = places.reduce((n, p) => n + (p.photos || []).length, 0);
   const title = t(DATA.title) || (PRIVATE ? (LANG === 'zh' ? '我的旅行足迹' : 'Places I have been') : (LANG === 'zh' ? '学术足迹' : 'Academic footprint'));
   $('#title').innerHTML = esc(title).replace(/\*([^*]+)\*/g, '<em>$1</em>');
   $('#intro').textContent = t(DATA.intro) || '';
   $('#intro').hidden = !t(DATA.intro);
-  const nCities = new Set(places.map(p => (p.cc || '') + '|' + (p.city?.en || t(p.city)).toLowerCase())).size;
+  const nCities = new Set(places.map(p => normCC(p.cc) + '|' + (p.city?.en || t(p.city)).toLowerCase())).size;
+  const nConf = places.filter(p => p.kind === 'conference').length, nOther = places.filter(p => p.academic && p.kind !== 'conference').length;
   const rows = PRIVATE
     ? [[nCountries, LANG === 'zh' ? '个国家' : 'Countries'], [nCities, LANG === 'zh' ? '座城市' : 'Cities'], [nPhotos, LANG === 'zh' ? '张照片' : 'Photos']]
-    : [[nCountries, LANG === 'zh' ? '个国家' : 'Countries'], [nCities, LANG === 'zh' ? '座城市' : 'Cities'], [places.length, LANG === 'zh' ? '场会议' : 'Conferences']];
+    : [[nCountries, LANG === 'zh' ? '个国家' : 'Countries'], [nConf, LANG === 'zh' ? '场会议' : 'Conferences'], [nOther, LANG === 'zh' ? '次访问 / 研讨' : (nOther === 1 ? 'Visit / workshop' : 'Visits / workshops')]];
   $('#stats').innerHTML = rows.map(([n, l]) => `<div class="stat"><span class="stat-num">${n}</span><span class="stat-label">${l}</span></div>`).join('');
-  $('#places-h').textContent = PRIVATE ? (LANG === 'zh' ? '足迹' : 'Places') : (LANG === 'zh' ? '会议' : 'Conferences');
+  $('#places-h').textContent = PRIVATE ? (LANG === 'zh' ? '足迹' : 'Places') : (LANG === 'zh' ? '会议与访问' : 'Conferences and visits');
   $('#places-sub').textContent = LANG === 'zh' ? '按国家排列，时间倒序' : 'by country, newest first';
   $('#footer-year').textContent = new Date().getFullYear();
 }
@@ -333,13 +379,13 @@ function renderList() {
   if (!groups.length) { list.innerHTML = `<p class="empty">${LANG === 'zh' ? '还没有添加地点。' : 'No places yet.'}</p>`; return; }
   const photosLabel = n => LANG === 'zh' ? `${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`;
   list.innerHTML = groups.map(c => `<section class="country" id="c-${esc(c.cc || t(c.name))}">
-    <div class="country-head"><span class="flag">${flag(c.cc)}</span><h3>${esc(t(c.name) || c.cc)}</h3><span class="n">${c.places.length} ${PRIVATE ? (LANG === 'zh' ? '座城市' : (c.places.length === 1 ? 'city' : 'cities')) : (LANG === 'zh' ? '场会议' : (c.places.length === 1 ? 'conference' : 'conferences'))}</span></div>
+    <div class="country-head"><span class="flag">${flag(c.cc)}</span><h3>${esc(t(c.name) || c.cc)}</h3><span class="n">${c.places.length} ${PRIVATE ? (LANG === 'zh' ? '座城市' : (c.places.length === 1 ? 'city' : 'cities')) : (LANG === 'zh' ? '次' : (c.places.length === 1 ? 'visit' : 'visits'))}</span></div>
     ${c.places.map(p => {
       const ph = p.photos || [];
       const strip = ph.length ? `<div class="strip" data-pid="${esc(p.id)}">${ph.slice(0, 6).map((x, i) => `<div class="ph" data-i="${i}" data-thumb="${esc(x.thumb)}"><img alt="${esc(t(x.caption))}">${i === 5 && ph.length > 6 ? `<div class="more">+${ph.length - 6}</div>` : ''}</div>`).join('')}</div>` : '';
       return `<div class="city" data-pid="${esc(p.id)}">
-        <div><div class="city-name">${esc(t(p.city))}${p.when ? `<span class="when">${esc(p.when)}</span>` : ''}${p.role ? `<span class="role">${esc(roleLabel(p.role))}</span>` : ''}</div>
-          ${t(p.event) ? `<div class="city-event">${esc(t(p.event))}</div>` : ''}${p.talk ? `<div class="city-talk">“${esc(p.talk)}”</div>` : ''}${t(p.note) ? `<div class="city-note">${esc(t(p.note))}</div>` : ''}</div>
+        <div><div class="city-name">${esc(t(p.city))}${p.when ? `<span class="when">${esc(fmtWhen(p.when))}</span>` : ''}${p.academic ? `<span class="role">${esc(kindLabel(p.kind || 'conference'))}</span>` : ''}</div>
+          ${p.academic && t(p.event) ? `<div class="city-event">${esc(t(p.event))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="city-talk">${p.talk_type ? `<span class="talk-type">${esc(talkLabel(p.talk_type))}</span>` : ''}${p.talk ? `“${esc(p.talk)}”` : ''}</div>` : ''}${t(p.note) ? `<div class="city-note">${esc(t(p.note))}</div>` : ''}</div>
         <div class="city-actions"><button class="small-btn ghost" data-map="${esc(p.id)}"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${LANG === 'zh' ? '地图' : 'Map'}</button>
           ${ph.length ? `<button class="small-btn" data-gallery="${esc(p.id)}">${photosLabel(ph.length)}</button>` : ''}</div>
         ${strip}</div>`;
@@ -378,8 +424,8 @@ async function renderMap() {
   if (!MAP) {
     MAP = L.map('map', { worldCopyJump: true, minZoom: 2, maxZoom: 18, zoomControl: true, attributionControl: true });
     MAP.attributionControl.setPrefix('');
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' }).addTo(MAP);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(MAP);
     MAP.setView([25, 15], 2);
     MAP.createPane('countries'); MAP.getPane('countries').style.zIndex = 350;
   }
@@ -390,7 +436,7 @@ async function renderMap() {
     if (typeof p.lat !== 'number' || typeof p.lon !== 'number') continue;
     const n = (p.photos || []).length;
     const m = L.circleMarker([p.lat, p.lon], { radius: 7, color: '#ffffff', weight: 2, fillColor: '#1b4f8a', fillOpacity: 1 }).addTo(MAP);
-    m.bindPopup(`<div class="pop-city">${esc(t(p.city))}</div><div class="pop-meta">${esc(t(p.country))}${p.when ? ' · ' + esc(p.when) : ''}</div>${t(p.event) ? `<div style="color:var(--accent);font-weight:500;margin-top:0.2rem">${esc(t(p.event))}</div>` : ''}${p.role ? `<div class="pop-meta">${esc(roleLabel(p.role))}${p.talk ? ': ' + esc(p.talk) : ''}</div>` : ''}
+    m.bindPopup(`<div class="pop-city">${esc(t(p.city))}</div><div class="pop-meta">${esc(t(p.country))}${p.when ? ' · ' + esc(fmtWhen(p.when)) : ''}</div>${p.academic && t(p.event) ? `<div style="color:var(--accent);font-weight:500;margin-top:0.2rem">${esc(kindLabel(p.kind || 'conference'))} · ${esc(t(p.event))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="pop-meta">${esc(talkLabel(p.talk_type))}${p.talk ? (p.talk_type ? ': ' : '') + esc(p.talk) : ''}</div>` : ''}
       ${n ? `<button class="pop-btn" onclick="openLightbox('${esc(p.id)}',0)">${LANG === 'zh' ? `查看 ${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`} ↗</button>` : ''}`);
     m.on('mouseover', () => m.setStyle({ radius: 9, fillColor: '#3b7dd8' })).on('mouseout', () => m.setStyle({ radius: 7, fillColor: '#1b4f8a' }));
     MARKERS.set(p.id, m); bounds.push([p.lat, p.lon]);
@@ -402,20 +448,50 @@ async function renderMap() {
     await loadScriptOnce(TOPO_URL, () => window.topojson);
     renderMap._world ||= await (await fetch(WORLD_URL)).json();
     const visited = new Map();
-    for (const p of places) { const key = p.cc === 'XK' ? 'Kosovo' : ISO_A2_TO_NUM[(p.cc || '').toUpperCase()]; if (key) visited.set(key, p.cc); }
+    for (const p of places) { const cc = normCC(p.cc); const key = cc === 'XK' ? 'Kosovo' : ISO_A2_TO_NUM[cc]; if (key) visited.set(key, cc); }
+    for (const [from, to] of Object.entries(FEATURE_MERGE)) { if (visited.has(to)) visited.set(from, visited.get(to)); else if (visited.has(from)) visited.set(to, visited.get(from)); }
     COUNTRY_LAYERS.forEach(l => l.remove()); COUNTRY_LAYERS.clear();
-    const feats = topojson.feature(renderMap._world, renderMap._world.objects.countries).features.filter(f => visited.has(f.id || f.properties.name));
+    const skip = new Set(Object.values(PROVINCE_CC).flatMap(x => [...x.skip]));
+    const feats = topojson.feature(renderMap._world, renderMap._world.objects.countries).features.filter(f => visited.has(f.id || f.properties.name) && !skip.has(f.id));
     const layer = L.geoJSON({ type: 'FeatureCollection', features: feats }, { pane: 'countries',
       style: { color: '#1b4f8a', weight: 1, fillColor: '#3b7dd8', fillOpacity: 0.32 },
       onEachFeature: (f, l) => {
         const cc = visited.get(f.id || f.properties.name);
         l.on('mouseover', () => l.setStyle({ fillOpacity: 0.5, weight: 1.5 })).on('mouseout', () => l.setStyle({ fillOpacity: 0.32, weight: 1 }));
         l.on('click', () => jumpToCountry(cc));
-        l.bindTooltip(`${flag(cc)} ${esc(t((places.find(p => p.cc === cc) || {}).country) || f.properties.name)}`, { sticky: true, direction: 'top', opacity: 0.95 });
+        const sample = places.find(p => normCC(p.cc) === cc) || {};
+        const label = CC_ALIAS[String(sample.cc || '').toUpperCase()] ? (LANG === 'zh' ? '中国' : 'China') : (t(sample.country) || f.properties.name);
+        l.bindTooltip(`${flag(cc)} ${esc(label)}`, { sticky: true, direction: 'top', opacity: 0.95 });
       } }).addTo(MAP);
     layer.bringToBack();
     COUNTRY_LAYERS.set('all', layer);
   } catch (e) { /* no country shapes: markers still work */ }
+  // Provinces for the countries drawn by province
+  if (PROVINCE_LAYER) { PROVINCE_LAYER.remove(); PROVINCE_LAYER = null; }
+  for (const [cc, cfg] of Object.entries(PROVINCE_CC)) {
+    const mine = places.filter(p => normCC(p.cc) === cc && typeof p.lat === 'number' && typeof p.lon === 'number');
+    if (!mine.length) continue;
+    try {
+      cfg.data ||= await (await fetch(cfg.url)).json();
+      const feats = cfg.data.features;
+      const hit = new Map();   // province id -> number of places
+      for (const p of mine) {
+        const f = feats.find(x => pointInFeature(p.lon, p.lat, x)) || nearestFeature(p.lon, p.lat, feats);
+        if (f) hit.set(f.id, (hit.get(f.id) || 0) + 1);
+      }
+      PROVINCE_LAYER = L.geoJSON(cfg.data, { pane: 'countries',
+        style: f => hit.has(f.id) ? { color: '#1b4f8a', weight: 1, fillColor: '#3b7dd8', fillOpacity: 0.32 } : { color: '#1b4f8a', weight: 0.5, opacity: 0.35, fillOpacity: 0, dashArray: '2 3' },
+        onEachFeature: (f, l) => {
+          const name = LANG === 'zh' ? f.properties.zh : f.properties.en, alt = LANG === 'zh' ? f.properties.en : f.properties.zh;
+          if (hit.has(f.id)) {
+            l.on('mouseover', () => l.setStyle({ fillOpacity: 0.5, weight: 1.5 })).on('mouseout', () => l.setStyle({ fillOpacity: 0.32, weight: 1 }));
+            l.on('click', () => jumpToCountry(cc));
+            l.bindTooltip(`${flag(cc)} ${esc(name)} <span style="opacity:.7">${esc(alt)}</span>`, { sticky: true, direction: 'top', opacity: 0.95 });
+          } else l.options.interactive = false;
+        } }).addTo(MAP);
+      PROVINCE_LAYER.bringToBack();
+    } catch (e) { /* no province file: the country simply has no fill */ }
+  }
 }
 
 // ── Lightbox ──
@@ -440,7 +516,7 @@ async function showLightbox() {
   const { p, i } = LB; const ph = p.photos[i];
   const img = $('#lb-img'), spin = $('#lb-spin'); img.classList.remove('ready'); spin.hidden = false;
   $('#lb-count').textContent = `${i + 1} / ${p.photos.length}`;
-  $('#lb-cap').innerHTML = `<b>${esc(t(p.city))}${p.when ? ', ' + esc(p.when) : ''}</b>${esc(t(ph.caption))}`;
+  $('#lb-cap').innerHTML = `<b>${esc(t(p.city))}${p.when ? ', ' + esc(fmtWhen(p.when)) : ''}</b>${esc(t(ph.caption))}`;
   try {
     // Thumbnail first (usually cached), then the full-size image
     if (URLS.has(ph.thumb)) { img.src = await photoUrl(ph.thumb); img.classList.add('ready'); }
