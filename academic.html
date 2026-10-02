@@ -115,6 +115,21 @@
   .small-btn.ghost:hover { background: var(--accent); color: #fff; }
   .small-btn svg { width: 14px; height: 14px; }
   .strip { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.6rem; }
+  /* Sights and landmarks visited in a place */
+  .highlights { margin-top: 0.6rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .sights { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .sight { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem 0.2rem 0.55rem; border: 1px solid var(--subtle); border-radius: 100px; background: var(--card-bg); font-size: 0.88rem; color: var(--ink); text-decoration: none; transition: border-color 0.2s, background 0.2s; }
+  .sight::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-light); flex-shrink: 0; }
+  a.sight:hover { border-color: var(--accent); background: var(--highlight); }
+  .tag { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.02rem 0.4rem; border-radius: 4px; line-height: 1.5; text-transform: uppercase; }
+  body.zh .tag { letter-spacing: 0.06em; font-size: 0.7rem; }
+  .tag-5a { background: #fcefd6; color: #8a5300; }
+  .tag-wh-cultural, .tag-wh { background: #d6e3f5; color: #1b4f8a; }
+  .tag-wh-natural { background: #dff0e4; color: #2f7a4f; }
+  .tag-wh-mixed { background: linear-gradient(90deg, #d6e3f5 50%, #dff0e4 50%); color: #1b4f8a; }
+  .tag-national-park { background: #e6f3ea; color: #2f7a4f; }
+  .highlights .tag { font-size: 0.8rem; padding: 0.15rem 0.6rem; }
+  .leaflet-tooltip .tag { margin-left: 0.3rem; }
   .strip .ph { aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden; background: var(--highlight); border: 1px solid var(--subtle); position: relative; cursor: zoom-in; }
   .strip .ph img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.4s; }
   .strip .ph img.ready { opacity: 1; }
@@ -196,6 +211,7 @@
       <div>
         <h1 id="title"></h1>
         <p class="intro" id="intro"></p>
+        <p class="highlights" id="highlights" hidden></p>
       </div>
       <div class="stats" id="stats"></div>
     </div>
@@ -229,6 +245,15 @@ const KINDS = { conference: ['Conference', '学术会议'], visit: ['Research vi
 const TALKS = { oral: ['Oral presentation', '口头报告'], poster: ['Poster presentation', '海报报告'], invited: ['Invited talk', '特邀报告'], keynote: ['Keynote', '主旨报告'] };
 const kindLabel = k => KINDS[k] ? KINDS[k][LANG === 'zh' ? 1 : 0] : (k || '');
 const talkLabel = k => TALKS[k] ? TALKS[k][LANG === 'zh' ? 1 : 0] : (k || '');
+const TAGS = { '5a': ['5A scenic area', '5A级景区'], 'wh-cultural': ['World Heritage · cultural', '世界文化遗产'], 'wh-natural': ['World Heritage · natural', '世界自然遗产'], 'wh-mixed': ['World Heritage · mixed', '世界文化与自然双遗产'], 'wh': ['World Heritage', '世界遗产'], 'national-park': ['National park', '国家公园'] };
+const tagLabel = k => TAGS[k] ? TAGS[k][LANG === 'zh' ? 1 : 0] : k;
+const tagHtml = k => `<span class="tag tag-${esc(k)}">${esc(tagLabel(k))}</span>`;
+const sightUrl = sg => (LANG === 'zh' && sg.zhwiki) || sg.enwiki || sg.zhwiki || '';
+function sightChip(sg) {
+  const inner = `${esc(t(sg.name))}${(sg.tags || []).map(tagHtml).join('')}`;
+  const u = sightUrl(sg);
+  return u ? `<a class="sight" href="${esc(u)}" target="_blank" rel="noopener">${inner}</a>` : `<span class="sight">${inner}</span>`;
+}
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 // "2024-09" -> "Sep 2024" / "2024年9月"; "2024" stays; anything else is shown as typed
 function fmtWhen(w) {
@@ -269,7 +294,7 @@ function nearestFeature(lon, lat, feats) {
   return bd < 1 ? best : null;   // within about 1 degree
 }
 
-let LANG = 'en', DATA = null, CKEY = null, MAP = null, MARKERS = new Map(), COUNTRY_LAYERS = new Map();
+let LANG = 'en', DATA = null, CKEY = null, MAP = null, MARKERS = new Map(), COUNTRY_LAYERS = new Map(), SIGHTS_LAYER = null;
 const URLS = new Map();   // encrypted file path -> object URL (decrypted)
 const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -368,6 +393,14 @@ function renderHeader() {
   $('#title').innerHTML = esc(title).replace(/\*([^*]+)\*/g, '<em>$1</em>');
   $('#intro').textContent = t(DATA.intro) || '';
   $('#intro').hidden = !t(DATA.intro);
+  // Highlights: how many World Heritage sites and 5A scenic areas appear in the visited sights
+  const sights = places.flatMap(p => p.sights || []);
+  const nWH = sights.filter(x => (x.tags || []).some(k => k.startsWith('wh'))).length, n5A = sights.filter(x => (x.tags || []).includes('5a')).length, nNP = sights.filter(x => (x.tags || []).includes('national-park')).length;
+  const hl = [];
+  if (nWH) hl.push(`<span class="tag tag-wh">${nWH} ${LANG === 'zh' ? '处世界遗产' : (nWH === 1 ? 'World Heritage site' : 'World Heritage sites')}</span>`);
+  if (n5A) hl.push(`<span class="tag tag-5a">${n5A} ${LANG === 'zh' ? '个5A级景区' : (n5A === 1 ? '5A scenic area' : '5A scenic areas')}</span>`);
+  if (nNP) hl.push(`<span class="tag tag-national-park">${nNP} ${LANG === 'zh' ? '个国家公园' : (nNP === 1 ? 'national park' : 'national parks')}</span>`);
+  $('#highlights').innerHTML = hl.join(''); $('#highlights').hidden = !hl.length;
   const nCities = new Set(places.map(p => normCC(p.cc) + '|' + (p.city?.en || t(p.city)).toLowerCase())).size;
   const nConf = places.filter(p => p.kind === 'conference').length, nOther = places.filter(p => p.academic && p.kind !== 'conference').length;
   const rows = PRIVATE
@@ -393,7 +426,7 @@ function renderList() {
           ${p.academic && t(p.event) ? `<div class="city-event">${esc(t(p.event))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="city-talk">${p.talk_type ? `<span class="talk-type">${esc(talkLabel(p.talk_type))}</span>` : ''}${p.talk ? `“${esc(p.talk)}”` : ''}</div>` : ''}${t(p.note) ? `<div class="city-note">${esc(t(p.note))}</div>` : ''}</div>
         <div class="city-actions"><button class="small-btn ghost" data-map="${esc(p.id)}"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${LANG === 'zh' ? '地图' : 'Map'}</button>
           ${ph.length ? `<button class="small-btn" data-gallery="${esc(p.id)}">${photosLabel(ph.length)}</button>` : ''}</div>
-        ${strip}</div>`;
+        ${(p.sights || []).length ? `<div class="sights">${p.sights.map(sightChip).join('')}</div>` : ''}${strip}</div>`;
     }).join('')}</section>`).join('');
   list.querySelectorAll('[data-map]').forEach(b => b.onclick = () => focusPlace(b.dataset.map));
   list.querySelectorAll('[data-gallery]').forEach(b => b.onclick = () => openLightbox(b.dataset.gallery, 0));
@@ -445,6 +478,21 @@ async function renderMap() {
       ${n ? `<button class="pop-btn" onclick="openLightbox('${esc(p.id)}',0)">${LANG === 'zh' ? `查看 ${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`} ↗</button>` : ''}`);
     m.on('mouseover', () => m.setStyle({ radius: 9, fillColor: '#3b7dd8' })).on('mouseout', () => m.setStyle({ radius: 7, fillColor: '#1b4f8a' }));
     MARKERS.set(p.id, m); bounds.push([p.lat, p.lon]);
+  }
+  // Sights: small markers, visible once zoomed in a little
+  if (SIGHTS_LAYER) { SIGHTS_LAYER.remove(); SIGHTS_LAYER = null; }
+  const sightMarkers = [];
+  for (const p of places) for (const sg of (p.sights || [])) {
+    if (typeof sg.lat !== 'number' || typeof sg.lon !== 'number') continue;
+    const m = L.circleMarker([sg.lat, sg.lon], { radius: 4, color: '#ffffff', weight: 1.5, fillColor: '#3b7dd8', fillOpacity: 0.95 });
+    m.bindTooltip(`${esc(t(sg.name))}${(sg.tags || []).map(tagHtml).join('')}`, { direction: 'top', offset: [0, -4], opacity: 0.95 });
+    m.on('click', () => { const el = document.querySelector(`.city[data-pid="${CSS.escape(p.id)}"]`); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } });
+    sightMarkers.push(m);
+  }
+  if (sightMarkers.length) {
+    SIGHTS_LAYER = L.layerGroup(sightMarkers);
+    const syncSights = () => { if (MAP.getZoom() >= 6) { if (!MAP.hasLayer(SIGHTS_LAYER)) SIGHTS_LAYER.addTo(MAP); } else if (MAP.hasLayer(SIGHTS_LAYER)) SIGHTS_LAYER.remove(); };
+    MAP.off('zoomend', renderMap._syncSights); renderMap._syncSights = syncSights; MAP.on('zoomend', syncSights); syncSights();
   }
   if (bounds.length > 1) MAP.fitBounds(bounds, { padding: [40, 40], maxZoom: 6 });
   else if (bounds.length === 1) MAP.setView(bounds[0], 5);
