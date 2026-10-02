@@ -11,11 +11,22 @@
     gtag('config', 'G-1WEB63LSGJ');
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="site-fonts.js"></script>
+  <script src="site-theme.js"></script>
   <title>Publications | Hui Tang</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@400;500;600&family=Pinyon+Script&family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap" rel="stylesheet">
   <style>
     :root {
+    /* Theme tokens (dark values below, under html[data-theme="dark"]) */
+    --on-accent: #ffffff; --on-accent-2: #a9c8f0; --ink-2: #334155; --highlight-2: #eaf1fb; --hover-border: #b9cbe3; --card-2: #fbfcfe; --hint: #d3dce7;
+    --paper-rgb: 245, 247, 250; --card-rgb: 255, 255, 255; --highlight-rgb: 214, 227, 245; --subtle-rgb: 211, 220, 231;
+    --warn: #8a5300; --warn-bg: #fcefd6; --ok: #2f7a4f; --ok-bg: #e6f3ea; --ok-border: #b7dcc3; --err: #b42318;
+    --note-bg: #c8dbf5; --note-fg: #174a85; --badge-blue: #2f74e0; --gold: #b8860b; --tip-sub: #c9dbf3;
+    --map-bg: #e9eef5; --map-ring: #ffffff; --map-dot: #1b4f8a; --map-line: #1b4f8a; --net-node: #9db4d0;
+    --ramp-lo: #cfe0f5; --ramp-hi: #0f3360; --map-empty: #e6ebf2; --map-sphere: #f7f9fc; --map-border: #ffffff;
+    --font-head: 'Source Serif 4', 'Noto Serif SC', Georgia, serif; --font-body: 'Source Sans 3', 'Noto Sans SC', system-ui, sans-serif;
+
       --ink: #0d1b2a;
       --paper: #f5f7fa;
       --accent: #1b4f8a;
@@ -27,17 +38,33 @@
       --shadow: rgba(13, 27, 42, 0.06);
     }
 
+  /* Dark theme: deep blue-black paper, light ink, a lighter ocean blue for links and accents */
+  html[data-theme="dark"] {
+    --ink: #e3e9f1; --ink-2: #c5cfdb; --paper: #0e141c; --paper-rgb: 14, 20, 28;
+    --accent: #8fb9ef; --accent-light: #6fa3e6; --subtle: #2a3747; --subtle-rgb: 42, 55, 71; --muted: #97a5b7;
+    --highlight: #1c2d44; --highlight-rgb: 28, 45, 68; --highlight-2: #172438;
+    --card-bg: #151e2a; --card: #151e2a; --card-2: #18222f; --card-rgb: 21, 30, 42; --hint: #53657c; --shadow: rgba(0, 0, 0, 0.35);
+    --on-accent: #0b1320; --on-accent-2: #1f3d63; --hover-border: #3d5675;
+    --warn: #f0c46a; --warn-bg: #3a2d12; --ok: #7fcf9e; --ok-bg: #16301f; --ok-border: #2f5a3f; --err: #ff8f80; --err-bg: #3d1915;
+    --note-bg: #22395a; --note-fg: #b5d0f4; --badge-blue: #3d84ea; --gold: #e0b347; --tip-sub: #475a72;
+    --map-bg: #131b25; --map-ring: #0e141c; --map-dot: #8fb9ef; --map-line: #8fb9ef; --net-node: #4a6585;
+    --ramp-lo: #1f3049; --ramp-hi: #a9cdf7; --map-empty: #1a2330; --map-sphere: #111923; --map-border: #0e141c;
+    color-scheme: dark;
+  }
+  html[data-theme="dark"] img.logo-on-dark, html[data-theme="dark"] .school-logo { background: #f5f7fa; }
+
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font-body);
       background: var(--paper);
       color: var(--ink);
       line-height: 1.75;
       -webkit-font-smoothing: antialiased;
     }
-    body.zh { font-family: 'Noto Serif SC', 'DM Sans', serif; }
+    body.zh { font-family: var(--font-body); }
 
     body::before {
       content: '';
@@ -52,7 +79,7 @@
     .top-bar {
       position: fixed; top: 0; width: 100%; z-index: 50;
       backdrop-filter: blur(16px);
-      background: rgba(245, 247, 250, 0.88);
+      background: rgba(var(--paper-rgb), 0.88);
       border-bottom: 1px solid var(--subtle);
       height: 60px; display: flex; align-items: center;
     }
@@ -66,28 +93,28 @@
       font-size: 1.68rem; color: var(--accent); transition: opacity 0.25s;
     }
     .back-link:hover { opacity: 0.7; }
-    .back-arrow { font-family: 'DM Sans', sans-serif; font-size: 1.062rem; opacity: 0.6; }
+    .back-arrow { font-family: var(--font-body); font-size: 1.062rem; opacity: 0.6; }
     .lang-toggle { display: flex; border: 1px solid var(--subtle); border-radius: 100px; overflow: hidden; background: var(--card-bg); }
     .lang-btn { padding: 0.3rem 0.7rem; font-size: 0.938rem; font-weight: 600; border: none; background: transparent; color: var(--muted); cursor: pointer; transition: all 0.25s; }
-    .lang-btn.active { background: var(--accent); color: #fff; }
+    .lang-btn.active { background: var(--accent); color: var(--on-accent); }
 
     .page-header {
       max-width: 1100px; margin: 0 auto; padding: 100px 2rem 2rem;
     }
     .page-header h1 {
-      font-family: 'Crimson Pro', serif; font-size: 2.688rem; font-weight: 300;
+      font-family: var(--font-head); font-size: 2.688rem; font-weight: 300;
       color: var(--ink); margin-bottom: 0.3rem;
     }
-    body.zh .page-header h1 { font-family: 'Noto Serif SC', serif; }
+    body.zh .page-header h1 { font-family: var(--font-head); }
     .page-header .subtitle { font-size: 1.15rem; color: var(--muted); }
     .stats-row { display: flex; gap: 2rem; margin-top: 1.2rem; flex-wrap: wrap; }
     .stat { display: flex; align-items: baseline; gap: 0.4rem; }
-    .stat-num { font-family: 'Crimson Pro', serif; font-size: 2.016rem; font-weight: 600; color: var(--accent); }
+    .stat-num { font-family: var(--font-head); font-size: 2.016rem; font-weight: 600; color: var(--accent); }
     .stat-label { font-size: 1.025rem; color: var(--muted); }
 
     .year-section { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem 0.5rem; }
     .year-label {
-      font-family: 'Crimson Pro', serif; font-size: 1.792rem; font-weight: 600;
+      font-family: var(--font-head); font-size: 1.792rem; font-weight: 600;
       color: var(--accent); display: flex; align-items: center; gap: 1rem;
     }
     .year-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, var(--subtle), transparent); }
@@ -99,9 +126,9 @@
 
     .pub-card {
       display: flex; gap: 1.2rem;
-      background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(214, 227, 245, 0.65) 100%);
+      background: linear-gradient(135deg, rgba(var(--card-rgb), 0.95) 0%, rgba(var(--highlight-rgb), 0.65) 100%);
       backdrop-filter: blur(6px);
-      border: 1px solid rgba(211, 220, 231, 0.4);
+      border: 1px solid rgba(var(--subtle-rgb), 0.4);
       border-radius: 12px; padding: 1.4rem;
       transition: all 0.35s ease; text-decoration: none; color: inherit;
       cursor: pointer; flex-wrap: wrap;
@@ -122,7 +149,7 @@
       border-color: rgba(59, 125, 216, 0.3);
       box-shadow: 0 12px 36px rgba(13, 27, 42, 0.1), 0 2px 8px rgba(27, 79, 138, 0.06);
       transform: translateY(-4px);
-      background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(214, 227, 245, 0.9) 100%);
+      background: linear-gradient(135deg, rgba(var(--card-rgb), 1) 0%, rgba(var(--highlight-rgb), 0.9) 100%);
     }
 
     .pub-card .pub-title {
@@ -154,7 +181,7 @@
       max-height: 2000px;
       opacity: 1;
       padding: 0.8rem 0.2rem 0;
-      border-top-color: rgba(211, 220, 231, 0.5);
+      border-top-color: rgba(var(--subtle-rgb), 0.5);
       margin-top: 0.5rem;
     }
     /* Clamp abstract text to 5 lines with ellipsis; remove clamp when expanded */
@@ -179,7 +206,7 @@
     }
     .expand-hint {
       font-size: 0.875rem;
-      color: var(--subtle);
+      color: var(--hint);
       margin-top: 0.4rem;
       transition: color 0.2s;
     }
@@ -208,7 +235,7 @@
     .cover-book { background: linear-gradient(135deg, #b71c1c, #d32f2f); color: #ffcdd2; }
     .cover-journal {
       background: linear-gradient(160deg, var(--accent) 0%, #0f3360 100%);
-      color: #eaf2fc; border: none; font-family: 'Crimson Pro', serif; font-size: 0.78rem;
+      color: #eaf2fc; border: none; font-family: var(--font-head); font-size: 0.78rem;
       font-weight: 600; line-height: 1.25; padding: 0.6rem; letter-spacing: 0.01em;
     }
     .cover-inprep {
@@ -223,16 +250,18 @@
     .pub-card .pub-venue { font-size: 1rem; font-style: italic; color: var(--accent-light); margin-bottom: 0.5rem; }
     .pub-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
     .pub-badge { display: inline-block; font-size: 0.85rem; font-weight: 600; padding: 0.12rem 0.5rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
-    .badge-first { background: #2f74e0; color: #ffffff; }
-    .badge-corr { background: #ffffff; color: #2f74e0; box-shadow: inset 0 0 0 1.5px #2f74e0; }
-    .badge-review { background: #fcefd6; color: #8a5300; }
+    .badge-first { background: var(--badge-blue); color: var(--on-accent); }
+    .badge-corr { background: var(--card-bg); color: var(--badge-blue); box-shadow: inset 0 0 0 1.5px var(--badge-blue); }
+    .badge-review { background: var(--warn-bg); color: var(--warn); }
     .pub-link-btn {
-      display: inline-flex; align-items: center; gap: 0.3rem;
-      font-size: 0.938rem; font-weight: 500; padding: 0.25rem 0.65rem;
-      border: 1px solid var(--subtle); border-radius: 4px; text-decoration: none;
-      color: var(--muted); transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.04em;
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.938rem; padding: 0.3rem 0.8rem;
+      border-radius: 5px; text-decoration: none;
+      background: var(--accent); color: var(--on-accent); border: 1.5px solid var(--accent); font-weight: 600;
+      transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.04em;
     }
-    .pub-link-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .pub-link-btn::after { content: '↗'; font-size: 0.95em; line-height: 1; }
+    .pub-link-btn:hover, .pub-link-btn:focus-visible { background: var(--card-bg); color: var(--accent); border-color: var(--accent); box-shadow: 0 4px 12px rgba(27, 79, 138, 0.2); }
 
     .cite-badge {
       display: inline-flex;
@@ -305,9 +334,12 @@
 <div class="top-bar">
   <div class="top-bar-inner">
     <a href="index.html" class="back-link"><span class="back-arrow">←</span> <span id="back-name">Hui Tang</span></a>
+    <div class="bar-right" style="display:flex;align-items:center;gap:0.7rem">
+    <button type="button" class="theme-btn" data-theme-toggle aria-label="Switch to dark mode"></button>
     <div class="lang-toggle" id="lang-toggle">
       <button class="lang-btn active" data-lang="en">EN</button>
       <button class="lang-btn" data-lang="zh">中</button>
+    </div>
     </div>
   </div>
 </div>
@@ -347,12 +379,12 @@
     if (p.first_author) badges += '<span class="pub-badge badge-first">First Author</span>';
     if (p.corresponding) badges += '<span class="pub-badge badge-corr">Corresponding Author</span>';
     if (p.status) badges += `<span class="pub-badge badge-review">${esc(p.status)}</span>`;
-    if (p.url) badges += `<a class="pub-link-btn" href="${attr(p.url)}" target="_blank" data-en="Read" data-zh="原文">Read</a>`;
+    if (p.url) badges += `<a class="pub-link-btn" href="${attr(p.url)}" target="_blank" data-en="Read" data-zh="阅读原文">Read</a>`;
     if (p.cited !== null && p.cited !== undefined && p.cited !== '') badges += `<span class="cite-badge">${CITE_ICON} Cited: ${esc(p.cited)}</span>`;
     const hasAbstract = !isBook;
     const abstract = hasAbstract ? `<div class="pub-abstract"><div class="abstract-label">Abstract</div><p>${esc(p.abstract || 'Coming soon.')}</p></div>` : '';
     const hint = hasAbstract ? '<div class="expand-hint" data-en="Click to view abstract" data-zh="点击查看摘要">Click to view abstract</div>' : '';
-    const style = isBook ? ' style="background: linear-gradient(135deg, var(--highlight) 0%, #eaf1fb 100%); border: 1px solid var(--subtle);"' : '';
+    const style = isBook ? ' style="background: linear-gradient(135deg, var(--highlight) 0%, var(--highlight-2) 100%); border: 1px solid var(--subtle);"' : '';
     return `<div class="pub-card"${style}>${cover}
       <div class="pub-info">
         <div class="pub-title">${title}</div>
