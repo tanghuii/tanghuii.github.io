@@ -274,6 +274,17 @@
           "w": 960,
           "h": 1280,
           "caption": {
+            "en": "Photo wi",
+            "zh": ""
+          }
+        },
+        {
+          "id": "6d77d0a54e",
+          "full": "academic/p-6d77d0a54e.jpg",
+          "thumb": "academic/t-6d77d0a54e.jpg",
+          "w": 1600,
+          "h": 1200,
+          "caption": {
             "en": "",
             "zh": ""
           }
