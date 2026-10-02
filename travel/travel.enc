@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "kdf": "PBKDF2-SHA256",
+  "iter": 600000,
+  "salt": "wZ/DZlqEL7j9UQfWMzMD4g==",
+  "iv": "aEmXGost80lpJPNa",
+  "ct": "94pubyR3OQ3KXaNEoyhggith5BO5hG5DWlpgw8LFz8uXOKuauGYMrhegtaj44+a0xq9IMtuq2t37teaGpF96s942NbkMeP5aHIKejN6AngeYhpfmYULBi/4x3PbOPT5CERPWsn+UuTNKKE+AbRVr55V71LKtharue/mk6lt7cHNa2fyuZV8rP4GMVUtKHPbKYcqDFT/CJvqwtuaZWmtjwnMzmMaLLOT65UUsPurr8ezbDQ==",
+  "updated": "2026-10-02T12:28:04.293Z",
+  "note": "Private travel map for travel.html: AES-256-GCM, key derived from the travel password. Photos in this folder are encrypted with a content key stored inside."
+}
