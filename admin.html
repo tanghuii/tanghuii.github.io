@@ -239,6 +239,9 @@
   .draft-card > .item.place { border: none; margin: 0; border-radius: 0; box-shadow: none; }
   .draft-card .item-head .tools { display: none; }
   .draft-foot { display: flex; justify-content: flex-end; padding: 0.6rem 0.9rem 0.8rem; border-top: 1px solid var(--subtle); background: var(--highlight); }
+  .drop-on { position: relative; outline: 2px dashed var(--accent) !important; outline-offset: 3px; border-radius: 10px; }
+  .drop-on::after { content: attr(data-drop-label); position: absolute; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(var(--accent-rgb, 27, 79, 138), 0.10); color: var(--accent); font-weight: 700; font-size: 1.05rem; border-radius: inherit; pointer-events: none; backdrop-filter: blur(1px); }
+  .drop-hint { display: inline; margin: 0 0 0 0.5rem; font-size: 0.82rem; }
   .tv-prov { margin: 0 0 0.45rem 0.2rem; border-left: 2px solid var(--subtle); }
   .tv-prov.open { border-left-color: var(--accent-light, var(--accent)); }
   .tv-prov-head { display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.5rem 0.7rem; border: none; background: none; color: var(--ink); font: inherit; font-size: 0.96rem; text-align: left; cursor: pointer; border-radius: 0 8px 8px 0; }
@@ -2889,7 +2892,7 @@ function viewFootprints(v) {
       <div class="field"><label>Photos (${p.photos.length})</label><div class="thumbs" id="tv-ph-${i}"></div>
         ${p.academic ? `<p class="hint">${p.photos.filter(isPublicPhoto).length} public (academic page) · ${p.photos.filter(x => !isPublicPhoto(x)).length} private (travel page only, encrypted). Use the 🌐 / 🔒 button on a photo to switch.</p>` : ''}
         ${!p.academic && p.photos.some(isPublicPhoto) ? `<p class="hint">${p.photos.filter(isPublicPhoto).length} photo(s) are stored unencrypted (uploaded while this entry was academic). Use 🔒 to make them private.</p>` : ''}
-        <div class="toolbar"><input type="file" id="tv-up-${i}" accept="image/*" multiple style="display:none"><button class="btn sm" data-up="${i}">Upload photos…</button>${p.academic ? `<label class="hint" style="margin:0;display:inline-flex;gap:0.4rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:500">as <select data-up-vis="${i}" style="width:auto;padding:0.2rem 0.4rem"><option value="pub">🌐 public (academic)</option><option value="priv">🔒 private (travel only)</option></select></label>` : ''}<span id="tv-upsg-${i}"></span><span class="tv-prog" id="tv-prog-${i}"></span></div></div></div></div>`; }) || `<p class="hint">Nothing yet. Search for a city above.</p>`;
+        <div class="toolbar"><input type="file" id="tv-up-${i}" accept="image/*" multiple style="display:none"><button class="btn sm" data-up="${i}">Upload photos…</button><span class="hint drop-hint">or drag photos onto this place</span>${p.academic ? `<label class="hint" style="margin:0;display:inline-flex;gap:0.4rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:500">as <select data-up-vis="${i}" style="width:auto;padding:0.2rem 0.4rem"><option value="pub">🌐 public (academic)</option><option value="priv">🔒 private (travel only)</option></select></label>` : ''}<span id="tv-upsg-${i}"></span><span class="tv-prog" id="tv-prog-${i}"></span></div></div></div></div>`; }) || `<p class="hint">Nothing yet. Search for a city above.</p>`;
     const nShown = box.querySelectorAll('.item.place').length, cnt = $('#tv-filter-n');
     if (cnt) cnt.textContent = PLACE_FILTER.trim() ? `${nShown} of ${T.places.length} places` : `${T.places.length} places in ${new Set(T.places.map(groupCC)).size} countries`;
     if (!CN_PROV && T.places.some(x => groupCC(x) === 'CN')) loadFiveA().then(() => { if (CN_PROV?.features?.length) renderPlaces(); });
@@ -3471,6 +3474,49 @@ $('#btn-save').onclick = saveContent;
 $('#btn-signout').onclick = () => (TOKEN ? signOut() : showLogin().then(loadContent));
 $('#btn-reload').onclick = async () => { if (isDirty() && !$('#btn-reload').dataset.confirm) { $('#btn-reload').dataset.confirm = '1'; $('#btn-reload').textContent = 'Discard changes & reload?'; setTimeout(() => { $('#btn-reload').dataset.confirm = ''; $('#btn-reload').textContent = 'Reload from GitHub'; }, 3000); return; } $('#btn-reload').dataset.confirm = ''; $('#btn-reload').textContent = 'Reload from GitHub'; await loadContent(); };
 window.addEventListener('beforeunload', e => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
+// Drag and drop: the smallest container holding exactly one file input is the drop zone for that input
+(() => {
+  let zoneEl = null, depth = 0;
+  const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+  const zoneOf = target => {
+    // climb while the container still holds exactly one file input; the largest such container is the zone
+    let best = null;
+    for (let el = target instanceof Element ? target : target?.parentElement; el && el !== document.body && !el.matches('main, .content, aside'); el = el.parentElement) {
+      const ins = [...el.querySelectorAll('input[type="file"]')].filter(x => !x.disabled);
+      if (ins.length === 1) best = { el, input: ins[0] };
+      else if (ins.length > 1) break;
+      if (best && el.matches('.item, .card, .draft-card')) break;   // a place editor or a settings card is the largest zone
+    }
+    return best;
+  };
+  const accepts = (input, f) => {
+    const acc = (input.accept || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean); if (!acc.length) return true;
+    const name = f.name.toLowerCase(), type = (f.type || '').toLowerCase();
+    return acc.some(a => a.startsWith('.') ? name.endsWith(a) : a.endsWith('/*') ? type.startsWith(a.slice(0, -1)) : type === a);
+  };
+  const label = input => /pdf/.test(input.accept) ? 'Drop the PDF to upload' : input.multiple ? 'Drop photos to upload' : 'Drop the image to upload';
+  const setZone = z => {
+    if (zoneEl && (!z || z.el !== zoneEl)) { zoneEl.classList.remove('drop-on'); zoneEl.removeAttribute('data-drop-label'); zoneEl = null; }
+    if (z && z.el !== zoneEl) { zoneEl = z.el; zoneEl.classList.add('drop-on'); zoneEl.setAttribute('data-drop-label', label(z.input)); }
+  };
+  window.addEventListener('dragenter', e => { if (!hasFiles(e)) return; depth++; });
+  window.addEventListener('dragleave', e => { if (!hasFiles(e)) return; depth = Math.max(0, depth - 1); if (!depth) setZone(null); });
+  window.addEventListener('dragover', e => {
+    if (!hasFiles(e)) return; e.preventDefault();
+    const z = zoneOf(e.target); setZone(z); e.dataTransfer.dropEffect = z ? 'copy' : 'none';
+  });
+  window.addEventListener('drop', e => {
+    if (!hasFiles(e)) return; e.preventDefault(); depth = 0;
+    const z = zoneOf(e.target); setZone(null); if (!z) return;
+    let files = [...e.dataTransfer.files].filter(f => accepts(z.input, f));
+    const skipped = e.dataTransfer.files.length - files.length;
+    if (!files.length) { toast(/pdf/.test(z.input.accept) ? 'Only a PDF can be uploaded here.' : 'Only image files can be uploaded here.', true); return; }
+    if (!z.input.multiple) files = files.slice(0, 1);
+    const dt = new DataTransfer(); files.forEach(f => dt.items.add(f));
+    z.input.files = dt.files; z.input.dispatchEvent(new Event('change', { bubbles: true }));
+    if (skipped) toast(`${skipped} file${skipped === 1 ? ' was' : 's were'} skipped (not ${/pdf/.test(z.input.accept) ? 'a PDF' : 'an image'}).`);
+  });
+})();
 (async () => {
   TAB = lsGet(LS.tab) || 'overview';
   await ensureSignedIn();
