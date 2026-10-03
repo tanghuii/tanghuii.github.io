@@ -185,6 +185,12 @@
   .sg-wh select { padding: 0.25rem 0.4rem; font-size: 14.5px; }
   .sg-wh input[type=text] { padding: 0.3rem 0.5rem; font-size: 15px; }
   @media (max-width: 760px) { .sg-wh { grid-column: 1 / -1; grid-template-columns: 1fr; } }
+  .tag-check .check-rows { display: grid; gap: 0.25rem; max-height: 320px; overflow: auto; border: 1px solid var(--subtle); border-radius: 8px; padding: 0.5rem 0.6rem; }
+  .check-row { display: grid; grid-template-columns: minmax(70px, 0.6fr) minmax(0, 1.4fr) minmax(0, 1.6fr); gap: 0.6rem; font-size: 14.5px; align-items: baseline; }
+  .check-row .w { color: var(--muted); }
+  .check-row.rm .what { color: var(--err); }
+  .check-row.add .what { color: var(--ok); }
+  @media (max-width: 760px) { .check-row { grid-template-columns: 1fr; gap: 0; padding: 0.3rem 0; border-top: 1px dashed var(--subtle); } }
   .wh-part.a5-part { color: var(--warn); background: var(--warn-bg); }
   .wh-part { font-size: 12.5px; color: var(--accent); background: var(--highlight); border-radius: 4px; padding: 0.05rem 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
   .sg-open a { font-size: 12.5px; padding: 0.05rem 0.45rem; border: 1px solid var(--subtle); border-radius: 4px; text-decoration: none; white-space: nowrap; }
@@ -1843,11 +1849,13 @@ const FA_SUFFIX = /(国家级?)?(生态旅游风景区|风景名胜旅游区|风
 function faKey(zh) { let n = String(zh || '').replace(/[（(][^）)]*[）)]/g, ''); for (let k = 0; k < 2; k++) { const m = n.match(FA_PREFIX); if (!m) break; n = n.slice(m[0].length); } return n.replace(/[·•・－—\-、\s]/g, '').replace(FA_SUFFIX, ''); }
 // The official 5A entry a Chinese sight belongs to, or null
 function officialFiveA(name, lat, lon) {
-  const c = faKey(name.zh); if (c.length < 2 || !/[一-鿿]/.test(c)) return null;
+  const c0 = faKey(name.zh); if (c0.length < 2 || !/[一-鿿]/.test(c0)) return null;
+  // Second try without "国家(级)" and with "湿地公园" as "湿地" (西溪国家湿地公园 = 西溪湿地)
+  const c1 = c0.replace(/国家级?(?=[一-鿿]{2})/g, '').replace(/湿地公园$/, '湿地'), cands = c1 !== c0 && c1.length >= 2 ? [c0, c1] : [c0];
   const prov = provinceAt(lat, lon);
   for (const it of FIVE_A_OFF?.items || []) {
     if (prov && it.p !== prov) continue;
-    for (const k of it.keys) {
+    for (const k of it.keys) for (const c of cands) {
       if (c === k || (k.includes(c) && c.length / k.length >= 0.6) || (c.includes(k) && (k.length >= 3 || c.length <= 4))) return it;
     }
   }
@@ -2336,6 +2344,9 @@ function viewFootprints(v) {
       <div class="field" style="margin:0"><label for="tv-q">City or town</label><input id="tv-q" type="text" placeholder="e.g. Groningen, Lhasa, Kyoto" autocomplete="off"></div>
       <button class="btn primary" id="tv-search">Search</button><button class="btn" id="tv-manual">Add manually</button></div>
     <div class="tv-results" id="tv-results"></div><p class="hint" id="tv-smsg"></p></div>
+  <div class="card tag-check"><div class="toolbar" style="margin:0"><button class="btn sm primary" id="tv-check">✓ Check all tags</button>
+    <span class="hint" style="margin:0">Re-checks every saved sight: 5A against the official list (358, May 2025), national parks against the official rule, and World Heritage / 5A-area grouping. Tags you set by hand are checked too.</span></div>
+    <div id="tv-check-out"></div></div>
   <h3 class="yearhead">Places</h3><div id="tv-places"></div>
   <div class="card"><h3>Map services (optional)</h3>
     <p class="hint" style="margin-bottom:0.8rem">Landmark search uses Wikidata and the built-in UNESCO list. Wikidata is blocked in mainland China, so for Chinese places add a free <b>Amap (高德) Web-service key</b>: open <a href="https://console.amap.com/dev/key/app" target="_blank">console.amap.com</a> → 应用管理 → 创建新应用 → 添加 Key → 服务平台 <b>Web服务</b>. The key is stored inside your encrypted sign-in.</p>
@@ -2605,6 +2616,47 @@ function viewFootprints(v) {
     };
   };
   renderPlaces();
+
+  // One-click tag check
+  $('#tv-check').onclick = async () => {
+    const btn = $('#tv-check'), out = $('#tv-check-out'); btn.disabled = true; out.innerHTML = '<p class="hint">Loading the official lists…</p>';
+    try {
+      await Promise.all([loadFiveA(), loadNP(), loadWH(), loadA5()]);
+      const rows = []; let n = 0, fixed = false;
+      // Report against the last published version, so fixes already made when the list was opened show up too
+      let pub = {}; try { pub = JSON.parse(FP.orig || '{}'); } catch (e) {}
+      const PUB = new Map(); for (const q of pub.places || []) for (const g of q.sights || []) PUB.set(q.id + '|' + g.id, g);
+      const snap = g => ({ tags: (g.tags || []).join(','), wh: g.whsite?.id || '', a5: g.a5?.id || '' });
+      for (const pl of T.places) {
+        const where = (pl.city?.zh && pl.city.zh !== pl.city.en ? pl.city.zh : pl.city?.en) || 'place';
+        // Grouping first (a part of a bundled 5A area keeps its 5A), then the official checks
+        const now0 = new Map(pl.sights.map(g => [g, JSON.stringify(snap(g))]));
+        const before = new Map(pl.sights.map(g => [g, snap(PUB.get(pl.id + '|' + g.id) || g)]));
+        autoGroupWH(pl, WH_SITES); autoGroupA5(pl);
+        for (const g of pl.sights) {
+          const la = typeof g.lat === 'number' ? g.lat : pl.lat, lo = typeof g.lon === 'number' ? g.lon : pl.lon;
+          delete g.fiveAManual; delete g.npManual;
+          fixFiveA(g, pl.cc, la, lo); fixNationalPark(g, pl.cc, la, lo);
+          const b = before.get(g), nm = g.name.zh && g.name.zh !== g.name.en ? `${g.name.zh} (${g.name.en || ''})` : (g.name.en || g.name.zh || 'sight');
+          const was = new Set(b.tags ? b.tags.split(',') : []), now = new Set(g.tags);
+          const lbl = { '5a': '5A', 'national-park': 'national park' };
+          for (const t of ['5a', 'national-park']) {
+            if (was.has(t) && !now.has(t)) { rows.push([where, nm, `removed ${lbl[t]}`, 'rm']); n++; }
+            if (!was.has(t) && now.has(t)) { rows.push([where, nm, `added ${lbl[t]}${t === '5a' && g.fiveA ? ' · ' + g.fiveA : ''}`, 'add']); n++; }
+          }
+          if (!b.wh && g.whsite) { rows.push([where, nm, `grouped under World Heritage: ${g.whsite.name.zh || g.whsite.name.en}`, 'add']); n++; }
+          if (!b.a5 && g.a5) { rows.push([where, nm, `grouped under 5A area: ${g.a5.name.zh}`, 'add']); n++; }
+          if (now0.get(g) !== JSON.stringify(snap(g))) fixed = true;
+        }
+      }
+      if (fixed) { markDirty(); renderPlaces(); }
+      const total = T.places.reduce((k, pl) => k + pl.sights.length, 0);
+      out.innerHTML = n ? `<p class="hint" style="margin:0.6rem 0 0.4rem">Checked ${total} sights: ${n} tag change${n === 1 ? '' : 's'} since the last publish. Click <b>Publish changes</b> to save them.</p>
+        <div class="check-rows">${rows.map(([w, nm, what, cls]) => `<div class="check-row ${cls}"><span class="w">${esc(w)}</span><span class="nm">${esc(nm)}</span><span class="what">${esc(what)}</span></div>`).join('')}</div>`
+        : `<p class="hint" style="margin:0.6rem 0 0">All ${total} sights already match the official lists.</p>`;
+    } catch (e) { out.innerHTML = `<p class="hint">Check failed: ${esc(e.message)}</p>`; }
+    btn.disabled = false;
+  };
 
   // Amap key
   $('#tv-amap-save').onclick = async () => {
