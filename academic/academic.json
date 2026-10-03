@@ -8,10 +8,11 @@
     "en": "Conferences, workshops and research visits.",
     "zh": "参加过的学术会议、研讨会与学术访问。"
   },
-  "updated": "2026-10-02",
+  "updated": "2026-10-03",
   "places": [
     {
       "id": "pl-44881eed94",
+      "highlight": false,
       "cc": "CN",
       "country": {
         "en": "China",
@@ -78,6 +79,7 @@
     },
     {
       "id": "pl-a4d9e00736",
+      "highlight": false,
       "cc": "CN",
       "country": {
         "en": "China",
@@ -156,6 +158,7 @@
     },
     {
       "id": "pl-22b653676c",
+      "highlight": false,
       "cc": "AT",
       "country": {
         "en": "Austria",
@@ -246,6 +249,7 @@
     },
     {
       "id": "pl-fba872d1c7",
+      "highlight": false,
       "cc": "IE",
       "country": {
         "en": "Ireland",
@@ -324,6 +328,7 @@
     },
     {
       "id": "pl-bb36375638",
+      "highlight": false,
       "cc": "ES",
       "country": {
         "en": "Spain",
@@ -378,6 +383,7 @@
     },
     {
       "id": "pl-6d2f1ce94e",
+      "highlight": false,
       "cc": "GB",
       "country": {
         "en": "United Kingdom",
@@ -432,6 +438,7 @@
     },
     {
       "id": "pl-be769a8845",
+      "highlight": false,
       "cc": "CN",
       "country": {
         "en": "China",
@@ -439,7 +446,7 @@
       },
       "city": {
         "en": "Xiamen",
-        "zh": "厦门市"
+        "zh": "厦门"
       },
       "lat": 24.4798,
       "lon": 118.0819,
