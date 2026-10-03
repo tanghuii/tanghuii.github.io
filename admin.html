@@ -230,6 +230,15 @@
   .sort-seg { display: inline-flex; border: 1px solid var(--subtle); border-radius: 999px; overflow: hidden; }
   .sort-seg button { border: none; background: none; color: var(--muted); font: inherit; font-size: 0.82rem; padding: 0.28rem 0.75rem; cursor: pointer; }
   .sort-seg button.on { background: var(--accent); color: var(--on-accent, #fff); }
+  .tv-drafts { margin: 0.9rem 0 1.2rem; }
+  .draft-card { border: 2px solid var(--accent); border-radius: 12px; background: var(--card); margin-bottom: 0.8rem; overflow: hidden; }
+  .draft-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem 0.6rem; padding: 0.6rem 0.9rem; background: var(--highlight); border-bottom: 1px solid var(--subtle); }
+  .draft-tag { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--on-accent, #fff); background: var(--accent); border-radius: 999px; padding: 0.1rem 0.6rem; }
+  .draft-name { font-weight: 600; }
+  .draft-hint { color: var(--muted); font-size: 0.86rem; margin-right: auto; }
+  .draft-card > .item.place { border: none; margin: 0; border-radius: 0; box-shadow: none; }
+  .draft-card .item-head .tools { display: none; }
+  .draft-foot { display: flex; justify-content: flex-end; padding: 0.6rem 0.9rem 0.8rem; border-top: 1px solid var(--subtle); background: var(--highlight); }
   .tv-prov { margin: 0 0 0.45rem 0.2rem; border-left: 2px solid var(--subtle); }
   .tv-prov.open { border-left-color: var(--accent-light, var(--accent)); }
   .tv-prov-head { display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.5rem 0.7rem; border: none; background: none; color: var(--ink); font: inherit; font-size: 0.96rem; text-align: left; cursor: pointer; border-radius: 0 8px 8px 0; }
@@ -1755,9 +1764,22 @@ function provGroupsHtml(list, idx, fn, q, openAll) {
       <div class="tv-prov-body"${open ? '' : ' hidden'}>${g.idx.map(i => fn(list[i], i)).join('')}</div></div>`;
   }).join('');
 }
+// Drafts (places just added) are drawn first and moved under the search box by renderPlaces
+function draftCard(p, i, fn) {
+  const name = p.city?.en || p.city?.zh || 'New place';
+  return `<div class="draft-card" data-di="${i}"><div class="draft-bar"><span class="draft-tag">New place</span><span class="draft-name">${esc(name)}${p.country?.en ? ', ' + esc(p.country.en) : ''}</span>
+    <span class="draft-hint">Fill in the details, then add it to the list below.</span>
+    <button type="button" class="btn sm primary" data-draft-done="${i}">✓ Done, add to the list</button><button type="button" class="btn sm" data-draft-drop="${i}">Discard</button></div>${fn(p, i)}
+    <div class="draft-foot"><button type="button" class="btn primary" data-draft-done="${i}">✓ Done, add to the list</button></div></div>`;
+}
 function placeGroups(list, fn) {
+  const d = list.map((p, i) => p._draft ? draftCard(p, i, fn) : '').join('');
+  return (d ? `<div id="tv-draft-tmp">${d}</div>` : '') + placeGroups0(list, fn);
+}
+function placeGroups0(list, fn) {
   const q = PLACE_FILTER.trim(), groups = new Map();
   list.forEach((p, i) => {
+    if (p._draft) return;
     if (q && !placeMatches(p, q)) return;
     const key = groupCC(p);
     if (!groups.has(key)) groups.set(key, key === 'CN' ? { key, name: 'China', zh: '中国', idx: [] } : { key, name: p.country?.en || (key === '—' ? 'No country yet' : key), zh: p.country?.zh || '', idx: [] });
@@ -2797,6 +2819,7 @@ function viewFootprints(v) {
       <div class="field" style="margin:0"><label for="tv-q">City or town</label><input id="tv-q" type="text" placeholder="e.g. Groningen, Lhasa, Kyoto" autocomplete="off"></div>
       <button class="btn primary" id="tv-search">Search</button><button class="btn" id="tv-manual">Add manually</button></div>
     <div class="tv-results" id="tv-results"></div><p class="hint" id="tv-smsg"></p></div>
+  <div id="tv-drafts" class="tv-drafts" hidden></div>
   <div class="card tag-check"><div class="toolbar" style="margin:0"><button class="btn sm primary" id="tv-check">✓ Check all tags</button>
     <span class="hint" style="margin:0">Re-checks every saved sight: 5A against the official list (358, May 2025), national parks against the official rule, and World Heritage / 5A-area grouping. Tags you set by hand are checked too.</span></div>
     <div id="tv-check-out"></div></div>
@@ -2832,14 +2855,15 @@ function viewFootprints(v) {
   $('#tv-manual').onclick = () => addPlace({ city: { en: '', zh: '' }, country: { en: '', zh: '' }, cc: '', lat: null, lon: null });
   const addPlace = r => {
     const np = normalizeFP({ places: [{ id: 'pl-' + rid(), cc: r.cc, country: r.country, city: r.city, lat: r.lat, lon: r.lon }] }).places[0];
-    T.places.unshift(np); OPEN_PLACES.add(np.id);
+    np._draft = true; T.places.unshift(np); OPEN_PLACES.add(np.id);
     markDirty(); renderPlaces();
+    requestAnimationFrame(() => { const d = $('#tv-drafts'); if (d && !d.hidden) d.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
     if (needsEn(np.city) && hasCJK(np.city.zh)) translateName(np.city.zh, np.lat, np.lon).then(({ en }) => { if (en && needsEn(np.city)) { np.city.en = en; markDirty(); renderPlaces(); } }).catch(() => {});
   };
 
   // Places
   const renderPlaces = () => {
-    const box = $('#tv-places');
+    const box = $('#tv-places'); { const s0 = $('#tv-drafts'); if (s0) s0.innerHTML = ''; }
     box.innerHTML = placeGroups(T.places, (p, i) => { const open = OPEN_PLACES.has(p.id); return `<div class="item place ${open ? 'open' : ''}" data-i="${i}"><div class="item-head" data-toggle="${esc(p.id)}" title="${open ? 'Collapse' : 'Expand to edit'}"><div class="title"><span class="chev">${open ? '▾' : '▸'}</span><span class="tv-icon" title="${esc(window.CityIcons ? CityIcons.label(CityIcons.iconKey(p), 'en') : '')}">${window.CityIcons ? CityIcons.svg(CityIcons.iconKey(p)) : ''}</span> ${esc(p.city.en || 'New place')}${!p.cc && p.country.en ? `, ${esc(p.country.en)}` : ''}${p.when ? ` <span class="hint" style="display:inline">· ${esc(p.when)}${p.when.split(/\s*[;,，、|；]\s*/).filter(Boolean).length > 1 ? ` (${p.when.split(/\s*[;,，、|；]\s*/).filter(Boolean).length} visits)` : ''}</span>` : ''}${p.academic ? ` <span class="pill acad">${esc(KIND_OPTIONS.find(k => k[0] === p.kind)?.[1] || 'Academic')}</span>` : (p.trip ? ` <span class="pill muted">${esc(TRIP_OPTIONS.find(k => k[0] === p.trip)?.[1] || p.trip)}</span>` : '')}${!open ? ` <span class="hint" style="display:inline;font-weight:400">· ${p.photos.length} photo${p.photos.length === 1 ? '' : 's'}${p.sights.length ? `, ${p.sights.length} sight${p.sights.length === 1 ? '' : 's'}` : ''}</span>` : ''}</div>${itemTools(T.places, i)}</div><div class="pbody" ${open ? '' : 'hidden'}>
       ${biField('City', p, 'city')}${biField('Country', p, 'country')}
       <div class="row" style="grid-template-columns:90px 1fr 1fr 1fr">
@@ -2900,6 +2924,21 @@ function viewFootprints(v) {
     box.querySelectorAll('[data-addvisit]').forEach(a => a.onclick = e => { e.preventDefault(); const inp = box.querySelector(`[data-when="${a.dataset.addvisit}"]`); if (!inp) return; inp.value = inp.value.trim() ? inp.value.trim().replace(/;?\s*$/, '; ') : ''; inp.dispatchEvent(new Event('input')); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); });
     box.querySelectorAll('input[maxlength="2"]').forEach(inp => inp.addEventListener('change', () => { inp.value = inp.value.toUpperCase(); inp.dispatchEvent(new Event('input')); }));
     T.places.forEach((p, i) => { if (!box.querySelector(`.item[data-i="${i}"]`)) return; renderThumbs(p, i); wireUpload(p, i); renderSights(p, i); wireSights(p, i); });
+    const slot = $('#tv-drafts'), tmp = $('#tv-draft-tmp');
+    if (slot) { slot.innerHTML = ''; slot.hidden = !tmp;
+      if (tmp) { slot.append(...tmp.children); tmp.remove();
+        slot.querySelectorAll('[data-draft-done]').forEach(b => b.onclick = () => {
+          const pl = T.places[Number(b.dataset.draftDone)]; if (!pl) return;
+          if (!pl.city?.en && !pl.city?.zh) { toast('Give the place a name first'); return; }
+          delete pl._draft; OPEN_PLACES.delete(pl.id); markDirty(); renderPlaces();
+          const k = String(pl.cc || '').toUpperCase(), where = (['TW', 'HK', 'MO'].includes(k) ? 'China' : pl.country?.en) || 'the list';
+          toast(`${pl.city.en || pl.city.zh} added to ${where}. Publish to save.`);
+        });
+        slot.querySelectorAll('[data-draft-drop]').forEach(b => b.onclick = () => {
+          const k = Number(b.dataset.draftDrop), pl = T.places[k]; if (!pl) return;
+          if ((pl.photos.length || pl.sights.length) && !confirm(`Discard ${pl.city.en || pl.city.zh || 'this place'} with ${pl.photos.length} photo(s) and ${pl.sights.length} sight(s)?`)) return;
+          T.places.splice(k, 1); OPEN_PLACES.delete(pl.id); markDirty(); renderPlaces();
+        }); } }
   };
   // Saved sights of a place: name EN/ZH, tag toggles, untick to remove
   const renderUploadSight = (p, i) => {
