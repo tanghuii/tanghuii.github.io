@@ -3,8 +3,8 @@
   "kdf": "PBKDF2-SHA256",
   "iter": 600000,
   "salt": "/7S1LXvpG2NMQvtMRKN1pw==",
-  "iv": "5b7bsUKp3+weWwWX",
-  "ct": "+D/vitJAcZuzLblMn++xbhUfVdZljGxiFz33YCkGi2aWvuIh27JQe2oknAmNClTr3H7CXL1871g27zK4oWFB6dKr0dJKw+JGwngcHtKxqM6PQo9PEiHAYZ8eTHhuXo8Zw2k/tbKtOuEfJlJjj6tzUramsV4Q8SHNbEDwbtlzGJj4uI34FJGGmcaw/4ashelU",
-  "updated": "2026-10-03T22:16:00.930Z",
+  "iv": "JNKF0xEaMPObe7S9",
+  "ct": "zPbjJ/wHhDf1CFW2MGLTIjJ0DVN8Zwr4mKEspn8kLCzbSax8v1NoVMcjFFXzI4fGW/diZFIO/W/W/K8QzMAs7tSqd0Gm/kamfL/RQddlsll8mZYQCkDPrzKXNjwM5iQiokN9Crwmt8StxfemdQRUs4mMNEckKjz6v0MmjhvflGZQmZoqCskCxGFtJl2T6pZReXrQPc0N+fhNmhBnkhKOP6mffWmK1eDmhg==",
+  "updated": "2026-10-03T22:16:16.132Z",
   "note": "Encrypted sign-in for admin.html (AES-256-GCM, key derived from the admin password). Delete this file to disable password sign-in."
 }
