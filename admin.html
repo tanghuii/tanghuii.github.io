@@ -1779,7 +1779,8 @@ function normalizeFP(d) {
 const OPEN_COUNTRIES = new Set(); let COUNTRIES_TOUCHED = false, PLACE_FILTER = '';
 const fold = x => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 function placeMatches(p, q) {
-  const hay = fold([p.city?.en, p.city?.zh, p.country?.en, p.country?.zh, p.cc, p.when, p.event?.en, p.event?.zh, p.talk, p.note?.en, p.note?.zh, p.pnote?.en, p.pnote?.zh,
+  const pr = groupCC(p) === 'CN' ? provOfPlace(p) : null;
+  const hay = fold([pr?.en, pr?.zh, pr ? pr.en.replace(/\s+/g, '') + ' ' + pr.zh + '省' : '', p.city?.en, p.city?.zh, p.country?.en, p.country?.zh, p.cc, p.when, p.event?.en, p.event?.zh, p.talk, p.note?.en, p.note?.zh, p.pnote?.en, p.pnote?.zh,
     ...(p.sights || []).flatMap(g => [g.name?.en, g.name?.zh])].join(' '));
   return fold(q).split(/\s+/).filter(Boolean).every(t => hay.includes(t));
 }
