@@ -11,6 +11,37 @@
   "updated": "2026-10-03",
   "places": [
     {
+      "id": "pl-27e5613631",
+      "highlight": false,
+      "icon": "",
+      "cc": "CN",
+      "country": {
+        "en": "China",
+        "zh": "中国"
+      },
+      "city": {
+        "en": "Weihai",
+        "zh": "威海"
+      },
+      "lat": 37.5097,
+      "lon": 122.1164,
+      "when": "2026-07",
+      "academic": true,
+      "kind": "workshop",
+      "event": {
+        "en": "CEADS Summer School 2026",
+        "zh": "第八届中国碳核算数据库（CEADs）未来学者暑期研修营"
+      },
+      "talk": "",
+      "talk_type": "",
+      "note": {
+        "en": "",
+        "zh": ""
+      },
+      "sights": [],
+      "photos": []
+    },
+    {
       "id": "pl-44881eed94",
       "highlight": false,
       "icon": "",
