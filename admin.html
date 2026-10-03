@@ -213,6 +213,14 @@
   .tv-country-n { margin-left: auto; color: var(--muted); font-size: 0.88rem; white-space: nowrap; }
   .tv-country-body { padding: 0 0.8rem 0.4rem; }
   .tv-country-body > .item { margin-bottom: 0.6rem; }
+  .tv-prov { margin: 0 0 0.45rem 0.2rem; border-left: 2px solid var(--subtle); }
+  .tv-prov.open { border-left-color: var(--accent-light, var(--accent)); }
+  .tv-prov-head { display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.5rem 0.7rem; border: none; background: none; color: var(--ink); font: inherit; font-size: 0.96rem; text-align: left; cursor: pointer; border-radius: 0 8px 8px 0; }
+  .tv-prov-head:hover { background: var(--highlight); }
+  .tv-prov-head .chev { color: var(--muted); width: 1em; }
+  .tv-prov-body { padding: 0.1rem 0 0.3rem 0.7rem; }
+  .tv-prov-body > .item { margin-bottom: 0.6rem; }
+  @media (max-width: 760px) { .tv-prov { margin-left: 0; } .tv-prov-head { padding: 0.45rem 0.5rem; } .tv-prov-body { padding-left: 0.4rem; } }
   @media (max-width: 760px) { .tv-country-head { padding: 0.65rem 0.75rem; } .tv-country-body { padding: 0 0.4rem 0.3rem; } .tv-filter .btn { flex: 1 1 auto; } }
   .wh-part.a5-part { color: var(--warn); background: var(--warn-bg); }
   .wh-part { font-size: 12.5px; color: var(--accent); background: var(--highlight); border-radius: 4px; padding: 0.05rem 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
@@ -1700,6 +1708,26 @@ function placeMatches(p, q) {
     ...(p.sights || []).flatMap(g => [g.name?.en, g.name?.zh])].join(' '));
   return fold(q).split(/\s+/).filter(Boolean).every(t => hay.includes(t));
 }
+// China: provinces inside the country group (needs cn-provinces.json, loaded with the 5A list)
+const OPEN_PROVS = new Set();
+function provOfPlace(p) {
+  if (!CN_PROV?.features?.length || typeof p.lat !== 'number' || typeof p.lon !== 'number') return null;
+  const feats = CN_PROV.features;
+  let f = sarFeature(p, feats, inFeature) || feats.find(x => inFeature(p.lon, p.lat, x));
+  if (!f) { let bd = 1;   // coastal points just outside the simplified outlines: nearest vertex within ~1 degree
+    for (const x of feats) for (const poly of (x.geometry.type === 'MultiPolygon' ? x.geometry.coordinates : [x.geometry.coordinates])) for (const [lo, la] of poly[0]) { const d = (lo - p.lon) ** 2 + (la - p.lat) ** 2; if (d < bd) { bd = d; f = x; } } }
+  return f ? f.properties : null;
+}
+function provGroupsHtml(list, idx, fn, q, openAll) {
+  const m = new Map();
+  for (const i of idx) { const pr = provOfPlace(list[i]), k = pr ? pr.zh : '—';
+    if (!m.has(k)) m.set(k, { k, en: pr ? pr.en : 'No province (no coordinates)', zh: pr ? pr.zh : '', idx: [] }); m.get(k).idx.push(i); }
+  return [...m.values()].sort((a, b) => (a.k === '—') - (b.k === '—') || a.en.localeCompare(b.en)).map(g => {
+    const open = !!q || openAll || OPEN_PROVS.has(g.k) || g.idx.some(i => OPEN_PLACES.has(list[i].id));
+    return `<div class="tv-prov${open ? ' open' : ''}" data-prov="${esc(g.k)}"><button type="button" class="tv-prov-head" data-ptoggle="${esc(g.k)}" aria-expanded="${open}"><span class="chev">${open ? '▾' : '▸'}</span><b>${esc(g.en)}</b>${g.zh ? `<span class="tv-country-zh">${esc(g.zh)}</span>` : ''}<span class="tv-country-n">${g.idx.length} place${g.idx.length === 1 ? '' : 's'}</span></button>
+      <div class="tv-prov-body"${open ? '' : ' hidden'}>${g.idx.map(i => fn(list[i], i)).join('')}</div></div>`;
+  }).join('');
+}
 function placeGroups(list, fn) {
   const q = PLACE_FILTER.trim(), groups = new Map();
   list.forEach((p, i) => {
@@ -1713,8 +1741,8 @@ function placeGroups(list, fn) {
   return [...groups.values()].sort((a, b) => (a.key === '—') - (b.key === '—') || a.name.localeCompare(b.name)).map(g => {
     const open = !!q || openAll || OPEN_COUNTRIES.has(g.key) || g.idx.some(i => OPEN_PLACES.has(list[i].id));
     const nA = g.idx.filter(i => list[i].academic).length;
-    return `<div class="tv-country${open ? ' open' : ''}" data-cc="${esc(g.key)}"><button type="button" class="tv-country-head" data-ctoggle="${esc(g.key)}" aria-expanded="${open}"><span class="chev">${open ? '▾' : '▸'}</span><span class="tv-flag">${g.key === '—' ? '' : tvFlag(g.key)}</span><b>${esc(g.name)}</b>${g.zh && g.zh !== g.name ? `<span class="tv-country-zh">${esc(g.zh)}</span>` : ''}<span class="tv-country-n">${g.idx.length} place${g.idx.length === 1 ? '' : 's'}${nA ? ` · ${nA} academic` : ''}</span></button>
-      <div class="tv-country-body"${open ? '' : ' hidden'}>${g.idx.map(i => fn(list[i], i)).join('')}</div></div>`;
+    return `<div class="tv-country${open ? ' open' : ''}" data-cc="${esc(g.key)}"><button type="button" class="tv-country-head" data-ctoggle="${esc(g.key)}" aria-expanded="${open}"><span class="chev">${open ? '▾' : '▸'}</span><span class="tv-flag">${g.key === '—' ? '' : tvFlag(g.key)}</span><b>${esc(g.name)}</b>${g.zh && g.zh !== g.name ? `<span class="tv-country-zh">${esc(g.zh)}</span>` : ''}<span class="tv-country-n">${g.idx.length} place${g.idx.length === 1 ? '' : 's'}${g.key === 'CN' && CN_PROV?.features?.length ? ` · ${new Set(g.idx.map(i => provOfPlace(list[i])?.zh || '—')).size} provinces` : ''}${nA ? ` · ${nA} academic` : ''}</span></button>
+      <div class="tv-country-body"${open ? '' : ' hidden'}>${g.key === 'CN' && CN_PROV?.features?.length ? provGroupsHtml(list, g.idx, fn, q, openAll) : g.idx.map(i => fn(list[i], i)).join('')}</div></div>`;
   }).join('');
 }
 // The public file: academic entries only, public fields only, plain photos only
@@ -2795,9 +2823,16 @@ function viewFootprints(v) {
         <div class="toolbar"><input type="file" id="tv-up-${i}" accept="image/*" multiple style="display:none"><button class="btn sm" data-up="${i}">Upload photos…</button>${p.academic ? `<label class="hint" style="margin:0;display:inline-flex;gap:0.4rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:500">as <select data-up-vis="${i}" style="width:auto;padding:0.2rem 0.4rem"><option value="pub">🌐 public (academic)</option><option value="priv">🔒 private (travel only)</option></select></label>` : ''}<span id="tv-upsg-${i}"></span><span class="tv-prog" id="tv-prog-${i}"></span></div></div></div></div>`; }) || `<p class="hint">Nothing yet. Search for a city above.</p>`;
     const nShown = box.querySelectorAll('.item.place').length, cnt = $('#tv-filter-n');
     if (cnt) cnt.textContent = PLACE_FILTER.trim() ? `${nShown} of ${T.places.length} places` : `${T.places.length} places in ${new Set(T.places.map(x => String(x.cc || '').toUpperCase() || '—')).size} countries`;
+    if (!CN_PROV && T.places.some(x => String(x.cc || '').toUpperCase() === 'CN')) loadFiveA().then(() => { if (CN_PROV?.features?.length) renderPlaces(); });
+    box.querySelectorAll('[data-ptoggle]').forEach(b => b.onclick = () => {
+      const sec = b.closest('.tv-prov'), k = b.dataset.ptoggle, open = !sec.classList.contains('open');
+      if (!COUNTRIES_TOUCHED) { COUNTRIES_TOUCHED = true; box.querySelectorAll('.tv-country.open').forEach(x => OPEN_COUNTRIES.add(x.dataset.cc)); box.querySelectorAll('.tv-prov.open').forEach(x => OPEN_PROVS.add(x.dataset.prov)); }
+      if (open) OPEN_PROVS.add(k); else { OPEN_PROVS.delete(k); sec.querySelectorAll('.item.place').forEach(it => OPEN_PLACES.delete(T.places[Number(it.dataset.i)]?.id)); }
+      sec.classList.toggle('open', open); sec.querySelector('.tv-prov-body').hidden = !open; b.querySelector('.chev').textContent = open ? '▾' : '▸'; b.setAttribute('aria-expanded', open);
+    });
     box.querySelectorAll('[data-ctoggle]').forEach(b => b.onclick = () => {
       const sec = b.closest('.tv-country'), k = b.dataset.ctoggle, open = !sec.classList.contains('open');
-      if (!COUNTRIES_TOUCHED) { COUNTRIES_TOUCHED = true; box.querySelectorAll('.tv-country.open').forEach(x => OPEN_COUNTRIES.add(x.dataset.cc)); }
+      if (!COUNTRIES_TOUCHED) { COUNTRIES_TOUCHED = true; box.querySelectorAll('.tv-country.open').forEach(x => OPEN_COUNTRIES.add(x.dataset.cc)); box.querySelectorAll('.tv-prov.open').forEach(x => OPEN_PROVS.add(x.dataset.prov)); }
       if (open) OPEN_COUNTRIES.add(k); else { OPEN_COUNTRIES.delete(k); sec.querySelectorAll('.item.place').forEach(it => OPEN_PLACES.delete(T.places[Number(it.dataset.i)]?.id)); }
       sec.classList.toggle('open', open); sec.querySelector('.tv-country-body').hidden = !open; b.querySelector('.chev').textContent = open ? '▾' : '▸'; b.setAttribute('aria-expanded', open);
     });
@@ -3019,8 +3054,8 @@ function viewFootprints(v) {
   let filterTimer = 0;
   $('#tv-filter').addEventListener('input', e => { clearTimeout(filterTimer); filterTimer = setTimeout(() => { PLACE_FILTER = e.target.value; renderPlaces(); }, 150); });
   $('#tv-filter').addEventListener('keydown', e => { if (e.key === 'Escape') { e.target.value = ''; PLACE_FILTER = ''; renderPlaces(); } });
-  $('#tv-open-all').onclick = () => { COUNTRIES_TOUCHED = true; T.places.forEach(x => OPEN_COUNTRIES.add(String(x.cc || '').toUpperCase() || '—')); renderPlaces(); };
-  $('#tv-close-all').onclick = () => { COUNTRIES_TOUCHED = true; OPEN_COUNTRIES.clear(); OPEN_PLACES.clear(); renderPlaces(); };
+  $('#tv-open-all').onclick = () => { COUNTRIES_TOUCHED = true; T.places.forEach(x => { OPEN_COUNTRIES.add(String(x.cc || '').toUpperCase() || '—'); if (String(x.cc || '').toUpperCase() === 'CN') OPEN_PROVS.add(provOfPlace(x)?.zh || '—'); }); renderPlaces(); };
+  $('#tv-close-all').onclick = () => { COUNTRIES_TOUCHED = true; OPEN_COUNTRIES.clear(); OPEN_PROVS.clear(); OPEN_PLACES.clear(); renderPlaces(); };
 
   // One-click tag check
   $('#tv-check').onclick = async () => {

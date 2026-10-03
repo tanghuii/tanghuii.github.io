@@ -344,6 +344,8 @@
   .hx-ext { grid-column: 2; grid-row: 1 / span 2; display: flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 8px; color: var(--muted); }
   .hx-ext:hover { color: var(--accent); background: var(--card); }
   .hx-ext svg { width: 16px; height: 16px; }
+  .hx-subs { grid-column: 1; margin: 0.1rem 0 0 2.2rem; color: var(--muted); font-size: 0.8rem; }
+  @media (max-width: 640px) { .hx-subs { margin-left: 0; } }
   .hx-note, .hx-empty { margin: 1rem 0 0; color: var(--muted); font-size: 0.8rem; }
   .fp-pin.hot { transform: scale(1.45); background: var(--accent-light); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.3), 0 2px 8px rgba(13, 27, 42, 0.3); }
   @media (max-width: 640px) {
@@ -770,7 +772,9 @@ function renderHeader() {
   $('#intro').hidden = !t(DATA.intro);
   // Highlights: how many World Heritage sites and 5A scenic areas appear in the visited sights
   const sights = places.flatMap(p => p.sights || []);
-  const nWH = new Set(sights.filter(x => x.whsite || (x.tags || []).some(k => k.startsWith('wh'))).map(x => x.whsite ? 'p' + x.whsite.id : 's' + x.id)).size, n5A = new Set(sights.filter(x => x.a5 || (x.tags || []).includes('5a')).map(x => x.a5 ? 'a' + x.a5.id : 's' + x.id)).size, nNP = sights.filter(x => (x.tags || []).includes('national-park')).length;
+  const nWH = new Set(sights.filter(x => x.whsite || (x.tags || []).some(k => k.startsWith('wh'))).map(x => x.whsite ? 'p' + x.whsite.id : 's' + x.id)).size, n5A = new Set(places.flatMap(p => (p.sights || []).filter(isFiveA).map(sg => a5Entry(sg, p).key))).size, nNP = sights.filter(x => (x.tags || []).includes('national-park')).length;
+  if (!FIVE_A_OFF && places.some(p => (p.sights || []).some(isFiveA))) loadFiveAOff().then(() => { renderHeader(); renderHeritage(); });
+  if (!PROVINCE_CC.CN.data && places.some(p => normCC(p.cc) === 'CN')) loadProvinces().then(d => { if (d) { renderHeader(); renderHeritage(); } });
   const hl = [];
   const hxTag = (cls, tab, text) => PRIVATE ? `<button type="button" class="tag ${cls} hx-link" data-hx="${tab}" title="${LANG === 'zh' ? '打开遗产索引' : 'Open the heritage index'}">${text}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>` : `<span class="tag ${cls}">${text}</span>`;
   if (nWH) hl.push(hxTag('tag-wh', 'wh', `${nWH} ${LANG === 'zh' ? '处世界遗产' : (nWH === 1 ? 'World Heritage site' : 'World Heritage sites')}`));
@@ -907,6 +911,33 @@ function animateCards(root) {
     pick();
   }
 }
+// ── 5A areas: resolve every 5A sight to one entry of the official list (several sights of one area count once) ──
+let FIVE_A_OFF = null;
+function loadFiveAOff() { return loadFiveAOff.p ||= fetch('cn-5a-official.json').then(r => r.json()).then(d => (FIVE_A_OFF = d)).catch(() => (FIVE_A_OFF = { items: [] })); }
+const FA_PREFIX = /^(?:[一-鿿]{2,8}?(?:自治州|地区|市|盟|县|区))(?=[一-鿿]{2})/;
+const FA_SUFFIX = /(国家级?)?(重点)?(生态旅游风景区|风景名胜旅游区|风景名胜区|生态文化旅游区|文化生态旅游区|文化旅游景区|文化旅游区|生态旅游区|风景旅游区|旅游风景区|旅游景区|旅游度假区|休闲旅游区|游览区|风景区|旅游区|景区|风光带|景点)$/;
+function faKey(zh) { let n = String(zh || '').replace(/[（(][^）)]*[）)]/g, ''); for (let k = 0; k < 2; k++) { const m = n.match(FA_PREFIX); if (!m) break; n = n.slice(m[0].length); } return n.replace(/[·•・－—\-、\s]/g, '').replace(FA_SUFFIX, ''); }
+function officialFiveA(zh, prov) {
+  const c0 = faKey(zh); if (c0.length < 2 || !/[一-鿿]/.test(c0)) return null;
+  const c1 = c0.replace(/国家级?(?=[一-鿿]{2})/g, '').replace(/湿地公园$/, '湿地'), cands = c1 !== c0 && c1.length >= 2 ? [c0, c1] : [c0];
+  let best = null, bl = 0;
+  for (const it of FIVE_A_OFF?.items || []) {
+    if (prov && it.p !== prov) continue;
+    for (const k of it.keys) for (const c of cands)
+      if ((c === k || (k.includes(c) && c.length / k.length >= 0.6) || (c.includes(k) && (k.length >= 3 || c.length <= 4))) && k.length > bl) { best = it; bl = k.length; }
+  }
+  return best;
+}
+const isFiveA = sg => !!sg.a5 || (sg.tags || []).includes('5a');
+// { key, off }: off is the official entry (or null when the sight is not on the list)
+function a5Entry(sg, p) {
+  const prov = normCC(p.cc) === 'CN' && PROVINCE_CC.CN.data ? (provinceOf(p)?.zh || '') : '';
+  if (FIVE_A_OFF) {
+    if (sg.fiveA) { const it = FIVE_A_OFF.items.find(x => x.n === sg.fiveA); if (it) return { key: 'o' + it.n, off: it }; }
+    for (const zh of [sg.a5?.name?.zh, sg.name?.zh]) { const it = zh && officialFiveA(zh, prov); if (it) return { key: 'o' + it.n, off: it }; }
+  }
+  return { key: sg.a5 ? 'a' + sg.a5.id : 's' + sg.id, off: null };
+}
 // ── Heritage index (travel page only): World Heritage sites by country, 5A scenic areas by province ──
 const WH_TOTAL = {"AD":1,"AE":3,"AF":2,"AG":1,"AL":4,"AM":3,"AO":1,"AR":12,"AT":12,"AU":21,"AZ":5,"BA":5,"BB":1,"BD":3,"BE":16,"BF":4,"BG":10,"BH":3,"BJ":3,"BO":7,"BR":26,"BW":2,"BY":4,"BZ":1,"CA":22,"CD":5,"CF":2,"CG":2,"CH":13,"CI":5,"CL":7,"CM":3,"CN":61,"CO":9,"CR":4,"CU":9,"CV":1,"CY":3,"CZ":17,"DE":55,"DK":13,"DM":1,"DO":1,"DZ":7,"EC":5,"EE":2,"EG":7,"ER":1,"ES":50,"ET":12,"FI":8,"FJ":1,"FM":1,"FR":56,"GA":2,"GB":35,"GE":4,"GH":2,"GM":2,"GN":1,"GR":21,"GT":4,"GW":1,"HN":2,"HR":10,"HT":1,"HU":8,"ID":10,"IE":2,"IL":9,"IN":45,"IQ":6,"IR":30,"IS":3,"IT":62,"JM":2,"JO":8,"JP":27,"KE":8,"KG":3,"KH":5,"KI":1,"KM":1,"KN":1,"KP":3,"KR":17,"KZ":7,"LA":4,"LB":7,"LC":1,"LK":8,"LS":1,"LT":5,"LU":1,"LV":3,"LY":5,"MA":9,"MD":1,"ME":4,"MG":3,"MH":1,"MK":2,"ML":4,"MM":2,"MN":7,"MR":2,"MT":3,"MU":2,"MW":3,"MX":36,"MY":6,"MZ":2,"NA":2,"NE":3,"NG":2,"NI":2,"NL":13,"NO":8,"NP":4,"NZ":3,"OM":5,"PA":5,"PE":13,"PG":1,"PH":6,"PK":6,"PL":18,"PS":6,"PT":17,"PW":1,"PY":1,"QA":1,"RO":11,"RS":5,"RU":33,"RW":2,"SA":8,"SB":1,"SC":2,"SD":3,"SE":15,"SG":1,"SI":5,"SK":8,"SL":1,"SM":1,"SN":7,"SR":3,"SS":1,"ST":1,"SV":1,"SY":6,"TD":2,"TG":1,"TH":9,"TJ":5,"TM":5,"TN":10,"TR":22,"TZ":7,"UA":8,"UG":3,"US":27,"UY":3,"UZ":8,"VA":2,"VE":3,"VN":9,"VU":1,"YE":5,"ZA":12,"ZM":1,"ZW":5};   // UNESCO list (wh-sites.json): properties per state party
 const A5_TOTAL = {"北京":9,"天津":2,"河北":13,"山西":12,"内蒙古":8,"辽宁":7,"吉林":9,"黑龙江":7,"上海":5,"江苏":26,"浙江":22,"安徽":13,"福建":12,"江西":15,"山东":16,"河南":17,"湖北":16,"湖南":12,"广东":16,"广西":10,"海南":7,"重庆":12,"四川":18,"贵州":10,"云南":10,"西藏":5,"陕西":13,"甘肃":8,"青海":4,"宁夏":6,"新疆":18};   // official 5A list (cn-5a-official.json): areas per province
@@ -928,9 +959,13 @@ function heritageItems() {
       if (w && !it.name.zh && w.name.zh) it.name.zh = w.name.zh;
       if (w && sg.whroot) it.sg0 = sg;
     }
-    if (sg.a5 || tags.includes('5a')) {
-      const it = add(a5, sg.a5 ? 'a' + sg.a5.id : 's' + sg.id, () => ({ kind: '5a', name: sg.a5 ? { ...sg.a5.name } : { ...sg.name }, a5: sg.a5 || null, sg0: sg, visits: [] }), p, sg);
-      if (sg.a5 && sg.a5root) it.sg0 = sg;
+    if (isFiveA(sg)) {
+      const e = a5Entry(sg, p);
+      const it = add(a5, e.key, () => ({ kind: '5a', name: e.off ? { zh: e.off.n, en: '' } : sg.a5 ? { ...sg.a5.name } : { ...sg.name }, off: e.off, a5: sg.a5 || null, sg0: sg, visits: [] }), p, sg);
+      // the sight named like the area itself (青海湖 for 青海湖风景区) gives the English name and the map position
+      const exact = e.off ? e.off.keys.includes(faKey(sg.name.zh)) : !!(sg.a5 && sg.a5root);
+      if (exact) { if (!it.exact) { it.exact = true; it.sg0 = sg; }
+        if (e.off && !it.name.en && sg.name.en && !/[一-鿿]/.test(sg.name.en)) it.name.en = sg.name.en; }
     }
   }
   const finish = it => {
@@ -939,6 +974,11 @@ function heritageItems() {
     it.last = ps.map(p => visitsOf(p.when).map(visitKey).sort().pop() || '').sort().pop() || '';
     it.lastLabel = (() => { const p = ps.find(q => visitsOf(q.when).some(w => visitKey(w) === it.last)); const w = p ? visitsOf(p.when).find(x => visitKey(x) === it.last) : ''; return w ? fmtVisit(w) : ''; })();
     it.parts = it.visits.filter(v => it.kind === 'wh' ? (it.wh && !v.sg.whroot) : (it.a5 && !v.sg.a5root)).length;
+    if (it.kind === '5a') {
+      const seen = new Map(); it.visits.forEach(v => { const k = (v.sg.name.zh || v.sg.name.en || v.sg.id); if (!seen.has(k)) seen.set(k, v.sg); });
+      it.subs = seen.size > 1 ? [...seen.values()] : [];
+      if (it.off && !it.name.en && it.visits.length === 1 && it.sg0.name.en && !/[一-鿿]/.test(it.sg0.name.en)) it.name.en = it.sg0.name.en;
+    }
     it.photos = it.visits.reduce((n, v) => n + sightPhotos(v.p, v.sg.id).length, 0);
     return it;
   };
@@ -949,7 +989,8 @@ function heritageGroups(items, kind) {
   for (const it of items) {
     let key, name, total, cc = '';
     if (kind === 'wh') { cc = normCC(it.p0.cc); key = cc || t(it.p0.country); name = cc === 'CN' ? { en: 'China', zh: '中国' } : it.p0.country; total = WH_TOTAL[cc] || 0; }
-    else { const pr = normCC(it.p0.cc) === 'CN' ? provinceOf(it.p0) : null; key = pr ? pr.zh : '—'; name = pr ? { en: pr.en, zh: pr.zh } : { en: 'Other', zh: '其他' }; total = pr ? (A5_TOTAL[pr.zh] || 0) : 0; }
+    else { const offF = it.off ? PROVINCE_CC.CN.data?.features.find(f => f.properties.zh === it.off.p) : null;
+      const pr = offF ? { zh: offF.properties.zh, en: offF.properties.en } : normCC(it.p0.cc) === 'CN' ? provinceOf(it.p0) : null; key = pr ? pr.zh : '—'; name = pr ? { en: pr.en, zh: pr.zh } : { en: 'Other', zh: '其他' }; total = pr ? (A5_TOTAL[pr.zh] || 0) : 0; }
     if (!m.has(key)) m.set(key, { key, cc, name, total, items: [] });
     m.get(key).items.push(it);
   }
@@ -959,16 +1000,18 @@ const hxBar = (n, total) => total ? `<span class="hx-bar" role="img" aria-label=
 const hxFrac = (n, total) => total ? `<b>${n}</b><span>/ ${Math.max(total, n)}</span>` : `<b>${n}</b>`;
 function hxRow(it) {
   const tag = it.kind === '5a' ? '5a' : (WH_CAT_TAG[it.cat] || 'wh'), [kind, icon] = sightIcon([tag]);
-  const url = it.kind === 'wh' ? (it.wh ? whUrl(it.wh) : sightUrl(it.sg0)) : (it.a5 ? 'https://baike.baidu.com/item/' + encodeURIComponent(String(it.a5.name.zh || '').replace(/[（(].*$/, '')) : sightUrl(it.sg0));
+  const url = it.kind === 'wh' ? (it.wh ? whUrl(it.wh) : sightUrl(it.sg0)) : (it.off || it.a5 ? 'https://baike.baidu.com/item/' + encodeURIComponent(String(it.off ? it.off.n : it.a5.name.zh || '').replace(/[（(].*$/, '')) : sightUrl(it.sg0));
   const cities = it.places.map(p => `<button type="button" class="hx-city" data-reveal="${esc(p.id)}">${esc(t(p.city))}</button>`).join('<span class="hx-dot">·</span>');
   const meta = [it.kind === 'wh' ? `<span class="hx-cat hx-cat-${it.cat}">${HX_CAT[it.cat] ? HX_CAT[it.cat][LANG === 'zh' ? 1 : 0] : ''}</span>` : '',
-    it.parts > 1 ? `<span class="hx-parts">${LANG === 'zh' ? `${it.parts} 处组成部分` : `${it.parts} components`}</span>` : '',
+    it.kind === 'wh' && it.parts > 1 ? `<span class="hx-parts">${LANG === 'zh' ? `${it.parts} 处组成部分` : `${it.parts} components`}</span>` : '',
+    it.kind === '5a' && it.subs.length ? `<span class="hx-parts" title="${esc(it.subs.map(s => t(s.name)).join(' · '))}">${LANG === 'zh' ? `含 ${it.subs.length} 处景点` : `${it.subs.length} sights`}</span>` : '',
     it.photos ? `<span class="hx-cam">${CAM}${it.photos}</span>` : ''].filter(Boolean).join('');
   const alt = nmAlt(it.name);
   return `<li class="hx-row si-${kind}" data-hx-key="${esc(it.p0.id)}" data-pids="${esc(it.places.map(p => p.id).join(' '))}">
     <button type="button" class="hx-go" data-fly="${esc(it.p0.id)}" data-lat="${typeof it.sg0.lat === 'number' ? it.sg0.lat : ''}" data-lon="${typeof it.sg0.lon === 'number' ? it.sg0.lon : ''}" title="${LANG === 'zh' ? '在地图上查看' : 'Show on the map'}"><span class="hx-ic">${icon}</span>
       <span class="hx-name">${esc(nm2(it.name))}${alt ? `<small>${esc(alt)}</small>` : ''}</span></button>
     <span class="hx-meta">${cities}${it.lastLabel ? `<span class="hx-dot">·</span><span class="hx-when">${esc(it.lastLabel)}</span>` : ''}${meta}</span>
+    ${it.kind === '5a' && it.subs.length ? `<span class="hx-subs">${LANG === 'zh' ? '包含：' : 'Includes: '}${it.subs.map(s => esc(t(s.name))).join('<span class="hx-dot"> · </span>')}</span>` : ''}
     ${url ? `<a class="hx-ext" href="${esc(url)}" target="_blank" rel="noopener" title="${it.kind === 'wh' ? 'UNESCO' : (LANG === 'zh' ? '百度百科' : 'Baidu Baike')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>` : ''}</li>`;
 }
 function renderHeritage() {
