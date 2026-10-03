@@ -503,17 +503,37 @@ function lsSet(k, v) { try { v === null ? localStorage.removeItem(k) : localStor
 // ─────────────────────────────────────────────────────────────────────────────
 const b64enc = str => { const bytes = new TextEncoder().encode(str); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); };
 const b64dec = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\n/g, '')), c => c.charCodeAt(0)));
+// fetch with a time limit: a stalled connection fails instead of hanging the page
+async function fetchT(url, opts = {}, ms = 30000) {
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
+  try { return await fetch(url, { ...opts, signal: ctl.signal }); }
+  catch (e) { if (e.name === 'AbortError') throw new Error('GitHub did not answer in time (slow network or GitHub busy). Please try again.'); throw e; }
+  finally { clearTimeout(timer); }
+}
+const ghSleep = ms => new Promise(r => setTimeout(r, ms));
 async function gh(path, opts = {}) {
-  const res = await fetch(`https://api.github.com${path}`, {
-    ...opts,
-    headers: { 'Accept': 'application/vnd.github+json', 'Authorization': `Bearer ${TOKEN}`, 'X-GitHub-Api-Version': '2022-11-28', ...(opts.headers || {}) }
-  });
-  if (!res.ok) {
-    let msg = res.statusText;
-    try { msg = (await res.json()).message || msg; } catch (e) {}
-    throw new Error(`GitHub ${res.status}: ${msg}`);
+  const isWrite = /^(PUT|POST|PATCH|DELETE)$/i.test(opts.method || 'GET');
+  for (let attempt = 0; ; attempt++) {
+    const { timeout, ...fo } = opts;
+    const res = await fetchT(`https://api.github.com${path}`, {
+      ...fo,
+      headers: { 'Accept': 'application/vnd.github+json', 'Authorization': `Bearer ${TOKEN}`, 'X-GitHub-Api-Version': '2022-11-28', ...(opts.headers || {}) }
+    }, timeout || (isWrite ? 120000 : 30000));
+    if (!res.ok) {
+      let msg = res.statusText;
+      try { msg = (await res.json()).message || msg; } catch (e) {}
+      // Rate limit (secondary limits come from many writes in a row): wait as GitHub asks, then retry
+      if ((res.status === 403 || res.status === 429) && /rate limit|abuse/i.test(msg)) {
+        const ra = Number(res.headers.get('retry-after')), reset = Number(res.headers.get('x-ratelimit-reset'));
+        const wait = ra > 0 ? ra : reset > 0 ? Math.max(5, reset - Math.floor(Date.now() / 1000)) : 60;
+        if (attempt < 2 && wait <= 90) { toast(`GitHub asked to slow down: waiting ${wait} s, then continuing…`); await ghSleep(wait * 1000 + 500); continue; }
+        const at = new Date(Date.now() + wait * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        throw new Error(`GitHub ${res.status}: rate limit reached. Please wait until about ${at} and try again.`);
+      }
+      throw new Error(`GitHub ${res.status}: ${msg}`);
+    }
+    return res.status === 204 ? null : res.json();
   }
-  return res.status === 204 ? null : res.json();
 }
 // GitHub may serve a cached GET for up to a minute after a write, so sha lookups add a timestamp.
 // No extra request headers here: GitHub's CORS preflight rejects e.g. Cache-Control and the fetch fails.
@@ -526,6 +546,8 @@ async function ghPutFile(path, base64Content, message, sha) {
   for (let attempt = 0; ; attempt++) {
     const body = { message, content: base64Content, branch: REPO.branch };
     if (sha) body.sha = sha;
+    const gap = 1000 - (Date.now() - (ghPutFile.last || 0)); if (gap > 0) await ghSleep(gap);
+    ghPutFile.last = Date.now();
     try { return await gh(url, { method: 'PUT', body: JSON.stringify(body) }); }
     catch (e) {
       // 409: our sha is stale; 422 "sha wasn't supplied": the file exists but we did not know it. Both: re-read and retry.
@@ -743,13 +765,16 @@ async function decryptBundle(file, password) {
   return { bundle: JSON.parse(new TextDecoder().decode(pt)), key, salt, iter: file.iter || AUTH_ITER };
 }
 // Read admin-auth.json fresh from the public GitHub API; fall back to the Pages copy
+let AUTH_FETCH_FAILED = false;
 async function fetchAuthFile() {
+  AUTH_FETCH_FAILED = false; let sure404 = false;
   try {
-    const r = await fetch(`https://api.github.com/repos/${REPO.owner}/${REPO.name}/contents/${AUTH_PATH}?ref=${REPO.branch}`, { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store' });
+    const r = await fetchT(`https://api.github.com/repos/${REPO.owner}/${REPO.name}/contents/${AUTH_PATH}?ref=${REPO.branch}`, { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store' }, 12000);
     if (r.status === 404) return null;
     if (r.ok) { const j = await r.json(); return JSON.parse(b64dec(j.content)); }
   } catch (e) {}
-  try { const r = await fetch(AUTH_PATH + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) return await r.json(); } catch (e) {}
+  try { const r = await fetchT(AUTH_PATH + '?t=' + Date.now(), { cache: 'no-store' }, 12000); if (r.ok) return await r.json(); if (r.status === 404) sure404 = true; } catch (e) {}
+  AUTH_FETCH_FAILED = !sure404;
   return null;
 }
 async function writeAuthFile(file, message) {
@@ -827,6 +852,12 @@ function showLogin(opts = {}) {
 
     const file = await fetchAuthFile();
     AUTH_INFO = { exists: !!file, updated: file?.updated };
+    if (!file && AUTH_FETCH_FAILED) {   // could not reach GitHub: do not guess, offer a retry
+      root.innerHTML = frame(`<h2>Can't reach GitHub</h2><p class="hint" style="margin:0.4rem 0 1rem">The sign-in settings could not be loaded (slow network, GitHub busy, or too many requests in a short time). Wait a minute and try again.</p>
+        <button class="btn primary block" id="lg-retry" type="button">Try again</button>`);
+      $('#lg-retry').onclick = () => { root.innerHTML = ''; showLogin(opts).then(resolve); };
+      return;
+    }
 
     const viewPassword = (msg = '') => {
       root.innerHTML = frame(`<h2>Sign in</h2>
@@ -936,7 +967,19 @@ async function ensureSignedIn() {
       if (lsGet(LS.token)) { lsSet(LS.token, null); lsSet(LS.gcToken, null); saveSession(true); } // finish migration
       fetchAuthFile().then(f => { AUTH_INFO = { exists: !!f, updated: f?.updated }; });
       setAuthState(); return;
-    } catch (e) { clearSession(); return showLogin({ message: 'Your session expired. Please sign in again.' }); }
+    } catch (e) {
+      if (/rejected this token|no access to|cannot write/i.test(e.message)) { clearSession(); return showLogin({ message: 'Your session expired. Please sign in again.' }); }
+      return new Promise(resolve => {   // network trouble or rate limit: keep the session, offer a retry
+        const root = $('#modal-root');
+        root.innerHTML = `<div class="login"><div class="login-card"><div class="login-brand"><span class="login-name">Hui Tang</span><span class="login-sub">Site Manager · ${esc(REPO.owner)}.github.io</span></div>
+          <h2>Can't reach GitHub</h2><p class="hint" style="margin:0.4rem 0 1rem">${esc(e.message)}</p>
+          <button class="btn primary block" id="lg-retry" type="button">Try again</button>
+          <p class="hint" style="text-align:center;margin-top:0.8rem"><a href="#" id="lg-fresh">Sign in again instead</a></p></div>
+          <p class="login-foot"><a href="index.html">← Back to website</a></p></div>`;
+        $('#lg-retry').onclick = () => { root.innerHTML = ''; ensureSignedIn().then(resolve); };
+        $('#lg-fresh').onclick = ev => { ev.preventDefault(); root.innerHTML = ''; clearSession(); showLogin().then(resolve); };
+      });
+    }
   }
   return showLogin();
 }
