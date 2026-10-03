@@ -93,7 +93,21 @@
   .topbar { position: sticky; top: 0; z-index: 5; background: rgba(var(--paper-rgb), 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--subtle); padding: 0.7rem 1.6rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
   .topbar .status { font-size: 15.625px; color: var(--muted); display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
   .topbar .actions { display: flex; gap: 0.5rem; }
-  .content { padding: 1.6rem; max-width: 1000px; }
+  .content { padding: 1.6rem 2rem; max-width: none; }
+  @media (min-width: 1500px) {
+    .tv-country-body, .tv-prov-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 0.8rem; align-items: start; }
+    .tv-country-body > .tv-prov, .tv-country-body > .hint, .tv-prov-body > .hint { grid-column: 1 / -1; }
+    .tv-country-body > .item.place.open, .tv-prov-body > .item.place.open { grid-column: 1 / -1; }
+    .tv-country-body > .item, .tv-prov-body > .item { margin-bottom: 0.6rem; }
+  }
+  @media (min-width: 2100px) { .tv-country-body, .tv-prov-body { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  /* Place editor: pairs side by side on wide screens (city | country, public | private note, sights | photos) */
+  @media (min-width: 1100px) {
+    .item.place .pbody:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 1.4rem; align-items: start; }
+    .item.place .pbody > * { grid-column: 1 / -1; min-width: 0; }
+    .item.place .pbody > .w-half { grid-column: auto; }
+  }
+  @media (min-width: 1100px) and (max-width: 1599px) { .item.place .pbody > .w-half-xl { grid-column: 1 / -1; } }
   h2 { font-family: var(--serif); font-weight: 400; font-size: 1.68rem; margin-bottom: 0.3rem; }
   .lead { color: var(--muted); margin-bottom: 1.4rem; font-size: 16.875px; }
   .card { background: var(--card); border: 1px solid var(--subtle); border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1rem; }
@@ -2875,6 +2889,11 @@ function viewFootprints(v) {
       sel.addEventListener('change', () => { const item = sel.closest('.item'); const k = CityIcons.iconKey(p); item.querySelectorAll('.tv-icon').forEach(el => { el.innerHTML = CityIcons.svg(k); el.title = CityIcons.label(k, 'en'); }); }); });
     box.querySelectorAll('select[data-trip]').forEach(sel => { const p = T.places[Number(sel.closest('.item').dataset.i)]; sel.innerHTML = TRIP_OPTIONS.map(([val, lab]) => `<option value="${val}" ${p.trip === val ? 'selected' : ''}>${lab}</option>`).join(''); });
     box.querySelectorAll('select[data-talk]').forEach(sel => { const p = T.places[Number(sel.closest('.item').dataset.i)]; sel.innerHTML = TALK_OPTIONS.map(([val, lab]) => `<option value="${val}" ${p.talk_type === val ? 'selected' : ''}>${lab}</option>`).join(''); });
+    // pairs that can sit side by side on wide screens
+    box.querySelectorAll('.item.place .pbody').forEach(b => { const kids = [...b.children], lab = c => (c.querySelector(':scope > label')?.textContent || '').trim();
+      const pair = re => { const hit = kids.filter(c => re.test(lab(c))); return hit.length === 2 ? hit : []; };
+      [...pair(/^(City|Country)$/i), ...pair(/note/i)].forEach(c => c.classList.add('w-half'));
+      pair(/^(Sights|Photos)/i).forEach(c => c.classList.add('w-half', 'w-half-xl')); });
     wireBindings(box); wireItemTools(box, T.places, renderPlaces);
     // Re-render when the academic flag or the type changes (labels and fields depend on them)
     box.querySelectorAll('[data-acad], select[data-kind], select[data-talk]').forEach(el => el.addEventListener('change', () => setTimeout(renderPlaces, 0)));
