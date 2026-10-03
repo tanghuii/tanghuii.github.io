@@ -274,6 +274,88 @@
   .tag-wh-mixed { background: linear-gradient(90deg, var(--highlight) 50%, var(--ok-bg) 50%); color: var(--accent); }
   .tag-national-park { background: var(--ok-bg); color: var(--ok); }
   .highlights .tag { font-size: 0.8rem; padding: 0.15rem 0.6rem; }
+  /* Heritage index (travel page) */
+  .highlights .hx-link { display: inline-flex; align-items: center; gap: 0.3rem; border: none; cursor: pointer; font-family: inherit; transition: transform 0.15s, box-shadow 0.15s; }
+  .highlights .hx-link svg { width: 12px; height: 12px; }
+  .highlights .hx-link:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(13, 27, 42, 0.12); }
+  .hx { margin: 2.2rem 0 0.4rem; border: 1px solid var(--subtle); border-radius: 16px; background: var(--card); padding: 1.1rem 1.2rem 1.2rem; transition: box-shadow 0.3s; scroll-margin-top: 84px; }
+  .hx.flash { box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.25); }
+  .hx-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.9rem; }
+  .hx-title { font-family: var(--font-head); font-weight: 400; font-size: 1.45rem; margin: 0; }
+  .hx-toggle { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--subtle); background: var(--card-bg); color: var(--accent); border-radius: 999px; padding: 0.3rem 0.85rem; font: inherit; font-size: 0.85rem; cursor: pointer; }
+  .hx-toggle svg { width: 14px; height: 14px; transition: transform 0.2s; }
+  .hx-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .hx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.7rem; }
+  .hx-card { position: relative; display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem 1rem 1.05rem; border: 1px solid var(--subtle); border-radius: 12px; background: var(--card-bg); color: var(--ink); font: inherit; text-align: left; cursor: pointer; overflow: hidden; transition: border-color 0.2s, background 0.2s; }
+  .hx-card:hover { border-color: var(--accent-light); }
+  .hx-card.on { border-color: var(--accent); background: var(--highlight); }
+  .hx-card-5a.on { border-color: var(--warn); background: var(--warn-bg); }
+  .hx-card-ic { flex: none; display: flex; width: 40px; height: 40px; border-radius: 10px; align-items: center; justify-content: center; background: var(--highlight); color: var(--accent); }
+  .hx-card-5a .hx-card-ic { background: var(--warn-bg); color: var(--warn); }
+  .hx-card.on .hx-card-ic { background: var(--card); }
+  .hx-card-ic svg { width: 22px; height: 22px; }
+  .hx-card-txt { display: flex; flex-direction: column; min-width: 0; }
+  .hx-card-n b { font-family: var(--font-head); font-size: 1.6rem; font-weight: 600; color: var(--accent); line-height: 1.1; }
+  .hx-card-5a .hx-card-n b { color: var(--warn); }
+  .hx-card-n span, .hx-gfrac span { color: var(--muted); font-size: 0.85rem; margin-left: 0.25rem; }
+  .hx-card-l { font-weight: 600; font-size: 0.95rem; }
+  .hx-card-s { color: var(--muted); font-size: 0.82rem; }
+  .hx-card .hx-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; border-radius: 0; }
+  .hx-bar { display: block; height: 6px; border-radius: 3px; background: rgba(var(--subtle-rgb), 0.7); overflow: hidden; }
+  .hx-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+  .hx-card-5a .hx-bar i, .hx-5a .hx-bar i { background: var(--warn); }
+  .hx-body { margin-top: 1rem; }
+  .hx-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 0.9rem; }
+  .hx-chip { border: 1px solid var(--subtle); background: var(--card-bg); color: var(--ink); border-radius: 999px; padding: 0.22rem 0.75rem; font: inherit; font-size: 0.84rem; cursor: pointer; }
+  .hx-chip span { color: var(--muted); margin-left: 0.15rem; }
+  .hx-chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .hx-chip.on span { color: inherit; opacity: 0.8; }
+  .hx-sort { margin-left: auto; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.84rem; color: var(--muted); }
+  .hx-sort select { font: inherit; font-size: 0.85rem; color: var(--ink); background: var(--card-bg); border: 1px solid var(--subtle); border-radius: 8px; padding: 0.2rem 0.4rem; }
+  .hx-group + .hx-group { margin-top: 1.1rem; }
+  .hx-ghead { display: grid; grid-template-columns: auto auto 1fr auto; align-items: baseline; column-gap: 0.5rem; row-gap: 0.35rem; padding-bottom: 0.25rem; }
+  .hx-ghead .flag { font-size: 1.05rem; }
+  .hx-gname { font-family: var(--font-head); font-weight: 600; font-size: 1.08rem; }
+  .hx-galt { color: var(--muted); font-size: 0.82rem; }
+  .hx-gfrac { justify-self: end; white-space: nowrap; }
+  .hx-gfrac b { font-weight: 700; color: var(--ink); }
+  .hx-ghead .hx-bar { grid-column: 1 / -1; height: 5px; }
+  .hx-list { list-style: none; margin: 0.3rem 0 0; padding: 0; }
+  .hx-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 0.6rem; padding: 0.45rem 0.4rem; border-bottom: 1px solid rgba(var(--subtle-rgb), 0.6); border-radius: 8px; transition: background 0.15s; }
+  .hx-row:last-child { border-bottom: none; }
+  .hx-row:hover { background: var(--highlight); }
+  .hx-go { display: flex; align-items: center; gap: 0.6rem; min-width: 0; border: none; background: none; padding: 0; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .hx-ic { flex: none; display: flex; width: 28px; height: 28px; border-radius: 8px; align-items: center; justify-content: center; background: var(--highlight); color: var(--accent); }
+  .hx-row:hover .hx-ic { background: var(--card); }
+  .hx-row.si-5a .hx-ic { background: var(--warn-bg); color: var(--warn); }
+  .hx-ic svg { width: 16px; height: 16px; }
+  .hx-name { font-weight: 600; font-size: 0.95rem; line-height: 1.3; }
+  .hx-name small { display: block; font-weight: 400; color: var(--muted); font-size: 0.8rem; }
+  .hx-go:hover .hx-name { color: var(--accent); }
+  .hx-meta { grid-column: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.35rem; margin: 0.15rem 0 0 2.2rem; color: var(--muted); font-size: 0.82rem; }
+  .hx-city { border: none; background: none; padding: 0; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(var(--accent-rgb), 0.3); text-underline-offset: 2px; }
+  .hx-dot { opacity: 0.6; }
+  .hx-cat, .hx-parts { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; padding: 0 0.4rem; border-radius: 4px; background: var(--highlight); color: var(--accent); margin-left: 0.2rem; }
+  .hx-cat-n { background: var(--ok-bg); color: var(--ok); }
+  .hx-cat-m { background: var(--warn-bg); color: var(--warn); }
+  .hx-parts { background: rgba(var(--subtle-rgb), 0.6); color: var(--muted); }
+  .hx-cam { display: inline-flex; align-items: center; gap: 0.15rem; margin-left: 0.2rem; }
+  .hx-cam svg { width: 13px; height: 13px; }
+  .hx-ext { grid-column: 2; grid-row: 1 / span 2; display: flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 8px; color: var(--muted); }
+  .hx-ext:hover { color: var(--accent); background: var(--card); }
+  .hx-ext svg { width: 16px; height: 16px; }
+  .hx-note, .hx-empty { margin: 1rem 0 0; color: var(--muted); font-size: 0.8rem; }
+  .fp-pin.hot { transform: scale(1.45); background: var(--accent-light); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.3), 0 2px 8px rgba(13, 27, 42, 0.3); }
+  @media (max-width: 640px) {
+    .hx { padding: 0.9rem 0.8rem 1rem; border-radius: 14px; }
+    .hx-cards { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .hx-card { flex-direction: column; align-items: flex-start; gap: 0.4rem; padding: 0.7rem 0.75rem 0.9rem; }
+    .hx-card-ic { width: 32px; height: 32px; } .hx-card-ic svg { width: 18px; height: 18px; }
+    .hx-card-n b { font-size: 1.35rem; }
+    .hx-sort { margin-left: 0; width: 100%; }
+    .hx-meta { margin-left: 0; }
+  }
+
   .leaflet-tooltip .tag { margin-left: 0.3rem; }
   .strip .ph { aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden; background: var(--highlight); border: 1px solid var(--subtle); position: relative; cursor: zoom-in; }
   .strip .ph img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.4s, transform 0.5s ease; }
@@ -393,6 +475,7 @@
       <span><span class="legend"><i></i> <span data-en="Visited country / province" data-zh="到访过的国家 / 省份">Visited country / province</span></span> &nbsp; <span class="legend"><b></b> <span data-en="City" data-zh="城市">City</span></span></span>
       <span data-en="Click a marker or a country to jump to its entry." data-zh="点击标记或国家可跳转到对应条目。">Click a marker or a country to jump to its entry.</span>
     </div>
+    <section class="hx" id="heritage" hidden></section>
     <div class="places">
       <h2 class="section-title"><span id="places-h"></span><small id="places-sub"></small></h2>
       <div id="list"></div>
@@ -689,10 +772,12 @@ function renderHeader() {
   const sights = places.flatMap(p => p.sights || []);
   const nWH = new Set(sights.filter(x => x.whsite || (x.tags || []).some(k => k.startsWith('wh'))).map(x => x.whsite ? 'p' + x.whsite.id : 's' + x.id)).size, n5A = new Set(sights.filter(x => x.a5 || (x.tags || []).includes('5a')).map(x => x.a5 ? 'a' + x.a5.id : 's' + x.id)).size, nNP = sights.filter(x => (x.tags || []).includes('national-park')).length;
   const hl = [];
-  if (nWH) hl.push(`<span class="tag tag-wh">${nWH} ${LANG === 'zh' ? '处世界遗产' : (nWH === 1 ? 'World Heritage site' : 'World Heritage sites')}</span>`);
-  if (n5A) hl.push(`<span class="tag tag-5a">${n5A} ${LANG === 'zh' ? '个5A级景区' : (n5A === 1 ? '5A scenic area' : '5A scenic areas')}</span>`);
+  const hxTag = (cls, tab, text) => PRIVATE ? `<button type="button" class="tag ${cls} hx-link" data-hx="${tab}" title="${LANG === 'zh' ? '打开遗产索引' : 'Open the heritage index'}">${text}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>` : `<span class="tag ${cls}">${text}</span>`;
+  if (nWH) hl.push(hxTag('tag-wh', 'wh', `${nWH} ${LANG === 'zh' ? '处世界遗产' : (nWH === 1 ? 'World Heritage site' : 'World Heritage sites')}`));
+  if (n5A) hl.push(hxTag('tag-5a', '5a', `${n5A} ${LANG === 'zh' ? '个5A级景区' : (n5A === 1 ? '5A scenic area' : '5A scenic areas')}`));
   if (nNP) hl.push(`<span class="tag tag-national-park">${nNP} ${LANG === 'zh' ? '个国家公园' : (nNP === 1 ? 'national park' : 'national parks')}</span>`);
   $('#highlights').innerHTML = hl.join(''); $('#highlights').hidden = !hl.length;
+  $('#highlights').querySelectorAll('[data-hx]').forEach(b => b.onclick = () => openHeritage(b.dataset.hx));
   const nCities = new Set(places.map(p => normCC(p.cc) + '|' + (p.city?.en || t(p.city)).toLowerCase())).size;
   const nConf = places.filter(p => p.kind === 'conference').length, nOther = places.filter(p => p.academic && p.kind !== 'conference').length;
   const rows = PRIVATE
@@ -775,6 +860,7 @@ function renderList() {
     </section>`;
   }).join('');
   list.querySelectorAll('[data-ctoggle]').forEach(b => b.onclick = () => toggleCountry(b.closest('.country')));
+  renderHeritage();
   if ((DATA.places || []).some(p => normCC(p.cc) === 'CN') && !PROVINCE_CC.CN.data) loadProvinces().then(d => { if (d) renderList(); });
   list.querySelectorAll('[data-map]').forEach(b => b.onclick = () => focusPlace(b.dataset.map));
   list.querySelectorAll('[data-gallery]').forEach(b => b.onclick = () => openLightbox(b.dataset.gallery, 0));
@@ -820,6 +906,124 @@ function animateCards(root) {
     window.addEventListener('scroll', animateCards._onScroll, { passive: true });
     pick();
   }
+}
+// ── Heritage index (travel page only): World Heritage sites by country, 5A scenic areas by province ──
+const WH_TOTAL = {"AD":1,"AE":3,"AF":2,"AG":1,"AL":4,"AM":3,"AO":1,"AR":12,"AT":12,"AU":21,"AZ":5,"BA":5,"BB":1,"BD":3,"BE":16,"BF":4,"BG":10,"BH":3,"BJ":3,"BO":7,"BR":26,"BW":2,"BY":4,"BZ":1,"CA":22,"CD":5,"CF":2,"CG":2,"CH":13,"CI":5,"CL":7,"CM":3,"CN":61,"CO":9,"CR":4,"CU":9,"CV":1,"CY":3,"CZ":17,"DE":55,"DK":13,"DM":1,"DO":1,"DZ":7,"EC":5,"EE":2,"EG":7,"ER":1,"ES":50,"ET":12,"FI":8,"FJ":1,"FM":1,"FR":56,"GA":2,"GB":35,"GE":4,"GH":2,"GM":2,"GN":1,"GR":21,"GT":4,"GW":1,"HN":2,"HR":10,"HT":1,"HU":8,"ID":10,"IE":2,"IL":9,"IN":45,"IQ":6,"IR":30,"IS":3,"IT":62,"JM":2,"JO":8,"JP":27,"KE":8,"KG":3,"KH":5,"KI":1,"KM":1,"KN":1,"KP":3,"KR":17,"KZ":7,"LA":4,"LB":7,"LC":1,"LK":8,"LS":1,"LT":5,"LU":1,"LV":3,"LY":5,"MA":9,"MD":1,"ME":4,"MG":3,"MH":1,"MK":2,"ML":4,"MM":2,"MN":7,"MR":2,"MT":3,"MU":2,"MW":3,"MX":36,"MY":6,"MZ":2,"NA":2,"NE":3,"NG":2,"NI":2,"NL":13,"NO":8,"NP":4,"NZ":3,"OM":5,"PA":5,"PE":13,"PG":1,"PH":6,"PK":6,"PL":18,"PS":6,"PT":17,"PW":1,"PY":1,"QA":1,"RO":11,"RS":5,"RU":33,"RW":2,"SA":8,"SB":1,"SC":2,"SD":3,"SE":15,"SG":1,"SI":5,"SK":8,"SL":1,"SM":1,"SN":7,"SR":3,"SS":1,"ST":1,"SV":1,"SY":6,"TD":2,"TG":1,"TH":9,"TJ":5,"TM":5,"TN":10,"TR":22,"TZ":7,"UA":8,"UG":3,"US":27,"UY":3,"UZ":8,"VA":2,"VE":3,"VN":9,"VU":1,"YE":5,"ZA":12,"ZM":1,"ZW":5};   // UNESCO list (wh-sites.json): properties per state party
+const A5_TOTAL = {"北京":9,"天津":2,"河北":13,"山西":12,"内蒙古":8,"辽宁":7,"吉林":9,"黑龙江":7,"上海":5,"江苏":26,"浙江":22,"安徽":13,"福建":12,"江西":15,"山东":16,"河南":17,"湖北":16,"湖南":12,"广东":16,"广西":10,"海南":7,"重庆":12,"四川":18,"贵州":10,"云南":10,"西藏":5,"陕西":13,"甘肃":8,"青海":4,"宁夏":6,"新疆":18};   // official 5A list (cn-5a-official.json): areas per province
+const A5_ASOF = '2025-05-17';
+const HX = { open: false, tab: 'wh', cat: '', sort: 'group' };
+try { Object.assign(HX, JSON.parse(localStorage.getItem('fp_hx') || '{}')); } catch (e) {}
+const hxSave = () => { try { localStorage.setItem('fp_hx', JSON.stringify({ open: HX.open, tab: HX.tab, cat: HX.cat, sort: HX.sort })); } catch (e) {} };
+const HX_CAT = { c: ['Cultural', '文化'], n: ['Natural', '自然'], m: ['Mixed', '双遗产'] };
+const nm2 = n => LANG === 'zh' ? (n?.zh || n?.en || '') : (n?.en || n?.zh || '');
+const nmAlt = n => LANG === 'zh' ? (n?.en && n.en !== n.zh ? n.en : '') : (n?.zh && n.zh !== n.en ? n.zh : '');
+function heritageItems() {
+  const wh = new Map(), a5 = new Map();
+  const add = (map, key, mk, p, sg) => { let it = map.get(key); if (!it) map.set(key, it = mk()); it.visits.push({ p, sg }); return it; };
+  for (const p of DATA.places || []) for (const sg of p.sights || []) {
+    const tags = sg.tags || [];
+    if (sg.whsite || tags.some(k => k.startsWith('wh'))) {
+      const w = sg.whsite;
+      const it = add(wh, w ? 'p' + w.id : 's' + sg.id, () => ({ kind: 'wh', name: w ? { ...w.name } : { ...sg.name }, cat: w?.cat || (tags.includes('wh-natural') ? 'n' : tags.includes('wh-mixed') ? 'm' : 'c'), wh: w || null, sg0: sg, visits: [] }), p, sg);
+      if (w && !it.name.zh && w.name.zh) it.name.zh = w.name.zh;
+      if (w && sg.whroot) it.sg0 = sg;
+    }
+    if (sg.a5 || tags.includes('5a')) {
+      const it = add(a5, sg.a5 ? 'a' + sg.a5.id : 's' + sg.id, () => ({ kind: '5a', name: sg.a5 ? { ...sg.a5.name } : { ...sg.name }, a5: sg.a5 || null, sg0: sg, visits: [] }), p, sg);
+      if (sg.a5 && sg.a5root) it.sg0 = sg;
+    }
+  }
+  const finish = it => {
+    const ps = [...new Map(it.visits.map(v => [v.p.id, v.p])).values()];
+    it.places = ps; it.p0 = ps[0];
+    it.last = ps.map(p => visitsOf(p.when).map(visitKey).sort().pop() || '').sort().pop() || '';
+    it.lastLabel = (() => { const p = ps.find(q => visitsOf(q.when).some(w => visitKey(w) === it.last)); const w = p ? visitsOf(p.when).find(x => visitKey(x) === it.last) : ''; return w ? fmtVisit(w) : ''; })();
+    it.parts = it.visits.filter(v => it.kind === 'wh' ? (it.wh && !v.sg.whroot) : (it.a5 && !v.sg.a5root)).length;
+    it.photos = it.visits.reduce((n, v) => n + sightPhotos(v.p, v.sg.id).length, 0);
+    return it;
+  };
+  return { wh: [...wh.values()].map(finish), '5a': [...a5.values()].map(finish) };
+}
+function heritageGroups(items, kind) {
+  const m = new Map();
+  for (const it of items) {
+    let key, name, total, cc = '';
+    if (kind === 'wh') { cc = normCC(it.p0.cc); key = cc || t(it.p0.country); name = cc === 'CN' ? { en: 'China', zh: '中国' } : it.p0.country; total = WH_TOTAL[cc] || 0; }
+    else { const pr = normCC(it.p0.cc) === 'CN' ? provinceOf(it.p0) : null; key = pr ? pr.zh : '—'; name = pr ? { en: pr.en, zh: pr.zh } : { en: 'Other', zh: '其他' }; total = pr ? (A5_TOTAL[pr.zh] || 0) : 0; }
+    if (!m.has(key)) m.set(key, { key, cc, name, total, items: [] });
+    m.get(key).items.push(it);
+  }
+  return [...m.values()].sort((a, b) => b.items.length - a.items.length || nm2(a.name).localeCompare(nm2(b.name)));
+}
+const hxBar = (n, total) => total ? `<span class="hx-bar" role="img" aria-label="${n} / ${total}"><i style="width:${Math.min(100, Math.max(2, n / total * 100)).toFixed(1)}%"></i></span>` : '';
+const hxFrac = (n, total) => total ? `<b>${n}</b><span>/ ${Math.max(total, n)}</span>` : `<b>${n}</b>`;
+function hxRow(it) {
+  const tag = it.kind === '5a' ? '5a' : (WH_CAT_TAG[it.cat] || 'wh'), [kind, icon] = sightIcon([tag]);
+  const url = it.kind === 'wh' ? (it.wh ? whUrl(it.wh) : sightUrl(it.sg0)) : (it.a5 ? 'https://baike.baidu.com/item/' + encodeURIComponent(String(it.a5.name.zh || '').replace(/[（(].*$/, '')) : sightUrl(it.sg0));
+  const cities = it.places.map(p => `<button type="button" class="hx-city" data-reveal="${esc(p.id)}">${esc(t(p.city))}</button>`).join('<span class="hx-dot">·</span>');
+  const meta = [it.kind === 'wh' ? `<span class="hx-cat hx-cat-${it.cat}">${HX_CAT[it.cat] ? HX_CAT[it.cat][LANG === 'zh' ? 1 : 0] : ''}</span>` : '',
+    it.parts > 1 ? `<span class="hx-parts">${LANG === 'zh' ? `${it.parts} 处组成部分` : `${it.parts} components`}</span>` : '',
+    it.photos ? `<span class="hx-cam">${CAM}${it.photos}</span>` : ''].filter(Boolean).join('');
+  const alt = nmAlt(it.name);
+  return `<li class="hx-row si-${kind}" data-hx-key="${esc(it.p0.id)}" data-pids="${esc(it.places.map(p => p.id).join(' '))}">
+    <button type="button" class="hx-go" data-fly="${esc(it.p0.id)}" data-lat="${typeof it.sg0.lat === 'number' ? it.sg0.lat : ''}" data-lon="${typeof it.sg0.lon === 'number' ? it.sg0.lon : ''}" title="${LANG === 'zh' ? '在地图上查看' : 'Show on the map'}"><span class="hx-ic">${icon}</span>
+      <span class="hx-name">${esc(nm2(it.name))}${alt ? `<small>${esc(alt)}</small>` : ''}</span></button>
+    <span class="hx-meta">${cities}${it.lastLabel ? `<span class="hx-dot">·</span><span class="hx-when">${esc(it.lastLabel)}</span>` : ''}${meta}</span>
+    ${url ? `<a class="hx-ext" href="${esc(url)}" target="_blank" rel="noopener" title="${it.kind === 'wh' ? 'UNESCO' : (LANG === 'zh' ? '百度百科' : 'Baidu Baike')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>` : ''}</li>`;
+}
+function renderHeritage() {
+  const box = $('#heritage'); if (!box) return;
+  if (!PRIVATE || !DATA) { box.hidden = true; return; }
+  const all = heritageItems();
+  if (!all.wh.length && !all['5a'].length) { box.hidden = true; return; }
+  if (!all[HX.tab].length) HX.tab = all.wh.length ? 'wh' : '5a';
+  const zh = LANG === 'zh';
+  const whC = new Set(all.wh.map(it => normCC(it.p0.cc))).size;
+  const a5P = new Set(all['5a'].map(it => (normCC(it.p0.cc) === 'CN' && provinceOf(it.p0)?.zh) || '—')).size;
+  const a5All = Object.values(A5_TOTAL).reduce((a, b) => a + b, 0);
+  const card = (tab, cls, icon, n, label, sub, total) => all[tab].length ? `<button type="button" class="hx-card ${cls}${HX.open && HX.tab === tab ? ' on' : ''}" data-tab="${tab}" aria-pressed="${HX.open && HX.tab === tab}">
+      <span class="hx-card-ic">${icon}</span><span class="hx-card-txt"><span class="hx-card-n">${hxFrac(n, total)}</span><span class="hx-card-l">${label}</span><span class="hx-card-s">${sub}</span></span>${total ? hxBar(n, total) : ''}</button>` : '';
+  const items = all[HX.tab].filter(it => HX.tab !== 'wh' || !HX.cat || it.cat === HX.cat);
+  const sorted = HX.sort === 'date' ? [...items].sort((a, b) => b.last.localeCompare(a.last)) : HX.sort === 'name' ? [...items].sort((a, b) => nm2(a.name).localeCompare(nm2(b.name), zh ? 'zh' : 'en')) : null;
+  const groups = sorted ? null : heritageGroups(items, HX.tab).map(g => { g.items.sort((a, b) => b.last.localeCompare(a.last)); return g; });
+  const catChips = HX.tab === 'wh' ? ['', 'c', 'n', 'm'].filter(c => !c || all.wh.some(it => it.cat === c)).map(c => `<button type="button" class="hx-chip${HX.cat === c ? ' on' : ''}" data-cat="${c}">${c ? HX_CAT[c][zh ? 1 : 0] : (zh ? '全部' : 'All')} <span>${c ? all.wh.filter(it => it.cat === c).length : all.wh.length}</span></button>`).join('') : '';
+  const sortSel = `<label class="hx-sort"><span>${zh ? '排序' : 'Sort'}</span><select data-sort>${[['group', HX.tab === 'wh' ? (zh ? '按国家' : 'By country') : (zh ? '按省份' : 'By province')], ['date', zh ? '最近到访' : 'Newest visit'], ['name', zh ? '按名称' : 'A–Z']].map(([v, l]) => `<option value="${v}"${HX.sort === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`;
+  const body = sorted ? `<ul class="hx-list">${sorted.map(hxRow).join('')}</ul>` : groups.map(g => `<div class="hx-group"><div class="hx-ghead">${g.cc ? `<span class="flag">${flag(g.cc)}</span>` : ''}<span class="hx-gname">${esc(nm2(g.name))}</span>${nmAlt(g.name) ? `<span class="hx-galt">${esc(nmAlt(g.name))}</span>` : ''}<span class="hx-gfrac">${hxFrac(g.items.length, g.total)}</span>${hxBar(g.items.length, g.total)}</div><ul class="hx-list">${g.items.map(hxRow).join('')}</ul></div>`).join('');
+  const note = HX.tab === 'wh' ? (zh ? '总数：联合国教科文组织《世界遗产名录》中该国的遗产数（跨国遗产计入每个缔约国）。' : 'Totals: properties of that country on the UNESCO World Heritage List (transnational properties count for each state party).')
+    : (zh ? `总数：文化和旅游部公布的 5A 级景区名单（${A5_ASOF}）。` : `Totals: the official list of 5A scenic areas (as of ${A5_ASOF}).`);
+  box.hidden = false; box.className = 'hx hx-' + HX.tab;
+  box.innerHTML = `<div class="hx-top"><h2 class="hx-title">${zh ? '遗产索引' : 'Heritage index'}</h2>
+    <button type="button" class="hx-toggle" aria-expanded="${HX.open}">${HX.open ? (zh ? '收起' : 'Hide') : (zh ? '展开索引' : 'Open index')}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>
+    <div class="hx-cards">${card('wh', 'hx-card-wh', sightIcon(['wh-cultural'])[1], all.wh.length, zh ? '世界遗产' : (all.wh.length === 1 ? 'World Heritage site' : 'World Heritage sites'), zh ? `${whC} 个国家` : `in ${whC} ${whC === 1 ? 'country' : 'countries'}`, 0)}
+      ${card('5a', 'hx-card-5a', sightIcon(['5a'])[1], all['5a'].length, zh ? '5A 级景区' : (all['5a'].length === 1 ? '5A scenic area' : '5A scenic areas'), zh ? `${a5P} 个省份 · 全国共 ${a5All} 个` : `in ${a5P} ${a5P === 1 ? 'province' : 'provinces'} · ${a5All} in China`, a5All)}</div>
+    <div class="hx-body"${HX.open ? '' : ' hidden'}><div class="hx-tools">${catChips}${sortSel}</div>${body || `<p class="hx-empty">${zh ? '没有符合的条目。' : 'Nothing here.'}</p>`}<p class="hx-note">${note}</p></div>`;
+  box.querySelector('.hx-toggle').onclick = () => { HX.open = !HX.open; hxSave(); renderHeritage(); };
+  box.querySelectorAll('.hx-card').forEach(b => b.onclick = () => { if (HX.open && HX.tab === b.dataset.tab) HX.open = false; else { HX.open = true; HX.tab = b.dataset.tab; } hxSave(); renderHeritage(); });
+  box.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { HX.cat = b.dataset.cat; hxSave(); renderHeritage(); });
+  box.querySelector('[data-sort]')?.addEventListener('change', e => { HX.sort = e.target.value; hxSave(); renderHeritage(); });
+  box.querySelectorAll('[data-reveal]').forEach(b => b.onclick = () => revealCity(b.dataset.reveal, 'start'));
+  box.querySelectorAll('[data-fly]').forEach(b => b.onclick = () => flyToSight(b.dataset.fly, parseFloat(b.dataset.lat), parseFloat(b.dataset.lon)));
+  box.querySelectorAll('.hx-row').forEach(r => { const ids = r.dataset.pids.split(' ');
+    r.addEventListener('mouseenter', () => hotPins(ids, true)); r.addEventListener('mouseleave', () => hotPins(ids, false)); });
+}
+function openHeritage(tab) {
+  HX.open = true; HX.tab = tab; hxSave(); renderHeritage();
+  const el = $('#heritage'); if (!el || el.hidden) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600);
+}
+// Row click: the map flies to the sight itself (or its city) and opens the city's popup
+function flyToSight(pid, lat, lon) {
+  const p = placeById(pid); if (!p || !MAP) return;
+  const ok = Number.isFinite(lat) && Number.isFinite(lon);
+  window.scrollTo({ top: $('#map').getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
+  MAP.flyTo(ok ? [lat, lon] : [p.lat, p.lon], Math.max(MAP.getZoom(), ok ? 10 : 7), { duration: 1 });
+  hotPins([pid], true); setTimeout(() => hotPins([pid], false), 2600);
+  const m = MARKERS.get(pid); if (m && !ok) setTimeout(() => m.openPopup(), 1050);
+}
+function hotPins(ids, on) {
+  for (const id of ids) { const m = MARKERS.get(id), el = m?.getElement()?.querySelector('.fp-pin'); if (!el) continue;
+    el.classList.toggle('hot', on); m.setZIndexOffset(on ? 1000 : 0); }
 }
 function placeById(id) { return (DATA.places || []).find(p => p.id === id); }
 function focusPlace(id) {
