@@ -2093,7 +2093,21 @@ function inFeature(lon, lat, f) {
     if (inside) return true; }
   return false;
 }
-const provinceAt = (lat, lon) => typeof lat === 'number' && CN_PROV ? (CN_PROV.features.find(f => inFeature(lon, lat, f))?.properties.zh || '') : '';
+// Hong Kong and Macau are tiny next to Guangdong: match them first, by name or within ~1.5 km of their outline
+const SAR_NAMES = { '澳门': /澳门|澳門|macau|macao/i, '香港': /香港|hong\s*kong/i };
+function sarFeature(p, feats, inF) {
+  const name = [p.city?.en, p.city?.zh, p.country?.en, p.country?.zh, p.admin].join(' ');
+  for (const f of feats) {
+    const re = SAR_NAMES[f.properties.zh]; if (!re) continue;
+    if (re.test(name)) return f;
+    if (typeof p.lat !== 'number' || /珠海|深圳|横琴|zhuhai|shenzhen|hengqin/i.test(name)) continue;
+    if (inF(p.lon, p.lat, f)) return f;
+    const polys = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
+    for (const poly of polys) for (const [x, y] of poly[0]) if ((x - p.lon) ** 2 + (y - p.lat) ** 2 < 0.00025) return f;
+  }
+  return null;
+}
+const provinceAt = (lat, lon) => typeof lat === 'number' && CN_PROV ? ((sarFeature({ lat, lon }, CN_PROV.features, inFeature) || CN_PROV.features.find(f => inFeature(lon, lat, f)))?.properties.zh || '') : '';
 // Candidate name → match key: no city / county prefix, no generic suffix, no separators
 const FA_PREFIX = /^(?:[一-鿿]{2,8}?(?:自治州|地区|市|盟|县|区))(?=[一-鿿]{2})/;
 const FA_SUFFIX = /(国家级?)?(生态旅游风景区|风景名胜旅游区|风景名胜区|生态文化旅游区|文化生态旅游区|文化旅游景区|文化旅游区|生态旅游区|风景旅游区|旅游风景区|旅游景区|旅游度假区|休闲旅游区|游览区|风景区|旅游区|景区|风光带|景点)$/;

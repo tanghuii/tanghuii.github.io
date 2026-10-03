@@ -165,14 +165,14 @@
   .city-ic { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: var(--highlight); color: var(--accent); flex-shrink: 0; transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), background 0.25s, color 0.25s; }
   .city-ic svg { width: 18px; height: 18px; }
   /* Map markers: round pin with the city icon */
-  .fp-pin-wrap { background: none; border: none; }
-  .fp-pin { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--map-dot); color: var(--on-accent, #fff); border: 2px solid var(--map-ring); box-shadow: 0 2px 6px rgba(13, 27, 42, 0.25); transition: transform 0.15s ease, background 0.2s; cursor: pointer; }
-  .fp-pin svg { width: 18px; height: 18px; }
+  .fp-pin-wrap { background: none; border: none; display: flex !important; align-items: center; justify-content: center; pointer-events: none; }
+  .fp-pin { pointer-events: auto; display: flex; align-items: center; justify-content: center; width: var(--pin, 30px); height: var(--pin, 30px); border-radius: 50%; background: var(--map-dot); color: var(--on-accent, #fff); border: 2px solid var(--map-ring); box-shadow: 0 2px 6px rgba(13, 27, 42, 0.25); transition: transform 0.15s ease, background 0.2s; cursor: pointer; }
+  .fp-pin svg { width: calc(var(--pin, 30px) * 0.6); height: calc(var(--pin, 30px) * 0.6); }
+  .fp-small .fp-pin { border-width: 1.5px; box-shadow: 0 1px 3px rgba(13, 27, 42, 0.25); }
   .fp-pin:hover, .leaflet-marker-icon:hover .fp-pin { transform: scale(1.15); background: var(--accent-light); }
   .fp-pin.hl { box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.25), 0 2px 6px rgba(13, 27, 42, 0.25); }
   /* Zoomed out: smaller pins so neighbouring cities overlap less */
-  .z-low .fp-pin { width: 22px; height: 22px; margin: 4px; }
-  .z-low .fp-pin svg { width: 13px; height: 13px; }
+
   .city-ic-lived { background: var(--ok-bg); color: var(--ok); }
   .visits-n { font-weight: 700; font-size: 0.78rem; color: var(--on-accent); background: var(--accent-light); padding: 0.05rem 0.45rem; border-radius: 100px; letter-spacing: 0.02em; }
   /* Scroll reveal: cards rise in as they enter the viewport */
@@ -564,6 +564,20 @@ function pointInFeature(lon, lat, f) {
   }
   return false;
 }
+// Hong Kong and Macau are tiny next to Guangdong: match them first, by name or within ~1.5 km of their outline
+const SAR_NAMES = { '澳门': /澳门|澳門|macau|macao/i, '香港': /香港|hong\s*kong/i };
+function sarFeature(p, feats, inF) {
+  const name = [p.city?.en, p.city?.zh, p.country?.en, p.country?.zh, p.admin].join(' ');
+  for (const f of feats) {
+    const re = SAR_NAMES[f.properties.zh]; if (!re) continue;
+    if (re.test(name)) return f;
+    if (typeof p.lat !== 'number' || /珠海|深圳|横琴|zhuhai|shenzhen|hengqin/i.test(name)) continue;
+    if (inF(p.lon, p.lat, f)) return f;
+    const polys = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
+    for (const poly of polys) for (const [x, y] of poly[0]) if ((x - p.lon) ** 2 + (y - p.lat) ** 2 < 0.00025) return f;
+  }
+  return null;
+}
 // Nearest feature by vertex distance (fallback for coastal points that fall just outside every polygon)
 function nearestFeature(lon, lat, feats) {
   let best = null, bd = Infinity;
@@ -714,7 +728,7 @@ function loadProvinces() {
 function provinceOf(p) {
   if (PROV_OF.has(p.id)) return PROV_OF.get(p.id);
   const feats = PROVINCE_CC.CN.data?.features; if (!feats || typeof p.lat !== 'number') return null;
-  const f = feats.find(x => pointInFeature(p.lon, p.lat, x)) || nearestFeature(p.lon, p.lat, feats);
+  const f = sarFeature(p, feats, pointInFeature) || feats.find(x => pointInFeature(p.lon, p.lat, x)) || nearestFeature(p.lon, p.lat, feats);
   const r = f ? { id: f.id, zh: f.properties.zh, en: f.properties.en } : null; PROV_OF.set(p.id, r); return r;
 }
 function provinceGroups(c) {
@@ -848,7 +862,12 @@ async function renderMap() {
       ${n ? `<button class="pop-btn" onclick="openLightbox('${esc(p.id)}',0)">${LANG === 'zh' ? `查看 ${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`} ↗</button>` : ''}`);
     MARKERS.set(p.id, m); bounds.push([p.lat, p.lon]);
   }
-  if (!MAP._pinZoomBound) { MAP._pinZoomBound = true; const syncPins = () => MAP.getContainer().classList.toggle('z-low', MAP.getZoom() < 4); MAP.on('zoomend', syncPins); syncPins(); }
+  // Pin size follows the zoom: about 12 px for a continent, 30 px for a city
+  if (!MAP._pinZoomBound) { MAP._pinZoomBound = true;
+    const PIN = [10, 11, 12, 14, 16, 19, 22, 25, 28, 30];
+    const syncPins = () => { const z = Math.max(0, Math.min(PIN.length - 1, Math.round(MAP.getZoom()))), el = MAP.getContainer();
+      el.style.setProperty('--pin', PIN[z] + 'px'); el.classList.toggle('fp-small', PIN[z] < 20); };
+    MAP.on('zoom zoomend', syncPins); syncPins(); }
   // Sights: small markers, visible once zoomed in a little
   if (SIGHTS_LAYER) { SIGHTS_LAYER.remove(); SIGHTS_LAYER = null; }
   const sightMarkers = [];
@@ -899,7 +918,7 @@ async function renderMap() {
       const feats = cfg.data.features;
       const hit = new Map();   // province id -> number of places
       for (const p of mine) {
-        const f = feats.find(x => pointInFeature(p.lon, p.lat, x)) || nearestFeature(p.lon, p.lat, feats);
+        const f = sarFeature(p, feats, pointInFeature) || feats.find(x => pointInFeature(p.lon, p.lat, x)) || nearestFeature(p.lon, p.lat, feats);
         if (f) hit.set(f.id, (hit.get(f.id) || 0) + 1);
       }
       PROVINCE_LAYER = L.geoJSON(cfg.data, { pane: 'countries',
