@@ -1586,10 +1586,13 @@ function renderAppearance() {
 }
 async function publishFontsIfChanged() {
   let before = {}; try { const o = JSON.parse(C_ORIG).site || {}; before = { fonts: o.fonts || null, palette: o.palette || null }; } catch (e) {}
-  if (JSON.stringify(C.site?.fonts || null) === JSON.stringify(before.fonts) && (C.site?.palette || null) === before.palette) return;
+  // Compare with the live file, not with content.json: they can disagree (an old copy uploaded by hand)
   const now = siteFonts(), pal = sitePalette();
+  let live = null; try { live = await ghGetFile('site-fonts.js'); } catch (e) {}
+  const liveTxt = live?.content ? new TextDecoder().decode(Uint8Array.from(atob(live.content.replace(/\s/g, '')), c => c.charCodeAt(0))) : '';
   const js = `// Font pairing for the whole site. Written by the Site Manager (CV & site settings → Fonts).\n// en: A–F, zh: 1–4 (see site-theme.js for the catalog); size: text size in percent.\nwindow.SITE_FONTS = ${JSON.stringify({ en: now.en, zh: now.zh, size: now.size || 100 })};\n// palette: see SiteTheme.PALETTES (ocean, glacier, lagoon, forest, graphite, walnut, pku).\nwindow.SITE_PALETTE = ${JSON.stringify(pal)};\n`;
-  await ghPutFile('site-fonts.js', b64enc(js), `Set site fonts to ${now.en} + ${now.zh} at ${now.size || 100}%, palette ${pal}, via Site Manager`);
+  if (liveTxt === js) return;
+  await ghPutFile('site-fonts.js', b64enc(js), `Set site fonts to ${now.en} + ${now.zh} at ${now.size || 100}%, palette ${pal}, via Site Manager`, live?.sha);
 }
 // The visitor map draws with computed colours: redraw it when the theme changes
 window.addEventListener('themechange', () => { if (C && $('#gc-map')) render(); });
