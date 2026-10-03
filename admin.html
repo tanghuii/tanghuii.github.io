@@ -1689,7 +1689,8 @@ function popularity(r) {
 }
 const fmtViews = v => v >= 1e6 ? (v / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : v >= 1e3 ? Math.round(v / 1e3) + 'k' : String(v);
 let SIGHT_SORT = 'popular';
-const SIGHT_RESULTS = new Map();   // place id -> last search results
+const SIGHT_RESULTS = new Map();
+const TR_DONE = new Set();   // places whose saved sights were auto-translated this session   // place id -> last search results
 const OPEN_PLACES = new Set();     // ids of expanded place editors
 const haversine = (a, b, c, d) => { const r = Math.PI / 180, x = Math.sin((c - a) * r / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin((d - b) * r / 2) ** 2; return 12742 * Math.asin(Math.sqrt(x)); };
 // Offline datasets in the repo root: all UNESCO World Heritage sites (wh-sites.json) and China's 5A names (cn-5a.json)
@@ -1820,6 +1821,97 @@ function autoGroupA5(p) {
     g.a5 = a5Ref(hit.area); g.a5root = hit.root; if (!g.tags.includes('5a')) g.tags.push('5a'); changed = true;
   }
   return changed;
+}
+// ── Official 5A list (by province) ──
+let FIVE_A_OFF = null, CN_PROV = null;
+async function loadFiveA() {
+  if (!FIVE_A_OFF) { try { FIVE_A_OFF = await fetchJson('cn-5a-official.json'); } catch (e) { FIVE_A_OFF = { items: [] }; } }
+  if (!CN_PROV) { try { CN_PROV = await fetchJson('cn-provinces.json'); } catch (e) { CN_PROV = { features: [] }; } }
+  return FIVE_A_OFF;
+}
+function inFeature(lon, lat, f) {
+  const polys = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
+  for (const poly of polys) { const ring = poly[0]; let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j]; if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) inside = !inside; }
+    if (inside) return true; }
+  return false;
+}
+const provinceAt = (lat, lon) => typeof lat === 'number' && CN_PROV ? (CN_PROV.features.find(f => inFeature(lon, lat, f))?.properties.zh || '') : '';
+// Candidate name → match key: no city / county prefix, no generic suffix, no separators
+const FA_PREFIX = /^(?:[一-鿿]{2,8}?(?:自治州|地区|市|盟|县|区))(?=[一-鿿]{2})/;
+const FA_SUFFIX = /(国家级?)?(生态旅游风景区|风景名胜旅游区|风景名胜区|生态文化旅游区|文化生态旅游区|文化旅游景区|文化旅游区|生态旅游区|风景旅游区|旅游风景区|旅游景区|旅游度假区|休闲旅游区|游览区|风景区|旅游区|景区|风光带|景点)$/;
+function faKey(zh) { let n = String(zh || '').replace(/[（(][^）)]*[）)]/g, ''); for (let k = 0; k < 2; k++) { const m = n.match(FA_PREFIX); if (!m) break; n = n.slice(m[0].length); } return n.replace(/[·•・－—\-、\s]/g, '').replace(FA_SUFFIX, ''); }
+// The official 5A entry a Chinese sight belongs to, or null
+function officialFiveA(name, lat, lon) {
+  const c = faKey(name.zh); if (c.length < 2 || !/[一-鿿]/.test(c)) return null;
+  const prov = provinceAt(lat, lon);
+  for (const it of FIVE_A_OFF?.items || []) {
+    if (prov && it.p !== prov) continue;
+    for (const k of it.keys) {
+      if (c === k || (k.includes(c) && c.length / k.length >= 0.6) || (c.includes(k) && (k.length >= 3 || c.length <= 4))) return it;
+    }
+  }
+  return null;
+}
+// Set / remove the 5A tag of a sight in China by the official list (a bundled-area part keeps it via sight.a5)
+function fixFiveA(g, cc, lat = g.lat, lon = g.lon) {
+  if (String(cc || '').toUpperCase() !== 'CN' || !FIVE_A_OFF) return false;
+  const it = officialFiveA(g.name, lat, lon), want = !!it || !!g.a5, had = g.tags.includes('5a');
+  if (it) g.fiveA = it.n; else delete g.fiveA;
+  if (want === had) return false;
+  g.tags = want ? g.tags.concat('5a') : g.tags.filter(t => t !== '5a'); return true;
+}
+
+// ── English names for Chinese ones ──
+const hasCJK = x => /[㐀-鿿]/.test(String(x || ''));
+const needsEn = n => !n.en || n.en === n.zh || hasCJK(n.en);
+const TR_KEY = 'sm_translations_v1';
+let TR_CACHE = null;
+function trCache() { if (!TR_CACHE) { try { TR_CACHE = JSON.parse(localStorage.getItem(TR_KEY) || '{}'); } catch (e) { TR_CACHE = {}; } } return TR_CACHE; }
+function trRemember(zh, en) { const c = trCache(); c[zh] = en; try { localStorage.setItem(TR_KEY, JSON.stringify(c)); } catch (e) {} }
+const EN_RULES = [
+  [/国家森林公园$/, 'National Forest Park'], [/国家湿地公园$/, 'National Wetland Park'], [/国家地质公园$/, 'National Geopark'], [/森林公园$/, 'Forest Park'],
+  [/湿地公园$/, 'Wetland Park'], [/(风景名胜区|风景区|旅游景区|旅游区|景区|景点)$/, 'Scenic Area'], [/度假区$/, 'Resort'], [/自然保护区$/, 'Nature Reserve'],
+  [/公园$/, 'Park'], [/古镇$/, 'Ancient Town'], [/古城$/, 'Ancient City'], [/古村落?$/, 'Ancient Village'], [/博物[馆院]$/, 'Museum'], [/纪念馆$/, 'Memorial Hall'],
+  [/美术馆$/, 'Art Museum'], [/故居$/, 'Former Residence'], [/遗址$/, 'Ruins'], [/大峡谷$/, 'Grand Canyon'], [/峡谷$/, 'Canyon'], [/瀑布$/, 'Waterfall'],
+  [/梯田$/, 'Terraces'], [/码头$/, 'Pier'], [/广场$/, 'Square'], [/寺$/, 'Temple'], [/[庙宫]$/, 'Temple'], [/塔$/, 'Pagoda'], [/桥$/, 'Bridge'],
+  [/[洞岩]$/, 'Cave'], [/峰$/, 'Peak'], [/山$/, 'Mountain'], [/湖$/, 'Lake'], [/[江河]$/, 'River'], [/岛$/, 'Island'], [/街$/, 'Street'], [/园$/, 'Garden'],
+];
+const PINYIN_URL = 'https://cdn.jsdelivr.net/npm/pinyin-pro@3.29.4/dist/index.js';
+async function pinyinEn(zh) {
+  await loadScriptOnce(PINYIN_URL, () => window.pinyinPro);
+  const py = x => { const s = window.pinyinPro.pinyin(x, { toneType: 'none', type: 'array', nonZh: 'consecutive' }).join(''); return s.charAt(0).toUpperCase() + s.slice(1); };
+  let rest = zh.replace(/[（(][^）)]*[）)]/g, '').replace(/[·•・－—\-、\s]/g, ''); const tail = [];
+  for (let k = 0; k < 2; k++) { const r = EN_RULES.find(([re]) => re.test(rest) && rest.replace(re, '').length >= 1); if (!r) break; tail.unshift(r[1]); rest = rest.replace(r[0], ''); }
+  return [rest ? py(rest) : '', ...tail].filter(Boolean).join(' ');
+}
+async function wikidataEn(zh, lat, lon) {
+  const sr = await fetchJson(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(zh)}&language=zh&uselang=zh&type=item&limit=7&format=json&origin=*`);
+  const ids = (sr.search || []).map(x => x.id); if (!ids.length) return '';
+  const ent = await fetchJson(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${ids.join('|')}&props=labels|claims&languages=en|zh&format=json&origin=*`);
+  for (const id of ids) {
+    const e = ent.entities?.[id]; const en = e?.labels?.en?.value; if (!en) continue;
+    const c = e.claims?.P625?.[0]?.mainsnak?.datavalue?.value;
+    if (typeof lat === 'number' && c && haversine(lat, lon, c.latitude, c.longitude) > 60) continue;
+    if (typeof lat === 'number' && !c) continue;
+    return en;
+  }
+  return '';
+}
+async function machineEn(zh) {
+  const d = await fetchJson(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(zh)}&langpair=zh-CN|en`);
+  let t = String(d?.responseData?.translatedText || '').trim().replace(/[.。]$/, '');
+  if (!t || hasCJK(t) || /MYMEMORY|QUERY LENGTH|INVALID/i.test(t) || Number(d?.responseStatus) !== 200) return '';
+  return t.replace(/\b(scenic spot|scenic area|scenic zone)\b/i, 'Scenic Area').replace(/\b\w/g, ch => ch.toUpperCase());
+}
+// zh → { en, via } (cached)
+async function translateName(zh, lat, lon) {
+  zh = String(zh || '').trim(); if (!zh || !hasCJK(zh)) return { en: zh, via: '' };
+  const hit = trCache()[zh]; if (hit) return { en: hit, via: 'cache' };
+  for (const [via, fn] of [['Wikidata', () => wikidataEn(zh, lat, lon)], ['MyMemory', () => machineEn(zh)], ['pinyin', () => pinyinEn(zh)]]) {
+    try { const en = await fn(); if (en && !hasCJK(en)) { trRemember(zh, en); return { en, via }; } } catch (e) {}
+  }
+  return { en: '', via: '' };
 }
 async function load5A() { if (!FIVE_A) { try { FIVE_A = await fetchJson('cn-5a.json'); } catch (e) { FIVE_A = []; } } return FIVE_A; }
 const SUFFIX_RE = /(国家级?|省级)?(风景名胜区|旅游风景区|旅游景区|风景区|景区|旅游区|度假区|名胜区|森林公园|地质公园|湿地公园|博物院|博物馆|纪念馆|纪念园|公园|古城|古镇|景点)$/;
@@ -2021,7 +2113,7 @@ function amapPoi(poi, lat, lon, order) {
   if (tc.startsWith('110201') || /世界遗产/.test(ty)) tags.push('wh');
   // Amap's own labels ("5A景区", "AAAAA", "国家级景点" …) live in tag / biz_ext / type
   const extra = [poi.tag, poi.biz_type, poi.alias, JSON.stringify(poi.biz_ext || {})].map(x => Array.isArray(x) ? x.join(' ') : String(x || '')).join(' ');
-  if (/5A|AAAAA/i.test(extra + ' ' + ty)) tags.push('5a');
+  // (5A comes from the official list only; Amap's tag text was wrong too often)
   if (/国家公园/.test(poi.name + ' ' + ty)) tags.push('national-park');
   const rank = tc.startsWith('110201') ? 0 : tc.startsWith('110202') ? 1 : /风景名胜/.test(ty) ? 2 : 3;
   return { id: 'amap-' + poi.id, name: { en: poi.name, zh: poi.name }, lat: la, lon: lo, links: 0, tags, enwiki: '', zhwiki: '',
@@ -2075,8 +2167,8 @@ async function findSightByName(p, q) {
       }
     }
   } catch (e) { /* name search on Wikidata is optional */ }
-  const list = await load5A();
-  out.forEach(r => { if (!r.tags.includes('5a') && (p.cc || '').toUpperCase() === 'CN' && is5A(r.name.zh, list)) r.tags.push('5a'); if (!r.baike && (p.cc || '').toUpperCase() === 'CN') r.baike = baikeUrl(r.name.zh); });
+  await loadFiveA();
+  out.forEach(r => { fixFiveA(r, p.cc); if (!r.baike && (p.cc || '').toUpperCase() === 'CN') r.baike = baikeUrl(r.name.zh); });
   await loadNP(); out.forEach(r => fixNationalPark(r, p.cc));
   return out.filter(r => r.dist <= 120).sort((a, b) => (a.src === 'Amap' ? -1 : 0) - (b.src === 'Amap' ? -1 : 0) || a.dist - b.dist);
 }
@@ -2137,16 +2229,17 @@ async function findSights(p) {
   const whZh = {}; out.forEach(c => { if (c.whsite?.name.zh) whZh[c.whsite.id] ||= c.whsite.name.zh; if (c.whroot && c.whsite && /[\u4e00-\u9fff]/.test(c.name.zh) && c.name.zh !== c.name.en) whZh[c.whsite.id] ||= c.name.zh; });
   out.forEach(c => { if (c.whsite && !c.whsite.name.zh && whZh[c.whsite.id]) c.whsite.name.zh = whZh[c.whsite.id]; if (c.whroot && c.whsite?.name.zh && c.name.zh === c.name.en) c.name.zh = c.whsite.name.zh; });
   // 5A from the offline list (Chinese places)
-  if (['CN'].includes((p.cc || '').toUpperCase())) { const list = await load5A(); out.forEach(r => { if (!r.tags.includes('5a') && is5A(r.name.zh, list)) r.tags.push('5a'); }); }
+  if (['CN'].includes((p.cc || '').toUpperCase())) { await loadFiveA(); out.forEach(r => { fixFiveA(r, p.cc); }); }
   // In China, Amap results (alone or merged) rank above Wikidata-only ones
   await loadNP(); out.forEach(r => fixNationalPark(r, p.cc));
   if (inChina) {
     await loadA5();
     for (const r of out) { const hit = a5Match(r.name, r.lat, r.lon); if (hit) { r.a5 = a5Ref(hit.area); r.a5root = hit.root; if (!r.tags.includes('5a')) r.tags.push('5a'); } }
+    // Amap parent-child only counts when the parent is on the official 5A list
     // Amap parent-child: a spot whose parent POI is a 5A area found in the same search
     const byPoi = new Map(out.filter(r => /^amap-/.test(r.id)).map(r => [r.id.slice(5), r]));
     for (const r of out) {
-      const par = r.amapParent && byPoi.get(r.amapParent); if (!par || r.a5 || !par.tags.includes('5a')) continue;
+      const par = r.amapParent && byPoi.get(r.amapParent); if (!par || r.a5 || !par.tags.includes('5a') || !par.fiveA) continue;
       par.a5 ||= { id: 'amap-' + r.amapParent, name: { zh: par.name.zh, en: par.name.en } }; par.a5root = par.a5root ?? true;
       r.a5 = { ...par.a5, name: { ...par.a5.name } }; r.a5root = false; if (!r.tags.includes('5a')) r.tags.push('5a');
     }
@@ -2297,7 +2390,7 @@ function viewFootprints(v) {
       ${biField(p.academic ? 'Public note (academic page and travel page)' : 'Note (optional)', p, 'note')}
       ${p.academic ? biField('Private note (travel page only)', p, 'pnote') : ''}
       <div class="field"><label>Sights &amp; landmarks (${p.sights.length})</label><div id="tv-sg-${i}"></div>
-        <div class="toolbar" style="margin-top:0.5rem"><button class="btn sm" data-sg-find="${i}">Find landmarks nearby</button><input type="text" data-sg-q="${i}" placeholder="or search by name, e.g. 外滩" style="width:auto;flex:1;min-width:160px;padding:0.25rem 0.5rem"><button class="btn sm" data-sg-name="${i}">Find</button><button class="btn sm" data-sg-add="${i}">Add manually</button><span class="hint" id="tv-sg-msg-${i}"></span></div>
+        <div class="toolbar" style="margin-top:0.5rem"><button class="btn sm" data-sg-find="${i}">Find landmarks nearby</button><input type="text" data-sg-q="${i}" placeholder="or search by name, e.g. 外滩" style="width:auto;flex:1;min-width:160px;padding:0.25rem 0.5rem"><button class="btn sm" data-sg-name="${i}">Find</button><button class="btn sm" data-sg-add="${i}">Add manually</button><button class="btn sm" data-sg-tr="${i}" title="Fill in or redo the English names of Chinese sights">Translate names</button><span class="hint" id="tv-sg-msg-${i}"></span></div>
         <div id="tv-sg-res-${i}"></div></div>
       <div class="field"><label>Photos (${p.photos.length})</label><div class="thumbs" id="tv-ph-${i}"></div>
         ${p.academic ? `<p class="hint">${p.photos.filter(isPublicPhoto).length} public (academic page) · ${p.photos.filter(x => !isPublicPhoto(x)).length} private (travel page only, encrypted). Use the 🌐 / 🔒 button on a photo to switch.</p>` : ''}
@@ -2335,11 +2428,22 @@ function viewFootprints(v) {
     const cur = g.a5 && !near.some(a => a.id === g.a5.id) ? `<option value="${esc(g.a5.id)}" selected>${esc(g.a5.name.zh || g.a5.name.en)}</option>` : '';
     return `<option value="">Not part of a bundled 5A area</option>${cur}` + near.map(a => `<option value="${esc(a.id)}" ${g.a5?.id === a.id ? 'selected' : ''}>${esc(a.zh)}</option>`).join('');
   };
+  const translateSaved = async (p, i, force = false) => {
+    const todo = p.sights.filter(g => hasCJK(g.name.zh) && (force || needsEn(g.name))); if (!todo.length) return;
+    const msg = $('#tv-sg-msg-' + i); if (msg) msg.textContent = `Translating ${todo.length} name${todo.length === 1 ? '' : 's'} to English…`;
+    let n = 0;
+    for (const g of todo) { if (force) delete trCache()[g.name.zh]; const { en, via } = await translateName(g.name.zh, g.lat, g.lon); if (en && (force || needsEn(g.name))) { g.name.en = en; n++; } }
+    if (n) markDirty(); renderSights(p, i);
+    if (msg) msg.textContent = n ? `${n} English name${n === 1 ? '' : 's'} filled in (Wikidata, MyMemory or pinyin). Edit any of them below.` : 'No English name could be found; type one in.';
+  };
   const renderSights = (p, i) => {
     renderUploadSight(p, i);
     const box = $('#tv-sg-' + i); if (!box) return;
     if (!WH_SITES) { loadWH().then(() => { if (autoGroupWH(p, WH_SITES)) markDirty(); renderSights(p, i); }); }
     else if (autoGroupWH(p, WH_SITES)) markDirty();
+    if (!FIVE_A_OFF) loadFiveA().then(() => renderSights(p, i));
+    else if (p.sights.filter(g => !g.fiveAManual).map(g => fixFiveA(g, p.cc, typeof g.lat === 'number' ? g.lat : p.lat, typeof g.lon === 'number' ? g.lon : p.lon)).some(Boolean)) markDirty();
+    if (!TR_DONE.has(p.id) && p.sights.some(g => needsEn(g.name) && hasCJK(g.name.zh))) { TR_DONE.add(p.id); translateSaved(p, i); }
     if (!A5_AREAS) loadA5().then(() => renderSights(p, i));
     else if (autoGroupA5(p)) markDirty();
     if (!NAT_PARKS) loadNP().then(() => renderSights(p, i));
@@ -2377,6 +2481,7 @@ function viewFootprints(v) {
       row.querySelectorAll('.tagbtn:not([data-sg-pub])').forEach(b => b.onclick = () => {
         const key = b.dataset.tag;
         if (key === 'national-park') g.npManual = true;
+        if (key === '5a') g.fiveAManual = true;
         if (g.tags.includes(key)) g.tags = g.tags.filter(x => x !== key);
         else { if (WH_GROUP.has(key)) g.tags = g.tags.filter(x => !WH_GROUP.has(x)); g.tags.push(key); }
         markDirty(); renderSights(p, i);
@@ -2392,13 +2497,19 @@ function viewFootprints(v) {
     if (SIGHT_SORT === 'near') order.sort((a, b) => (res[b].pinned || 0) - (res[a].pinned || 0) || res[a].dist - res[b].dist);
     else order.sort((a, b) => (res[b].pinned || 0) - (res[a].pinned || 0) || (res[b].score ?? 0) - (res[a].score ?? 0) || a - b);
     const sortBar = res.length ? `<div class="sg-sort"><span class="hint" style="margin:0">Sort</span><button type="button" class="tagbtn ${SIGHT_SORT === 'popular' ? 'on' : ''}" data-sort="popular">most known</button><button type="button" class="tagbtn ${SIGHT_SORT === 'near' ? 'on' : ''}" data-sort="near">nearest</button></div>` : '';
-    box.innerHTML = res.length ? sortBar + `<div class="sg-cands">${order.map(k => [res[k], k]).map(([r, k]) => `<label class="sg-cand"><input type="checkbox" data-k="${k}" ${p.sights.some(g => g.id === r.id) ? 'checked' : ''}><b>${esc(r.name.en)}</b>${r.name.zh && r.name.zh !== r.name.en ? `<span>${esc(r.name.zh)}</span>` : ''}${r.tags.map(tg => `<span class="tagbtn on" data-tag="${tg}">${TAG_LABEL[tg]}</span>`).join('')}${r.whsite && !r.whroot ? `<span class="wh-part" title="Counted once, under this World Heritage property">part of ${esc(r.whsite.name.zh || r.whsite.name.en)}${r.whcomp ? ' · ' + esc(r.whcomp) : ''}</span>` : ''}${r.whroot && r.whcomp ? `<span class="wh-part" title="Nearest component of this serial property">component: ${esc(r.whcomp)}</span>` : ''}${r.a5 && !r.a5root ? `<span class="wh-part a5-part" title="Counted once, under this 5A scenic area">5A: ${esc(r.a5.name.zh || r.a5.name.en)}</span>` : ''}<span class="m">${typeof r.views === 'number' ? `<span title="Wikipedia page views, last 60 days">👁 ${fmtViews(r.views)}</span> · ` : ''}${r.dist.toFixed(0)} km · ${esc(r.src)}${r.amapType ? ' · ' + esc(r.amapType.split(';').pop()) : ''}${r.url ? ' · 🔗 site' : ''}</span></label>`).join('')}</div>` : '<p class="hint">Nothing found within 50 km on Wikidata. Add the sight by hand.</p>';
+    box.innerHTML = res.length ? sortBar + `<div class="sg-cands">${order.map(k => [res[k], k]).map(([r, k]) => `<label class="sg-cand"><input type="checkbox" data-k="${k}" ${p.sights.some(g => g.id === r.id) ? 'checked' : ''}><b>${esc(r.name.en)}</b>${r.name.zh && r.name.zh !== r.name.en ? `<span>${esc(r.name.zh)}</span>` : ''}${r.tags.map(tg => `<span class="tagbtn on" data-tag="${tg}"${tg === '5a' && r.fiveA ? ` title="Official 5A: ${esc(r.fiveA)}"` : ''}>${TAG_LABEL[tg]}</span>`).join('')}${r.whsite && !r.whroot ? `<span class="wh-part" title="Counted once, under this World Heritage property">part of ${esc(r.whsite.name.zh || r.whsite.name.en)}${r.whcomp ? ' · ' + esc(r.whcomp) : ''}</span>` : ''}${r.whroot && r.whcomp ? `<span class="wh-part" title="Nearest component of this serial property">component: ${esc(r.whcomp)}</span>` : ''}${r.a5 && !r.a5root ? `<span class="wh-part a5-part" title="Counted once, under this 5A scenic area">5A: ${esc(r.a5.name.zh || r.a5.name.en)}</span>` : ''}<span class="m">${typeof r.views === 'number' ? `<span title="Wikipedia page views, last 60 days">👁 ${fmtViews(r.views)}</span> · ` : ''}${r.dist.toFixed(0)} km · ${esc(r.src)}${r.amapType ? ' · ' + esc(r.amapType.split(';').pop()) : ''}${r.url ? ' · 🔗 site' : ''}</span></label>`).join('')}</div>` : '<p class="hint">Nothing found within 50 km on Wikidata. Add the sight by hand.</p>';
     box.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => { SIGHT_SORT = b.dataset.sort; renderResults(p, i); });
+    // English names for the first 30 results, filled in as they arrive
+    if (!res._tr) { res._tr = true; (async () => { let changed = false;
+      for (const r of order.slice(0, 30).map(k => res[k])) { if (!needsEn(r.name)) continue; const { en } = await translateName(r.name.zh, r.lat, r.lon); if (en) { r.name.en = en; changed = true; } }
+      if (changed && SIGHT_RESULTS.get(p.id) === res) renderResults(p, i); })(); }
     box.querySelectorAll('input[data-k]').forEach(cb => cb.onchange = () => {
       const r = res[Number(cb.dataset.k)];
       if (cb.checked) { if (!p.sights.some(g => g.id === r.id)) p.sights.push({ pub: !p.academic ? undefined : false, id: r.id, name: { ...r.name }, lat: r.lat, lon: r.lon, tags: [...r.tags], enwiki: r.enwiki, zhwiki: r.zhwiki, url: r.url || '', amap: r.amap || '', baike: r.baike || '', ...(r.whsite ? { whsite: JSON.parse(JSON.stringify(r.whsite)), whroot: !!r.whroot } : {}), ...(r.a5 ? { a5: JSON.parse(JSON.stringify(r.a5)), a5root: !!r.a5root } : {}) }); }
       else { p.sights = p.sights.filter(g => g.id !== r.id); p.photos.forEach(ph => { if (ph.sights) ph.sights = ph.sights.filter(x => x !== r.id); }); }
       markDirty(); renderSights(p, i); renderResults(p, i); renderThumbs(p, i);
+      const g = cb.checked && p.sights.find(x => x.id === r.id);
+      if (g && needsEn(g.name)) translateName(g.name.zh, g.lat, g.lon).then(({ en }) => { if (en && needsEn(g.name)) { g.name.en = en; markDirty(); renderSights(p, i); } });
     });
   };
   const wireSights = (p, i) => {
@@ -2425,6 +2536,7 @@ function viewFootprints(v) {
       } catch (e) { msg.textContent = 'Search failed: ' + e.message; }
     };
     $(`[data-sg-name="${i}"]`).onclick = byName;
+    $(`[data-sg-tr="${i}"]`).onclick = () => translateSaved(p, i, true);
     $(`[data-sg-q="${i}"]`).onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); byName(); } };
     $(`[data-sg-add="${i}"]`).onclick = () => { p.sights.push({ pub: p.academic ? false : undefined, id: 's-' + rid(), name: { en: '', zh: '' }, lat: null, lon: null, tags: [], enwiki: '', zhwiki: '' }); markDirty(); renderSights(p, i); renderThumbs(p, i); };
     renderResults(p, i);
