@@ -242,8 +242,8 @@
   @media (max-width: 640px) { .sort-seg { margin-left: 0; } }
   /* Wide screens: map left (sticky), list right */
   @media (min-width: 1200px) {
-    .top-bar-inner, .wrap { max-width: 1760px; }
-    .split { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); gap: 2.2rem; align-items: start; }
+    .top-bar-inner, .wrap { max-width: none; padding-left: 28px; padding-right: 28px; }
+    .split { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(500px, 1fr); gap: 1.6rem; align-items: start; }
     .split-map { position: sticky; top: calc(var(--tb, 61px) + 16px); }
     .split-map #map { height: calc(100vh - var(--tb, 61px) - 78px); min-height: 460px; }
     .split-list { min-width: 0; padding-bottom: 7rem; }
@@ -257,6 +257,65 @@
   .fp-follow i { width: 8px; height: 8px; border-radius: 50%; background: var(--subtle); }
   .fp-follow.on i { background: var(--accent); }
   .fp-pin.cur { background: var(--accent-light); transform: scale(1.3); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.28), 0 2px 8px rgba(13, 27, 42, 0.3); }
+  /* Places navigator (≥1360 px) */
+  .split-nav { display: none; }
+  @media (min-width: 1200px) and (max-width: 1359px) {
+    .split.has-nav { grid-template-columns: minmax(0, 1.15fr) 58px minmax(460px, 1fr); gap: 1rem; }
+    .has-nav > .split-nav { display: flex; flex-direction: column; position: sticky; top: calc(var(--tb, 61px) + 16px); height: calc(100vh - var(--tb, 61px) - 78px); min-height: 460px; background: var(--card-bg, var(--card, #fff)); border: 1px solid var(--subtle); border-radius: 12px; overflow: visible; z-index: 500; }
+  }
+  @media (min-width: 1360px) {
+    .split.has-nav { grid-template-columns: minmax(0, 1.15fr) 236px minmax(480px, 1fr); gap: 1.2rem; }
+    .has-nav > .split-nav { display: flex; flex-direction: column; position: sticky; top: calc(var(--tb, 61px) + 16px); height: calc(100vh - var(--tb, 61px) - 78px); min-height: 460px; background: var(--card-bg, var(--card, #fff)); border: 1px solid var(--subtle); border-radius: 12px; overflow: hidden; }
+  }
+  .nv-head { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; padding: 0.75rem 0.85rem 0.4rem; }
+  .nv-head b { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .nv-sort { display: inline-flex; border: 1px solid var(--subtle); border-radius: 999px; overflow: hidden; }
+  .nv-sort button { border: none; background: none; color: var(--muted); font: inherit; font-size: 0.7rem; padding: 0.12rem 0.5rem; cursor: pointer; }
+  .nv-sort button.on { background: var(--accent); color: var(--on-accent); }
+  .nv-filter { margin: 0 0.75rem 0.5rem; padding: 0.32rem 0.6rem; border: 1px solid var(--subtle); border-radius: 8px; background: var(--card-bg); color: var(--ink); font: inherit; font-size: 0.82rem; }
+  .nv-filter:focus { outline: 2px solid var(--accent-light); outline-offset: 0; }
+  .nv-tree { flex: 1; overflow-y: auto; padding: 0 0.4rem 0.8rem; font-size: 0.86rem; scrollbar-width: thin; }
+  .nv-row { display: flex; align-items: center; gap: 0.3rem; width: 100%; border: none; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; border-radius: 7px; padding: 0.24rem 0.45rem; line-height: 1.3; }
+  .nv-row:hover { background: var(--highlight); }
+  .nv-row .chev { flex: none; width: 1em; color: var(--muted); font-size: 0.7rem; text-align: center; }
+  .nv-row .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nv-row .alt { color: var(--muted); font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .nv-row .n { margin-left: auto; padding-left: 0.4rem; color: var(--muted); font-size: 0.72rem; flex: none; }
+  .nv-c { font-weight: 650; margin-top: 0.15rem; }
+  .nv-p { padding-left: 1.2rem; color: var(--muted); font-size: 0.83rem; }
+  .nv-p.has-cur { color: var(--accent); font-weight: 600; }
+  .nv-city { padding-left: 2.25rem; font-size: 0.83rem; }
+  .nv-c + .nv-kids > .nv-city { padding-left: 1.5rem; }
+  .nv-city.cur { background: var(--accent); color: var(--on-accent); }
+  .nv-city.cur .alt { color: inherit; opacity: 0.8; }
+  .nv-kids[hidden] { display: none; }
+  /* Narrower screens: flags only, the country's tree opens beside it */
+  .nv-rail { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 0.6rem 0; overflow-y: auto; height: 100%; scrollbar-width: none; }
+  .nv-flag { position: relative; flex: none; width: 40px; height: 40px; border: none; border-radius: 10px; background: none; font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .nv-flag img { width: 24px; height: auto; border-radius: 3px; }
+  .nv-flag:hover, .nv-flag.open { background: var(--highlight); }
+  .nv-flag.cur { box-shadow: inset 3px 0 0 var(--accent); background: var(--highlight); }
+  .nv-flag i { position: absolute; right: -2px; top: -2px; min-width: 16px; padding: 0 3px; border-radius: 99px; background: var(--accent); color: var(--on-accent); font: 700 9px/15px var(--font-body); font-style: normal; text-align: center; }
+  .nv-pop { position: absolute; left: calc(100% + 8px); top: 0; width: 270px; max-height: 100%; overflow-y: auto; background: var(--card-bg, var(--card, #fff)); border: 1px solid var(--subtle); border-radius: 12px; box-shadow: 0 14px 34px rgba(13, 27, 42, 0.2); padding: 0.4rem 0.4rem 0.7rem; font-size: 0.86rem; }
+  .nv-pop h4 { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 0.45rem 0.5rem 0.35rem; display: flex; gap: 0.4rem; align-items: center; }
+  .nv-pop .nv-p { padding-left: 0.5rem; } .nv-pop .nv-city { padding-left: 1.5rem; } .nv-pop .nv-flat .nv-city { padding-left: 0.6rem; }
+  .nv-empty { color: var(--muted); font-size: 0.82rem; padding: 0.6rem 0.5rem; }
+  /* Heritage index collapsed to one line */
+  .hx.hx-slim { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 0.6rem; padding: 0.6rem 0.75rem 0.6rem 1rem; border-radius: 12px; }
+  .hx-slim-t { font-family: var(--font-head); font-size: 1.08rem; margin-right: 0.2rem; }
+  .hx-pill { display: inline-flex; align-items: center; gap: 0.4rem; border: 1px solid var(--subtle); background: var(--card-bg, #fff); color: var(--ink); border-radius: 999px; padding: 0.25rem 0.75rem 0.25rem 0.35rem; font: inherit; font-size: 0.86rem; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+  .hx-pill:hover { border-color: var(--accent-light); background: var(--highlight); }
+  .hx-pill b { font-weight: 700; color: var(--accent); }
+  .hx-pill-5a b { color: var(--warn); }
+  .hx-pill-s { color: var(--muted); font-size: 0.8rem; }
+  .hx-pill-ic { display: inline-flex; width: 24px; height: 24px; border-radius: 50%; align-items: center; justify-content: center; background: var(--highlight); color: var(--accent); }
+  .hx-pill-5a .hx-pill-ic { background: var(--warn-bg); color: var(--warn); }
+  .hx-pill-ic svg { width: 14px; height: 14px; }
+  .hx-mini { display: inline-block; width: 42px; height: 4px; border-radius: 2px; background: rgba(var(--subtle-rgb), 0.8); overflow: hidden; margin-left: 0.15rem; }
+  .hx-mini i { display: block; height: 100%; background: var(--warn); }
+  .hx-slim .hx-toggle { margin-left: auto; }
+  .split-list { container-type: inline-size; }
+  @container (max-width: 600px) { .hx-slim-t, .hx-pill-wh .hx-pill-s, .hx-mini { display: none; } .hx-pill { padding-right: 0.6rem; } }
   .highlights { margin-top: 0.6rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
   .sights { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
   .sights-label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ok); margin-right: 0.2rem; }
@@ -518,6 +577,7 @@
       <span data-en="Click a province, city or sight to jump to its entry; names in the popup can be copied." data-zh="点击省份、城市或景点可跳到对应条目；弹出框里的地名可以复制。">Click a province, city or sight to jump to its entry; names in the popup can be copied.</span>
     </div>
     </div>
+    <nav class="split-nav" id="fp-nav" aria-label="Places"></nav>
     <div class="split-list">
     <section class="hx" id="heritage" hidden></section>
     <div class="places">
@@ -924,7 +984,7 @@ function renderList() {
     </section>`;
   }).join('');
   list.querySelectorAll('[data-ctoggle]').forEach(b => b.onclick = () => toggleCountry(b.closest('.country')));
-  renderHeritage(); wireFollow();
+  renderHeritage(); wireFollow(); wireNav();
   if ((DATA.places || []).some(p => normCC(p.cc) === 'CN') && !PROVINCE_CC.CN.data) loadProvinces().then(d => { if (d) renderList(); });
   list.querySelectorAll('[data-map]').forEach(b => b.onclick = () => focusPlace(b.dataset.map));
   list.querySelectorAll('[data-gallery]').forEach(b => b.onclick = () => openLightbox(b.dataset.gallery, 0));
@@ -1088,6 +1148,18 @@ function renderHeritage() {
   const whC = new Set(all.wh.map(it => normCC(it.p0.cc))).size;
   const a5P = new Set(all['5a'].map(it => (normCC(it.p0.cc) === 'CN' && provinceOf(it.p0)?.zh) || '—')).size;
   const a5All = Object.values(A5_TOTAL).reduce((a, b) => a + b, 0);
+  // Collapsed: one line with two pills
+  if (!HX.open) {
+    box.hidden = false; box.className = 'hx hx-slim';
+    const pill = (tab, cls, icon, inner, title) => all[tab].length ? `<button type="button" class="hx-pill ${cls}" data-tab="${tab}" title="${esc(title)}"><span class="hx-pill-ic">${icon}</span>${inner}</button>` : '';
+    box.innerHTML = `<span class="hx-slim-t">${zh ? '遗产索引' : 'Heritage'}</span>
+      ${pill('wh', 'hx-pill-wh', sightIcon(['wh-cultural'])[1], `<b>${all.wh.length}</b> ${zh ? '处世界遗产' : 'World Heritage'}<span class="hx-pill-s">· ${zh ? `${whC} 个国家` : `${whC} ${whC === 1 ? 'country' : 'countries'}`}</span>`, zh ? '打开世界遗产列表' : 'Open the World Heritage list')}
+      ${pill('5a', 'hx-pill-5a', sightIcon(['5a'])[1], `<b>${all['5a'].length}</b><span class="hx-pill-s">/ ${a5All}</span> ${zh ? '个 5A' : '5A areas'}<span class="hx-mini"><i style="width:${Math.min(100, Math.max(2, all['5a'].length / a5All * 100)).toFixed(1)}%"></i></span>`, zh ? '打开 5A 景区列表' : 'Open the 5A list')}
+      <button type="button" class="hx-toggle" aria-expanded="false">${zh ? '展开' : 'Open'}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>`;
+    box.querySelector('.hx-toggle').onclick = () => { HX.open = true; hxSave(); renderHeritage(); };
+    box.querySelectorAll('.hx-pill').forEach(b => b.onclick = () => { HX.open = true; HX.tab = b.dataset.tab; hxSave(); renderHeritage(); });
+    return;
+  }
   const card = (tab, cls, icon, n, label, sub, total) => all[tab].length ? `<button type="button" class="hx-card ${cls}${HX.open && HX.tab === tab ? ' on' : ''}" data-tab="${tab}" aria-pressed="${HX.open && HX.tab === tab}">
       <span class="hx-card-ic">${icon}</span><span class="hx-card-txt"><span class="hx-card-n">${hxFrac(n, total)}</span><span class="hx-card-l">${label}</span><span class="hx-card-s">${sub}</span></span>${total ? hxBar(n, total) : ''}</button>` : '';
   const items = all[HX.tab].filter(it => HX.tab !== 'wh' || !HX.cat || it.cat === HX.cat);
@@ -1216,8 +1288,95 @@ function addFollowControl() {
   const sync = () => { const el = MAP._followCtl.getContainer(); el.style.display = isWide() ? '' : 'none'; el._paint?.(); };
   sync(); MAP._followSync = sync;
 }
+matchMedia('(min-width: 1360px)').addEventListener?.('change', () => { NAV_POP = ''; if (MAP) setTimeout(() => MAP.invalidateSize(), 60); renderNav(); });
+matchMedia('(min-width: 1200px)').addEventListener?.('change', () => { NAV_POP = ''; renderNav(); });
 WIDE_MQ.addEventListener?.('change', () => { syncTopBar(); if (MAP) { setTimeout(() => MAP.invalidateSize(), 60); MAP._followSync?.(); } });
 window.addEventListener('resize', syncTopBar);
+// ── Places navigator: tree country → province → city beside the list ──
+// NAV_OPEN: branches the user opened; NAV_AUTO: the branch of the city in view (replaced as you scroll)
+const NAV_OPEN = new Set(); let NAV_AUTO = new Set(); let NAV_Q = '', NAV_CUR = '', NAV_IO = null;
+const navMode = () => matchMedia('(min-width: 1360px)').matches ? 'full' : matchMedia('(min-width: 1200px)').matches ? 'rail' : 'none';
+const navVisible = () => PRIVATE && navMode() !== 'none';
+let NAV_POP = '';
+// Rail: one flag per country; clicking opens that country's tree beside the rail
+function renderRail(box) {
+  const zh = LANG === 'zh', groups = groupByCountry(DATA.places || []), curP = placeById(NAV_CUR), curKey = curP ? (normCC(curP.cc) || t(curP.country)) : '';
+  const cityRow = p => `<button type="button" class="nv-row nv-city${p.id === NAV_CUR ? ' cur' : ''}" data-nv-city="${esc(p.id)}"><span class="nm">${esc(t(p.city))}</span>${navAlt(p.city) ? `<span class="alt">${esc(navAlt(p.city))}</span>` : ''}</button>`;
+  const c = groups.find(g => (g.cc || t(g.name)) === NAV_POP);
+  let pop = '';
+  if (c) { const provs = provinceGroups(c);
+    pop = `<h4>${flag(c.cc)} ${esc(t(c.name) || c.cc)} · ${c.places.length}</h4>` + (provs ? provs.map(g => `<button type="button" class="nv-row nv-p${g.places.some(p => p.id === NAV_CUR) ? ' has-cur' : ''}" data-nv-prov="${esc(g.zh)}"><span class="nm">${esc(zh ? g.zh : g.en)}</span>${!zh && g.zh ? `<span class="alt">${esc(g.zh)}</span>` : ''}<span class="n">${g.places.length}</span></button>${g.places.map(cityRow).join('')}`).join('') : `<div class="nv-flat">${c.places.map(cityRow).join('')}</div>`); }
+  box.innerHTML = `<div class="nv-rail">${groups.map(g => { const key = g.cc || t(g.name); return `<button type="button" class="nv-flag${key === curKey ? ' cur' : ''}${key === NAV_POP ? ' open' : ''}" data-nv-flag="${esc(key)}" title="${esc(t(g.name) || g.cc)} · ${g.places.length}" aria-expanded="${key === NAV_POP}">${flag(g.cc)}<i>${g.places.length}</i></button>`; }).join('')}</div>${c ? `<div class="nv-pop" role="dialog">${pop}</div>` : ''}`;
+  box.querySelectorAll('[data-nv-flag]').forEach(b => b.onclick = e => { e.stopPropagation(); NAV_POP = NAV_POP === b.dataset.nvFlag ? '' : b.dataset.nvFlag; renderNav(); });
+  box.querySelectorAll('.nv-pop [data-nv-prov]').forEach(r => r.onclick = () => { NAV_POP = ''; renderNav(); jumpToProvince('CN', r.dataset.nvProv); });
+  box.querySelectorAll('.nv-pop [data-nv-city]').forEach(r => r.onclick = () => { const p = placeById(r.dataset.nvCity); if (!p) return; NAV_POP = ''; setNavCurrent(p.id, false); renderNav(); jumpToCity(p.id);
+    if (MAP && typeof p.lat === 'number') { markCurrent(p.id); MAP.flyTo([p.lat, p.lon], Math.max(MAP.getZoom(), 6), { duration: 0.8 }); } });
+}
+document.addEventListener('click', e => { if (NAV_POP && !e.target.closest('#fp-nav')) { NAV_POP = ''; renderNav(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && NAV_POP) { NAV_POP = ''; renderNav(); } });
+const navFold = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+function navAlt(n) { const a = LANG === 'zh' ? n?.en : n?.zh; return a && a !== t(n) ? a : ''; }
+function renderNav() {
+  const box = $('#fp-nav'); if (!box || !DATA) return;
+  box.closest('.split')?.classList.toggle('has-nav', PRIVATE);
+  if (!PRIVATE) { box.hidden = true; return; }
+  if (navMode() === 'rail') return renderRail(box);
+  const zh = LANG === 'zh', q = navFold(NAV_Q.trim());
+  const hit = p => !q || [p.city?.en, p.city?.zh, p.country?.en, p.country?.zh, ...(p.sights || []).flatMap(g => [g.name?.en, g.name?.zh])].some(x => navFold(x).includes(q));
+  const cityRow = p => `<button type="button" class="nv-row nv-city${p.id === NAV_CUR ? ' cur' : ''}" data-nv-city="${esc(p.id)}" title="${esc(t(p.city))}${p.when ? ' · ' + esc(fmtWhen(p.when)) : ''}"><span class="nm">${esc(t(p.city))}</span>${navAlt(p.city) ? `<span class="alt">${esc(navAlt(p.city))}</span>` : ''}</button>`;
+  const groups = groupByCountry(DATA.places || []);
+  const html = groups.map(c => {
+    const key = c.cc || t(c.name), places = c.places.filter(hit); if (!places.length) return '';
+    const provs = provinceGroups({ ...c, places });
+    const open = !!q || NAV_OPEN.has('c:' + key) || NAV_AUTO.has('c:' + key);
+    const kids = provs ? provs.map(g => { const pk = 'p:' + g.zh, po = !!q || NAV_OPEN.has(pk) || NAV_AUTO.has(pk), cur = g.places.some(p => p.id === NAV_CUR);
+        return `<button type="button" class="nv-row nv-p${cur ? ' has-cur' : ''}" data-nv-prov="${esc(g.zh)}" data-nv-key="${esc(pk)}"><span class="chev" data-nv-tog>${po ? '▾' : '▸'}</span><span class="nm">${esc(zh ? g.zh : g.en)}</span>${!zh && g.zh ? `<span class="alt">${esc(g.zh)}</span>` : ''}<span class="n">${g.places.length}</span></button><div class="nv-kids"${po ? '' : ' hidden'}>${g.places.map(cityRow).join('')}</div>`; }).join('')
+      : places.map(cityRow).join('');
+    return `<button type="button" class="nv-row nv-c" data-nv-country="${esc(key)}" data-nv-key="c:${esc(key)}"><span class="chev" data-nv-tog>${open ? '▾' : '▸'}</span><span>${flag(c.cc)}</span><span class="nm">${esc(t(c.name) || c.cc)}</span><span class="n">${places.length}</span></button><div class="nv-kids"${open ? '' : ' hidden'}>${kids}</div>`;
+  }).join('');
+  const keepFocus = document.activeElement?.classList.contains('nv-filter'), caret = keepFocus ? document.activeElement.selectionStart : 0, scroll = box.querySelector('.nv-tree')?.scrollTop || 0;
+  box.innerHTML = `<div class="nv-head"><b>${zh ? '地点' : 'Places'}</b><span class="nv-sort">${[['name', zh ? '字母' : 'A–Z'], ['date', zh ? '时间' : 'Newest']].map(([v, l]) => `<button type="button" data-nv-sort="${v}" class="${LIST_SORT === v ? 'on' : ''}">${l}</button>`).join('')}</span></div>
+    <input class="nv-filter" type="search" placeholder="${zh ? '筛选城市、国家、景点…' : 'Filter cities, countries, sights…'}" value="${esc(NAV_Q)}" aria-label="${zh ? '筛选地点' : 'Filter places'}">
+    <div class="nv-tree">${html || `<p class="nv-empty">${zh ? '没有匹配的地点。' : 'No place matches.'}</p>`}</div>`;
+  const tree = box.querySelector('.nv-tree'); tree.scrollTop = scroll;
+  const inp = box.querySelector('.nv-filter'); if (keepFocus) { inp.focus(); try { inp.setSelectionRange(caret, caret); } catch (e) {} }
+  inp.addEventListener('input', e => { NAV_Q = e.target.value; renderNav(); });
+  inp.addEventListener('keydown', e => { if (e.key === 'Escape') { NAV_Q = ''; renderNav(); } });
+  box.querySelectorAll('[data-nv-sort]').forEach(b => b.onclick = () => { if (LIST_SORT === b.dataset.nvSort) return; LIST_SORT = b.dataset.nvSort; try { localStorage.setItem('fp_sort', LIST_SORT); } catch (e) {} renderHeader(); renderList(); });
+  const isOpen = k => NAV_OPEN.has(k) || NAV_AUTO.has(k);
+  const toggle = row => { const k = row.dataset.nvKey; if (isOpen(k)) { NAV_OPEN.delete(k); NAV_AUTO.delete(k); } else NAV_OPEN.add(k); renderNav(); };
+  box.querySelectorAll('[data-nv-country]').forEach(r => r.onclick = e => { if (e.target.closest('[data-nv-tog]')) return toggle(r); if (!isOpen(r.dataset.nvKey)) toggle(r); jumpToCountry(r.dataset.nvCountry); });
+  box.querySelectorAll('[data-nv-prov]').forEach(r => r.onclick = e => { if (e.target.closest('[data-nv-tog]')) return toggle(r); if (!isOpen(r.dataset.nvKey)) toggle(r); jumpToProvince('CN', r.dataset.nvProv); });
+  box.querySelectorAll('[data-nv-city]').forEach(r => r.onclick = () => {
+    const p = placeById(r.dataset.nvCity); if (!p) return;
+    setNavCurrent(p.id, false); jumpToCity(p.id);
+    if (MAP && typeof p.lat === 'number') { markCurrent(p.id); MAP.flyTo([p.lat, p.lon], Math.max(MAP.getZoom(), 6), { duration: 0.8 }); }
+  });
+  r_navCenter();
+}
+function r_navCenter() {
+  const box = $('#fp-nav'), tree = box?.querySelector('.nv-tree'), cur = tree?.querySelector('.nv-city.cur'); if (!cur) return;
+  const top = cur.offsetTop - tree.offsetTop, h = tree.clientHeight;
+  if (top < tree.scrollTop + 30 || top > tree.scrollTop + h - 50) tree.scrollTo({ top: Math.max(0, top - h / 2), behavior: 'smooth' });
+}
+// The city in view: highlight it and open its country / province in the tree
+function setNavCurrent(pid, rerender = true) {
+  if (!pid || pid === NAV_CUR) return; NAV_CUR = pid;
+  const p = placeById(pid); if (!p) return;
+  const key = normCC(p.cc) || t(p.country); NAV_AUTO = new Set(['c:' + key]);
+  if (normCC(p.cc) === 'CN') { const pr = provinceOf(p); if (pr) NAV_AUTO.add('p:' + pr.zh); }
+  if (rerender && navVisible()) renderNav();
+}
+function wireNav() {
+  NAV_IO?.disconnect(); NAV_IO = null;
+  renderNav();
+  if (!('IntersectionObserver' in window)) return;
+  NAV_IO = new IntersectionObserver(entries => {
+    if (!navVisible()) return;
+    const hit = entries.find(e => e.isIntersecting); if (hit) setNavCurrent(hit.target.dataset.pid);
+  }, { rootMargin: '-35% 0px -55% 0px' });
+  document.querySelectorAll('#list .city').forEach(c => NAV_IO.observe(c));
+}
 function placeById(id) { return (DATA.places || []).find(p => p.id === id); }
 function focusPlace(id) {
   const p = placeById(id); if (!p || !MAP) return;
