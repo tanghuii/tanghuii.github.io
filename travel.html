@@ -219,6 +219,27 @@
   .small-btn svg { width: 14px; height: 14px; }
   .strip { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.6rem; }
   /* Sights and landmarks visited in a place */
+  /* Sort switch next to the Places heading */
+  .sort-seg { margin-left: auto; display: inline-flex; border: 1px solid var(--subtle); border-radius: 999px; overflow: hidden; background: var(--card-bg); align-self: center; }
+  .sort-seg button { border: none; background: none; color: var(--muted); font: inherit; font-family: var(--font-body); font-size: 0.82rem; padding: 0.3rem 0.8rem; cursor: pointer; }
+  .sort-seg button.on { background: var(--accent); color: var(--on-accent); }
+  .section-title { flex-wrap: wrap; }
+  /* Jump targets */
+  .prov, .city, .sight { scroll-margin-top: 90px; }
+  .prov.flash { border-left-color: var(--accent); background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.10), transparent 70%); transition: background 0.4s; }
+  .city.flash { box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.35) !important; transition: box-shadow 0.3s; }
+  .sight.flash { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.3); background: var(--highlight); }
+  /* Popups: names are selectable text */
+  .leaflet-popup-content, .leaflet-popup-content * { -webkit-user-select: text; user-select: text; }
+  .pop-names { display: flex; flex-direction: column; gap: 0.05rem; cursor: text; }
+  .pop-zh { font-weight: 600; font-size: 1.05rem; color: var(--ink); }
+  .pop-en { color: var(--muted); font-size: 0.9rem; }
+  .pop-names .pop-zh:only-child, .pop-names .pop-en:only-child { font-weight: 600; font-size: 1.05rem; color: var(--ink); }
+  .pop-copy { margin-top: 0.45rem; margin-left: 0.3rem; border: 1px solid var(--subtle); background: var(--card-bg); color: var(--accent); border-radius: 999px; font: inherit; font-size: 0.78rem; padding: 0.12rem 0.65rem; cursor: pointer; -webkit-user-select: none; user-select: none; }
+  .pop-copy:first-of-type { margin-left: 0; }
+  .pop-btn + .pop-copy { margin-left: 0.3rem; }
+  .name-pop .tag { margin-left: 0.25rem; }
+  @media (max-width: 640px) { .sort-seg { margin-left: 0; } }
   .highlights { margin-top: 0.6rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
   .sights { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
   .sights-label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ok); margin-right: 0.2rem; }
@@ -475,11 +496,11 @@
     <div id="map" role="region" aria-label="Map of visited places"></div>
     <div class="map-note">
       <span><span class="legend"><i></i> <span data-en="Visited country / province" data-zh="到访过的国家 / 省份">Visited country / province</span></span> &nbsp; <span class="legend"><b></b> <span data-en="City" data-zh="城市">City</span></span></span>
-      <span data-en="Click a marker or a country to jump to its entry." data-zh="点击标记或国家可跳转到对应条目。">Click a marker or a country to jump to its entry.</span>
+      <span data-en="Click a province, city or sight to jump to its entry; names in the popup can be copied." data-zh="点击省份、城市或景点可跳到对应条目；弹出框里的地名可以复制。">Click a province, city or sight to jump to its entry; names in the popup can be copied.</span>
     </div>
     <section class="hx" id="heritage" hidden></section>
     <div class="places">
-      <h2 class="section-title"><span id="places-h"></span><small id="places-sub"></small></h2>
+      <h2 class="section-title"><span id="places-h"></span><small id="places-sub"></small><span class="sort-seg" id="list-sort" role="group"></span></h2>
       <div id="list"></div>
     </div>
   </div>
@@ -750,6 +771,19 @@ $('#btn-lock').onclick = () => { ssSet(SS_KEY, null); lsSet(LS_KEY, null); URLS.
 // ─────────────────────────────────────────────────────────────────────────────
 // Rendering
 // ─────────────────────────────────────────────────────────────────────────────
+// List order: 'name' (A–Z) or 'date' (newest visit first) for countries, provinces and cities
+let LIST_SORT = 'name';
+try { LIST_SORT = localStorage.getItem('fp_sort') === 'date' ? 'date' : 'name'; } catch (e) {}
+const byName = (a, b) => t(a).localeCompare(t(b), LANG === 'zh' ? 'zh-Hans-CN-u-co-pinyin' : 'en');
+const newestOf = ps => ps.reduce((m, p) => { const k = whenKey(p.when); return k > m ? k : m; }, '');
+function sortPlaces(ps) { return ps.sort((a, b) => LIST_SORT === 'date' ? whenKey(b.when).localeCompare(whenKey(a.when)) || byName(a.city, b.city) : byName(a.city, b.city) || whenKey(b.when).localeCompare(whenKey(a.when))); }
+function renderSortSeg() {
+  const box = $('#list-sort'); if (!box) return;
+  const zh = LANG === 'zh';
+  box.innerHTML = [['name', zh ? '按字母' : 'A–Z'], ['date', zh ? '按时间' : 'Newest first']].map(([v, l]) => `<button type="button" data-sort="${v}" class="${LIST_SORT === v ? 'on' : ''}" aria-pressed="${LIST_SORT === v}">${l}</button>`).join('');
+  box.setAttribute('aria-label', zh ? '排序' : 'Sort');
+  box.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => { if (LIST_SORT === b.dataset.sort) return; LIST_SORT = b.dataset.sort; try { localStorage.setItem('fp_sort', LIST_SORT); } catch (e) {} renderHeader(); renderList(); });
+}
 function groupByCountry(places) {
   const g = new Map();
   for (const p of places) {
@@ -758,8 +792,8 @@ function groupByCountry(places) {
     if (!g.has(k)) g.set(k, { cc, name, places: [] }); g.get(k).places.push(p);
   }
   const arr = [...g.values()];
-  arr.forEach(c => c.places.sort((a, b) => whenKey(b.when).localeCompare(whenKey(a.when))));
-  arr.sort((a, b) => t(a.name).localeCompare(t(b.name), LANG === 'zh' ? 'zh' : 'en'));
+  arr.forEach(c => sortPlaces(c.places));
+  arr.sort((a, b) => LIST_SORT === 'date' ? newestOf(b.places).localeCompare(newestOf(a.places)) || byName(a.name, b.name) : byName(a.name, b.name));
   return arr;
 }
 function renderHeader() {
@@ -772,7 +806,7 @@ function renderHeader() {
   $('#intro').hidden = !t(DATA.intro);
   // Highlights: how many World Heritage sites and 5A scenic areas appear in the visited sights
   const sights = places.flatMap(p => p.sights || []);
-  const nWH = new Set(sights.filter(x => x.whsite || (x.tags || []).some(k => k.startsWith('wh'))).map(x => x.whsite ? 'p' + x.whsite.id : 's' + x.id)).size, n5A = new Set(places.flatMap(p => (p.sights || []).filter(isFiveA).map(sg => a5Entry(sg, p).key))).size, nNP = sights.filter(x => (x.tags || []).includes('national-park')).length;
+  const nWH = new Set(sights.filter(x => x.whsite || (x.tags || []).some(k => k.startsWith('wh'))).map(x => x.whsite ? 'p' + x.whsite.id : 's' + x.id)).size, n5A = new Set(places.flatMap(p => (p.sights || []).filter(isFiveA).map(sg => a5Entry(sg, p).key)).filter(Boolean)).size, nNP = sights.filter(x => (x.tags || []).includes('national-park')).length;
   if (!FIVE_A_OFF && places.some(p => (p.sights || []).some(isFiveA))) loadFiveAOff().then(() => { renderHeader(); renderHeritage(); });
   if (!PROVINCE_CC.CN.data && places.some(p => normCC(p.cc) === 'CN')) loadProvinces().then(d => { if (d) { renderHeader(); renderHeritage(); } });
   const hl = [];
@@ -789,7 +823,8 @@ function renderHeader() {
     : [[nCountries, LANG === 'zh' ? '个国家' : 'Countries'], [nConf, LANG === 'zh' ? '场会议' : 'Conferences'], [nOther, LANG === 'zh' ? '次访问 / 研讨' : (nOther === 1 ? 'Visit / workshop' : 'Visits / workshops')]];
   $('#stats').innerHTML = rows.map(([n, l]) => `<div class="stat"><span class="stat-num">${n}</span><span class="stat-label">${l}</span></div>`).join('');
   $('#places-h').textContent = PRIVATE ? (LANG === 'zh' ? '足迹' : 'Places') : (LANG === 'zh' ? '会议与访问' : 'Conferences and visits');
-  $('#places-sub').textContent = LANG === 'zh' ? '按国家排列，时间倒序；点击国家展开' : 'by country, newest first · click a country to open it';
+  $('#places-sub').textContent = LANG === 'zh' ? '按国家分组，点击国家展开' : 'by country · click a country to open it';
+  renderSortSeg();
   $('#footer-year').textContent = new Date().getFullYear();
 }
 // Collapsed / expanded countries, remembered per visitor
@@ -824,8 +859,10 @@ function provinceGroups(c) {
   if (c.cc !== 'CN' || !PROVINCE_CC.CN.data) return null;
   const m = new Map(), other = { zh: '其他', en: 'Other', places: [] };
   for (const p of c.places) { const pr = provinceOf(p); if (!pr) { other.places.push(p); continue; } if (!m.has(pr.id)) m.set(pr.id, { ...pr, places: [] }); m.get(pr.id).places.push(p); }
-  const arr = [...m.values()]; if (other.places.length) arr.push(other);
-  return arr;   // c.places is newest first, so provinces come out ordered by their latest visit
+  const arr = [...m.values()];
+  arr.sort((a, b) => LIST_SORT === 'date' ? newestOf(b.places).localeCompare(newestOf(a.places)) || byName(a, b) : byName(a, b));
+  if (other.places.length) arr.push(other);
+  return arr;
 }
 function cityCard(p) {
   const photosLabel = n => LANG === 'zh' ? `${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`;
@@ -855,7 +892,7 @@ function renderList() {
     const counts = [provs ? provWord(provs.length) : '', PRIVATE ? cityWord(nCity) : visitWord(c.places.length)].filter(Boolean).join(' · ');
     const nHidden = c.places.filter(p => !p.highlight).length, nHl = c.places.length - nHidden;
     const body = provs
-      ? provs.map(g => `<div class="prov${g.places.some(p => p.highlight) ? ' has-hl' : ''}"><div class="prov-head"><span class="prov-name">${esc(LANG === 'zh' ? g.zh : g.en)}</span>${LANG === 'zh' ? `<span class="prov-en">${esc(g.en)}</span>` : `<span class="prov-en">${esc(g.zh)}</span>`}<span class="n">${PRIVATE ? cityWord(new Set(g.places.map(cityKey)).size) : visitWord(g.places.length)}</span></div>${g.places.map(cityCard).join('')}</div>`).join('')
+      ? provs.map(g => `<div class="prov${g.places.some(p => p.highlight) ? ' has-hl' : ''}" data-prov="${esc(g.zh)}"><div class="prov-head"><span class="prov-name">${esc(LANG === 'zh' ? g.zh : g.en)}</span>${LANG === 'zh' ? `<span class="prov-en">${esc(g.en)}</span>` : `<span class="prov-en">${esc(g.zh)}</span>`}<span class="n">${PRIVATE ? cityWord(new Set(g.places.map(cityKey)).size) : visitWord(g.places.length)}</span></div>${g.places.map(cityCard).join('')}</div>`).join('')
       : c.places.map(cityCard).join('');
     return `<section class="country${isOpen ? ' open' : ''}" id="c-${esc(key)}" data-ckey="${esc(key)}">
     <button type="button" class="country-head" data-ctoggle aria-expanded="${isOpen}"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="flag">${flag(c.cc)}</span><h3>${esc(t(c.name) || c.cc)}</h3>${nHl ? `<span class="hl-count" title="${LANG === 'zh' ? '精选' : 'Highlights'}">${STAR}${nHl}</span>` : ''}<span class="n">${counts}</span></button>
@@ -932,10 +969,14 @@ const isFiveA = sg => !!sg.a5 || (sg.tags || []).includes('5a');
 // { key, off }: off is the official entry (or null when the sight is not on the list)
 function a5Entry(sg, p) {
   const prov = normCC(p.cc) === 'CN' && PROVINCE_CC.CN.data ? (provinceOf(p)?.zh || '') : '';
+  // 5A is a mainland list: places abroad, in Hong Kong, Macau or Taiwan have none
+  if (FIVE_A_OFF?.items?.length && (normCC(p.cc) !== 'CN' || ['香港', '澳门', '台湾'].includes(prov) || ['HK', 'MO', 'TW'].includes(String(p.cc || '').toUpperCase()))) return { key: null, off: null };
   if (FIVE_A_OFF) {
     if (sg.fiveA) { const it = FIVE_A_OFF.items.find(x => x.n === sg.fiveA); if (it) return { key: 'o' + it.n, off: it }; }
     for (const zh of [sg.a5?.name?.zh, sg.name?.zh]) { const it = zh && officialFiveA(zh, prov); if (it) return { key: 'o' + it.n, off: it }; }
   }
+  // the official list is loaded and nothing on it matches: not a 5A area (a wrong tag), so it is not counted
+  if (FIVE_A_OFF && FIVE_A_OFF.items?.length) return { key: null, off: null };
   return { key: sg.a5 ? 'a' + sg.a5.id : 's' + sg.id, off: null };
 }
 // ── Heritage index (travel page only): World Heritage sites by country, 5A scenic areas by province ──
@@ -959,8 +1000,8 @@ function heritageItems() {
       if (w && !it.name.zh && w.name.zh) it.name.zh = w.name.zh;
       if (w && sg.whroot) it.sg0 = sg;
     }
-    if (isFiveA(sg)) {
-      const e = a5Entry(sg, p);
+    const e = isFiveA(sg) ? a5Entry(sg, p) : null;
+    if (e && e.key) {
       const it = add(a5, e.key, () => ({ kind: '5a', name: e.off ? { zh: e.off.n, en: '' } : sg.a5 ? { ...sg.a5.name } : { ...sg.name }, off: e.off, a5: sg.a5 || null, sg0: sg, visits: [] }), p, sg);
       // the sight named like the area itself (青海湖 for 青海湖风景区) gives the English name and the map position
       const exact = e.off ? e.off.keys.includes(faKey(sg.name.zh)) : !!(sg.a5 && sg.a5root);
@@ -1068,6 +1109,41 @@ function hotPins(ids, on) {
   for (const id of ids) { const m = MARKERS.get(id), el = m?.getElement()?.querySelector('.fp-pin'); if (!el) continue;
     el.classList.toggle('hot', on); m.setZIndexOffset(on ? 1000 : 0); }
 }
+// ── Map → list jumps, and copyable names in map popups ──
+function flashEl(el) { if (!el) return; el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1800); }
+function jumpToProvince(cc, zh) {
+  const el = document.querySelector(`.prov[data-prov="${CSS.escape(zh)}"]`); if (!el) return jumpToCountry(cc);
+  const sec = el.closest('.country'); if (sec && !sec.classList.contains('open')) setCountryOpen(sec, true);
+  requestAnimationFrame(() => { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); flashEl(el); });
+}
+function jumpToCity(pid) {
+  revealCity(pid, 'start');
+  setTimeout(() => flashEl(document.querySelector(`.city[data-pid="${CSS.escape(pid)}"]`)), 120);
+}
+function jumpToSight(pid, sid) {
+  const card = document.querySelector(`.city[data-pid="${CSS.escape(pid)}"]`); if (!card) return;
+  const sec = card.closest('.country'); if (sec && !sec.classList.contains('open') && !card.classList.contains('hl')) setCountryOpen(sec, true);
+  const chip = card.querySelector(`.sight[data-sid="${CSS.escape(sid)}"]`);
+  if (chip && chip.closest('[hidden]')) { const more = card.querySelector('[data-more-btn]:not(.open)'); if (more) more.click(); }
+  requestAnimationFrame(() => { (chip || card).scrollIntoView({ behavior: 'smooth', block: 'center' }); flashEl(chip || card); });
+}
+// Popup with both names as selectable text and a Copy button
+function namePop(n, sub = '') {
+  const zh = n?.zh || '', en = n?.en && n.en !== zh ? n.en : '';
+  const both = [zh, en].filter(Boolean).join(' ');
+  return `<div class="pop-names">${zh ? `<span class="pop-zh">${esc(zh)}</span>` : ''}${en ? `<span class="pop-en">${esc(en)}</span>` : ''}</div>${sub}<button type="button" class="pop-copy" data-copy="${esc(both)}">${LANG === 'zh' ? '复制地名' : 'Copy name'}</button>`;
+}
+async function copyText(s) {
+  try { await navigator.clipboard.writeText(s); return true; } catch (e) {
+    const ta = Object.assign(document.createElement('textarea'), { value: s }); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {} ta.remove(); return ok; }
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('.pop-copy'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const ok = await copyText(b.dataset.copy), old = b.textContent;
+  b.textContent = ok ? (LANG === 'zh' ? '已复制' : 'Copied') : (LANG === 'zh' ? '请手动选中复制' : 'Select the text to copy'); setTimeout(() => { b.textContent = old; }, 1400);
+});
 function placeById(id) { return (DATA.places || []).find(p => p.id === id); }
 function focusPlace(id) {
   const p = placeById(id); if (!p || !MAP) return;
@@ -1105,8 +1181,9 @@ async function renderMap() {
     const n = (p.photos || []).length;
     const k = window.CityIcons ? CityIcons.iconKey(p) : 'city';
     const m = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: 'fp-pin-wrap', html: `<span class="fp-pin fp-city${p.highlight ? ' hl' : ''}" data-icon="${k}">${window.CityIcons ? CityIcons.svg(k) : ''}</span>`, iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -14] }), riseOnHover: true, keyboard: false }).addTo(MAP);
-    m.bindPopup(`<div class="pop-city">${esc(t(p.city))}</div><div class="pop-meta">${esc(t(p.country))}${p.when ? ' · ' + esc(fmtWhen(p.when)) : ''}</div>${p.academic && t(p.event) ? `<div style="color:var(--accent);font-weight:500;margin-top:0.2rem">${esc(kindLabel(p.kind || 'conference'))} · ${esc(t(p.event))}</div>` : ''}${PRIVATE && p.trip ? `<div class="pop-meta">${esc(tripLabel(p.trip))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="pop-meta">${esc(talkLabel(p.talk_type))}${p.talk ? (p.talk_type ? ': ' : '') + esc(p.talk) : ''}</div>` : ''}
-      ${n ? `<button class="pop-btn" onclick="openLightbox('${esc(p.id)}',0)">${LANG === 'zh' ? `查看 ${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`} ↗</button>` : ''}`);
+    m.bindPopup(`${namePop(p.city).replace(/<button[^]*$/, '')}<div class="pop-meta">${esc(t(p.country))}${p.when ? ' · ' + esc(fmtWhen(p.when)) : ''}</div>${p.academic && t(p.event) ? `<div style="color:var(--accent);font-weight:500;margin-top:0.2rem">${esc(kindLabel(p.kind || 'conference'))} · ${esc(t(p.event))}</div>` : ''}${PRIVATE && p.trip ? `<div class="pop-meta">${esc(tripLabel(p.trip))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="pop-meta">${esc(talkLabel(p.talk_type))}${p.talk ? (p.talk_type ? ': ' : '') + esc(p.talk) : ''}</div>` : ''}
+      ${n ? `<button class="pop-btn" onclick="openLightbox('${esc(p.id)}',0)">${LANG === 'zh' ? `查看 ${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`} ↗</button>` : ''}<button type="button" class="pop-copy" data-copy="${esc([p.city?.zh, p.city?.en && p.city.en !== p.city.zh ? p.city.en : ''].filter(Boolean).join(' '))}">${LANG === 'zh' ? '复制地名' : 'Copy name'}</button>`, { autoPan: false });
+    m.on('click', () => jumpToCity(p.id));
     MARKERS.set(p.id, m); bounds.push([p.lat, p.lon]);
   }
   // Pin size follows the zoom: about 12 px for a continent, 30 px for a city
@@ -1122,7 +1199,8 @@ async function renderMap() {
     if (typeof sg.lat !== 'number' || typeof sg.lon !== 'number') continue;
     const m = L.circleMarker([sg.lat, sg.lon], { radius: 4, weight: 1.5, fillOpacity: 0.95, className: 'fp-sight' });
     m.bindTooltip(`${esc(t(sg.name))}${(sg.tags || []).map(tagHtml).join('')}`, { direction: 'top', offset: [0, -4], opacity: 0.95 });
-    m.on('click', () => revealCity(p.id));
+    m.bindPopup(namePop(sg.name, `<div class="pop-meta">${esc(t(p.city))}${(sg.tags || []).length ? ' ' + sg.tags.map(tagHtml).join('') : ''}</div>`), { autoPan: false, className: 'name-pop' });
+    m.on('click', () => jumpToSight(p.id, sg.id));
     sightMarkers.push(m);
   }
   if (sightMarkers.length) {
@@ -1174,7 +1252,7 @@ async function renderMap() {
           const name = LANG === 'zh' ? f.properties.zh : f.properties.en, alt = LANG === 'zh' ? f.properties.en : f.properties.zh;
           if (hit.has(f.id)) {
             l.on('mouseover', () => l.setStyle({ fillOpacity: 0.5, weight: 1.5 })).on('mouseout', () => l.setStyle({ fillOpacity: 0.32, weight: 1 }));
-            l.on('click', () => jumpToCountry(cc));
+            l.on('click', e => { L.popup({ autoPan: false, className: 'name-pop' }).setLatLng(e.latlng).setContent(namePop({ zh: f.properties.zh, en: f.properties.en }, `<div class="pop-meta">${hit.get(f.id)} ${LANG === 'zh' ? '个地点' : (hit.get(f.id) === 1 ? 'place' : 'places')}</div>`)).openOn(MAP); jumpToProvince(cc, f.properties.zh); });
             l.bindTooltip(`${flag(cc)} ${esc(name)} <span style="opacity:.7">${esc(alt)}</span>`, { sticky: true, direction: 'top', opacity: 0.95 });
           } else l.options.interactive = false;
         } }).addTo(MAP);

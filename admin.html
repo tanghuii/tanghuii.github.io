@@ -213,6 +213,9 @@
   .tv-country-n { margin-left: auto; color: var(--muted); font-size: 0.88rem; white-space: nowrap; }
   .tv-country-body { padding: 0 0.8rem 0.4rem; }
   .tv-country-body > .item { margin-bottom: 0.6rem; }
+  .sort-seg { display: inline-flex; border: 1px solid var(--subtle); border-radius: 999px; overflow: hidden; }
+  .sort-seg button { border: none; background: none; color: var(--muted); font: inherit; font-size: 0.82rem; padding: 0.28rem 0.75rem; cursor: pointer; }
+  .sort-seg button.on { background: var(--accent); color: var(--on-accent, #fff); }
   .tv-prov { margin: 0 0 0.45rem 0.2rem; border-left: 2px solid var(--subtle); }
   .tv-prov.open { border-left-color: var(--accent-light, var(--accent)); }
   .tv-prov-head { display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.5rem 0.7rem; border: none; background: none; color: var(--ink); font: inherit; font-size: 0.96rem; text-align: left; cursor: pointer; border-radius: 0 8px 8px 0; }
@@ -1710,6 +1713,12 @@ function placeMatches(p, q) {
 }
 // China: provinces inside the country group (needs cn-provinces.json, loaded with the 5A list)
 const OPEN_PROVS = new Set();
+let PLACE_SORT = 'name'; try { PLACE_SORT = localStorage.getItem('sm_place_sort') === 'date' ? 'date' : 'name'; } catch (e) {}
+// Latest visit of a place as a sortable string ("2018-09", "present" sorts last = newest)
+const lastVisit = p => String(p.when || '').split(/\s*[;,，、|；]\s*/).filter(Boolean).map(v => { const m = v.split(/\s*(?:[-–—~]|to|至)\s*(?=\d{4}|present|now|至今)/i); return (m[m.length - 1] || '').replace(/^(now|至今|现在|today)$/i, 'present').replace(/[./]/g, '-').replace(/-(\d)(?!\d)/, '-0$1'); }).sort().pop() || '';
+const newestIdx = (list, idx) => idx.reduce((m, i) => { const k = lastVisit(list[i]); return k > m ? k : m; }, '');
+const sortIdx = (list, idx) => idx.sort((a, b) => PLACE_SORT === 'date' ? lastVisit(list[b]).localeCompare(lastVisit(list[a])) || String(list[a].city?.en || '').localeCompare(String(list[b].city?.en || '')) : String(list[a].city?.en || list[a].city?.zh || '').localeCompare(String(list[b].city?.en || list[b].city?.zh || '')));
+const groupCC = x => { const c = String(x.cc || '').toUpperCase(); return ({ TW: 'CN', HK: 'CN', MO: 'CN' })[c] || c || '—'; };
 function provOfPlace(p) {
   if (!CN_PROV?.features?.length || typeof p.lat !== 'number' || typeof p.lon !== 'number') return null;
   const feats = CN_PROV.features;
@@ -1722,7 +1731,8 @@ function provGroupsHtml(list, idx, fn, q, openAll) {
   const m = new Map();
   for (const i of idx) { const pr = provOfPlace(list[i]), k = pr ? pr.zh : '—';
     if (!m.has(k)) m.set(k, { k, en: pr ? pr.en : 'No province (no coordinates)', zh: pr ? pr.zh : '', idx: [] }); m.get(k).idx.push(i); }
-  return [...m.values()].sort((a, b) => (a.k === '—') - (b.k === '—') || a.en.localeCompare(b.en)).map(g => {
+  m.forEach(g => sortIdx(list, g.idx));
+  return [...m.values()].sort((a, b) => (a.k === '—') - (b.k === '—') || (PLACE_SORT === 'date' ? newestIdx(list, b.idx).localeCompare(newestIdx(list, a.idx)) : 0) || a.en.localeCompare(b.en)).map(g => {
     const open = !!q || openAll || OPEN_PROVS.has(g.k) || g.idx.some(i => OPEN_PLACES.has(list[i].id));
     return `<div class="tv-prov${open ? ' open' : ''}" data-prov="${esc(g.k)}"><button type="button" class="tv-prov-head" data-ptoggle="${esc(g.k)}" aria-expanded="${open}"><span class="chev">${open ? '▾' : '▸'}</span><b>${esc(g.en)}</b>${g.zh ? `<span class="tv-country-zh">${esc(g.zh)}</span>` : ''}<span class="tv-country-n">${g.idx.length} place${g.idx.length === 1 ? '' : 's'}</span></button>
       <div class="tv-prov-body"${open ? '' : ' hidden'}>${g.idx.map(i => fn(list[i], i)).join('')}</div></div>`;
@@ -1732,13 +1742,14 @@ function placeGroups(list, fn) {
   const q = PLACE_FILTER.trim(), groups = new Map();
   list.forEach((p, i) => {
     if (q && !placeMatches(p, q)) return;
-    const key = String(p.cc || '').toUpperCase() || '—';
-    if (!groups.has(key)) groups.set(key, { key, name: p.country?.en || (key === '—' ? 'No country yet' : key), zh: p.country?.zh || '', idx: [] });
+    const key = groupCC(p);
+    if (!groups.has(key)) groups.set(key, key === 'CN' ? { key, name: 'China', zh: '中国', idx: [] } : { key, name: p.country?.en || (key === '—' ? 'No country yet' : key), zh: p.country?.zh || '', idx: [] });
     groups.get(key).idx.push(i);
   });
   if (!groups.size) return q ? `<p class="hint">No place matches “${esc(q)}”.</p>` : '';
   const openAll = !COUNTRIES_TOUCHED && list.length <= 8;
-  return [...groups.values()].sort((a, b) => (a.key === '—') - (b.key === '—') || a.name.localeCompare(b.name)).map(g => {
+  groups.forEach(g => sortIdx(list, g.idx));
+  return [...groups.values()].sort((a, b) => (a.key === '—') - (b.key === '—') || (PLACE_SORT === 'date' ? newestIdx(list, b.idx).localeCompare(newestIdx(list, a.idx)) : 0) || a.name.localeCompare(b.name)).map(g => {
     const open = !!q || openAll || OPEN_COUNTRIES.has(g.key) || g.idx.some(i => OPEN_PLACES.has(list[i].id));
     const nA = g.idx.filter(i => list[i].academic).length;
     return `<div class="tv-country${open ? ' open' : ''}" data-cc="${esc(g.key)}"><button type="button" class="tv-country-head" data-ctoggle="${esc(g.key)}" aria-expanded="${open}"><span class="chev">${open ? '▾' : '▸'}</span><span class="tv-flag">${g.key === '—' ? '' : tvFlag(g.key)}</span><b>${esc(g.name)}</b>${g.zh && g.zh !== g.name ? `<span class="tv-country-zh">${esc(g.zh)}</span>` : ''}<span class="tv-country-n">${g.idx.length} place${g.idx.length === 1 ? '' : 's'}${g.key === 'CN' && CN_PROV?.features?.length ? ` · ${new Set(g.idx.map(i => provOfPlace(list[i])?.zh || '—')).size} provinces` : ''}${nA ? ` · ${nA} academic` : ''}</span></button>
@@ -2103,7 +2114,8 @@ function autoGroupA5(p) {
     if (g.a5 || g.a5Manual) continue;
     const hit = a5Match(g.name, typeof g.lat === 'number' ? g.lat : p.lat, typeof g.lon === 'number' ? g.lon : p.lon);
     if (!hit) continue;
-    g.a5 = a5Ref(hit.area); g.a5root = hit.root; if (!g.tags.includes('5a')) g.tags.push('5a'); changed = true;
+    g.a5 = a5Ref(hit.area); g.a5root = hit.root; changed = true;
+    if (FIVE_A_OFF?.items?.length) fixFiveA(g, p.cc, typeof g.lat === 'number' ? g.lat : p.lat, typeof g.lon === 'number' ? g.lon : p.lon); else if (!g.tags.includes('5a')) g.tags.push('5a');
   }
   return changed;
 }
@@ -2155,11 +2167,26 @@ function officialFiveA(name, lat, lon) {
   return null;
 }
 // Set / remove the 5A tag of a sight in China by the official list (a bundled-area part keeps it via sight.a5)
+// Mainland China only (the official list has no Hong Kong, Macau or Taiwan); no country code: by coordinates
+function isMainland(cc, lat, lon) {
+  const c = String(cc || '').toUpperCase(), pr = provinceAt(lat, lon);
+  if (c && c !== 'CN') return false;
+  if (['香港', '澳门', '台湾'].includes(pr)) return false;
+  return c === 'CN' || !!pr;
+}
+// The official entry a sight counts as: its own name, else the name of its 5A area (both must be on the list)
+function fiveAOf(g, lat, lon) {
+  return officialFiveA(g.name, lat, lon) || (g.a5?.name?.zh ? officialFiveA({ zh: g.a5.name.zh, en: '' }, lat, lon) : null);
+}
 function fixFiveA(g, cc, lat = g.lat, lon = g.lon) {
-  if (String(cc || '').toUpperCase() !== 'CN' || !FIVE_A_OFF) return false;
-  const it = officialFiveA(g.name, lat, lon), want = !!it || !!g.a5, had = g.tags.includes('5a');
+  if (!FIVE_A_OFF || !FIVE_A_OFF.items?.length) return false;
+  const main = isMainland(cc, lat, lon);
+  let changed = false;
+  if (!main && g.a5) { delete g.a5; delete g.a5root; delete g.a5Manual; changed = true; }
+  const it = main ? fiveAOf(g, lat, lon) : null, want = !!it, had = g.tags.includes('5a');
+  if (!it && g.a5) { delete g.a5; delete g.a5root; delete g.a5Manual; changed = true; }   // an area that is not on the official list
   if (it) g.fiveA = it.n; else delete g.fiveA;
-  if (want === had) return false;
+  if (want === had) return changed;
   g.tags = want ? g.tags.concat('5a') : g.tags.filter(t => t !== '5a'); return true;
 }
 
@@ -2758,6 +2785,7 @@ function viewFootprints(v) {
     <div id="tv-check-out"></div></div>
   <h3 class="yearhead">Places</h3>
   <div class="tv-filter"><input type="search" id="tv-filter" placeholder="Find a place: city, country, conference, sight … (中文 or English)" autocomplete="off" value="${esc(PLACE_FILTER)}"><span class="hint" id="tv-filter-n"></span>
+    <span class="sort-seg" id="tv-sort" role="group" aria-label="Sort"><button type="button" data-psort="name" class="${PLACE_SORT === 'name' ? 'on' : ''}">A–Z</button><button type="button" data-psort="date" class="${PLACE_SORT === 'date' ? 'on' : ''}">Newest first</button></span>
     <button class="btn sm" type="button" id="tv-open-all">Expand all</button><button class="btn sm" type="button" id="tv-close-all">Collapse all</button></div>
   <div id="tv-places"></div>
   <div class="card"><h3>Map services (optional)</h3>
@@ -2822,8 +2850,8 @@ function viewFootprints(v) {
         ${!p.academic && p.photos.some(isPublicPhoto) ? `<p class="hint">${p.photos.filter(isPublicPhoto).length} photo(s) are stored unencrypted (uploaded while this entry was academic). Use 🔒 to make them private.</p>` : ''}
         <div class="toolbar"><input type="file" id="tv-up-${i}" accept="image/*" multiple style="display:none"><button class="btn sm" data-up="${i}">Upload photos…</button>${p.academic ? `<label class="hint" style="margin:0;display:inline-flex;gap:0.4rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:500">as <select data-up-vis="${i}" style="width:auto;padding:0.2rem 0.4rem"><option value="pub">🌐 public (academic)</option><option value="priv">🔒 private (travel only)</option></select></label>` : ''}<span id="tv-upsg-${i}"></span><span class="tv-prog" id="tv-prog-${i}"></span></div></div></div></div>`; }) || `<p class="hint">Nothing yet. Search for a city above.</p>`;
     const nShown = box.querySelectorAll('.item.place').length, cnt = $('#tv-filter-n');
-    if (cnt) cnt.textContent = PLACE_FILTER.trim() ? `${nShown} of ${T.places.length} places` : `${T.places.length} places in ${new Set(T.places.map(x => String(x.cc || '').toUpperCase() || '—')).size} countries`;
-    if (!CN_PROV && T.places.some(x => String(x.cc || '').toUpperCase() === 'CN')) loadFiveA().then(() => { if (CN_PROV?.features?.length) renderPlaces(); });
+    if (cnt) cnt.textContent = PLACE_FILTER.trim() ? `${nShown} of ${T.places.length} places` : `${T.places.length} places in ${new Set(T.places.map(groupCC)).size} countries`;
+    if (!CN_PROV && T.places.some(x => groupCC(x) === 'CN')) loadFiveA().then(() => { if (CN_PROV?.features?.length) renderPlaces(); });
     box.querySelectorAll('[data-ptoggle]').forEach(b => b.onclick = () => {
       const sec = b.closest('.tv-prov'), k = b.dataset.ptoggle, open = !sec.classList.contains('open');
       if (!COUNTRIES_TOUCHED) { COUNTRIES_TOUCHED = true; box.querySelectorAll('.tv-country.open').forEach(x => OPEN_COUNTRIES.add(x.dataset.cc)); box.querySelectorAll('.tv-prov.open').forEach(x => OPEN_PROVS.add(x.dataset.prov)); }
@@ -3054,7 +3082,9 @@ function viewFootprints(v) {
   let filterTimer = 0;
   $('#tv-filter').addEventListener('input', e => { clearTimeout(filterTimer); filterTimer = setTimeout(() => { PLACE_FILTER = e.target.value; renderPlaces(); }, 150); });
   $('#tv-filter').addEventListener('keydown', e => { if (e.key === 'Escape') { e.target.value = ''; PLACE_FILTER = ''; renderPlaces(); } });
-  $('#tv-open-all').onclick = () => { COUNTRIES_TOUCHED = true; T.places.forEach(x => { OPEN_COUNTRIES.add(String(x.cc || '').toUpperCase() || '—'); if (String(x.cc || '').toUpperCase() === 'CN') OPEN_PROVS.add(provOfPlace(x)?.zh || '—'); }); renderPlaces(); };
+  document.querySelectorAll('[data-psort]').forEach(b => b.onclick = () => { PLACE_SORT = b.dataset.psort; try { localStorage.setItem('sm_place_sort', PLACE_SORT); } catch (e) {}
+    document.querySelectorAll('[data-psort]').forEach(x => x.classList.toggle('on', x.dataset.psort === PLACE_SORT)); renderPlaces(); });
+  $('#tv-open-all').onclick = () => { COUNTRIES_TOUCHED = true; T.places.forEach(x => { OPEN_COUNTRIES.add(groupCC(x)); if (groupCC(x) === 'CN') OPEN_PROVS.add(provOfPlace(x)?.zh || '—'); }); renderPlaces(); };
   $('#tv-close-all').onclick = () => { COUNTRIES_TOUCHED = true; OPEN_COUNTRIES.clear(); OPEN_PROVS.clear(); OPEN_PLACES.clear(); renderPlaces(); };
 
   // One-click tag check
@@ -3072,6 +3102,13 @@ function viewFootprints(v) {
         // Grouping first (a part of a bundled 5A area keeps its 5A), then the official checks
         const now0 = new Map(pl.sights.map(g => [g, JSON.stringify(snap(g))]));
         const before = new Map(pl.sights.map(g => [g, snap(PUB.get(pl.id + '|' + g.id) || g)]));
+        for (const g of pl.sights) {
+          const la = typeof g.lat === 'number' ? g.lat : pl.lat, lo = typeof g.lon === 'number' ? g.lon : pl.lon;
+          if (g.whsite && !(WH_SITES || []).some(w => w.id === g.whsite.id)) { delete g.whsite; delete g.whroot; g.tags = g.tags.filter(t => !WH_GROUP.has(t)); }
+          if (g.a5) { const hit = isMainland(pl.cc, la, lo) ? a5Match(g.name, la, lo) : null;
+            if (!hit || hit.area.id !== g.a5.id) { delete g.a5; delete g.a5root; } else g.a5root = hit.root; }
+          delete g.a5Manual;
+        }
         autoGroupWH(pl, WH_SITES); autoGroupA5(pl);
         for (const g of pl.sights) {
           const la = typeof g.lat === 'number' ? g.lat : pl.lat, lo = typeof g.lon === 'number' ? g.lon : pl.lon;
@@ -3086,6 +3123,9 @@ function viewFootprints(v) {
           }
           if (!b.wh && g.whsite) { rows.push([where, nm, `grouped under World Heritage: ${g.whsite.name.zh || g.whsite.name.en}`, 'add']); n++; }
           if (!b.a5 && g.a5) { rows.push([where, nm, `grouped under 5A area: ${g.a5.name.zh}`, 'add']); n++; }
+          else if (b.a5 && !g.a5) { rows.push([where, nm, 'removed from a 5A area it does not belong to', 'rm']); n++; }
+          else if (b.a5 && g.a5 && b.a5 !== g.a5.id) { rows.push([where, nm, `moved to 5A area: ${g.a5.name.zh}`, 'add']); n++; }
+          if (b.wh && !g.whsite) { rows.push([where, nm, 'removed from a World Heritage property not on the UNESCO list', 'rm']); n++; }
           if (now0.get(g) !== JSON.stringify(snap(g))) fixed = true;
         }
       }
