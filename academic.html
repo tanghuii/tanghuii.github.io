@@ -240,6 +240,23 @@
   .pop-btn + .pop-copy { margin-left: 0.3rem; }
   .name-pop .tag { margin-left: 0.25rem; }
   @media (max-width: 640px) { .sort-seg { margin-left: 0; } }
+  /* Wide screens: map left (sticky), list right */
+  @media (min-width: 1200px) {
+    .top-bar-inner, .wrap { max-width: 1760px; }
+    .split { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); gap: 2.2rem; align-items: start; }
+    .split-map { position: sticky; top: calc(var(--tb, 61px) + 16px); }
+    .split-map #map { height: calc(100vh - var(--tb, 61px) - 78px); min-height: 460px; }
+    .split-list { min-width: 0; padding-bottom: 7rem; }
+    .split-list .hx { margin-top: 0; }
+    .split-list .places { padding-top: 1.6rem; }
+    .split-list .hx[hidden] + .places { padding-top: 0; }
+    .split-list .strip { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  }
+  .fp-follow { display: flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.65rem; border-radius: 999px; border: 1px solid var(--subtle); background: var(--card-bg); color: var(--muted); font: inherit; font-size: 0.8rem; cursor: pointer; box-shadow: 0 2px 8px var(--shadow); }
+  .fp-follow.on { color: var(--accent); border-color: var(--accent-light); }
+  .fp-follow i { width: 8px; height: 8px; border-radius: 50%; background: var(--subtle); }
+  .fp-follow.on i { background: var(--accent); }
+  .fp-pin.cur { background: var(--accent-light); transform: scale(1.3); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.28), 0 2px 8px rgba(13, 27, 42, 0.3); }
   .highlights { margin-top: 0.6rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
   .sights { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
   .sights-label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ok); margin-right: 0.2rem; }
@@ -493,15 +510,21 @@
       </div>
       <div class="stats" id="stats"></div>
     </div>
+    <div class="split">
+    <div class="split-map">
     <div id="map" role="region" aria-label="Map of visited places"></div>
     <div class="map-note">
       <span><span class="legend"><i></i> <span data-en="Visited country / province" data-zh="到访过的国家 / 省份">Visited country / province</span></span> &nbsp; <span class="legend"><b></b> <span data-en="City" data-zh="城市">City</span></span></span>
       <span data-en="Click a province, city or sight to jump to its entry; names in the popup can be copied." data-zh="点击省份、城市或景点可跳到对应条目；弹出框里的地名可以复制。">Click a province, city or sight to jump to its entry; names in the popup can be copied.</span>
     </div>
+    </div>
+    <div class="split-list">
     <section class="hx" id="heritage" hidden></section>
     <div class="places">
       <h2 class="section-title"><span id="places-h"></span><small id="places-sub"></small><span class="sort-seg" id="list-sort" role="group"></span></h2>
       <div id="list"></div>
+    </div>
+    </div>
     </div>
   </div>
   <footer><p><a href="index.html" data-en="← Back to Homepage" data-zh="← 返回主页">← Back to Homepage</a> &nbsp;&middot;&nbsp; &copy; <span id="footer-year">2026</span> Hui Tang</p></footer>
@@ -901,7 +924,7 @@ function renderList() {
     </section>`;
   }).join('');
   list.querySelectorAll('[data-ctoggle]').forEach(b => b.onclick = () => toggleCountry(b.closest('.country')));
-  renderHeritage();
+  renderHeritage(); wireFollow();
   if ((DATA.places || []).some(p => normCC(p.cc) === 'CN') && !PROVINCE_CC.CN.data) loadProvinces().then(d => { if (d) renderList(); });
   list.querySelectorAll('[data-map]').forEach(b => b.onclick = () => focusPlace(b.dataset.map));
   list.querySelectorAll('[data-gallery]').forEach(b => b.onclick = () => openLightbox(b.dataset.gallery, 0));
@@ -1100,7 +1123,8 @@ function openHeritage(tab) {
 function flyToSight(pid, lat, lon) {
   const p = placeById(pid); if (!p || !MAP) return;
   const ok = Number.isFinite(lat) && Number.isFinite(lon);
-  window.scrollTo({ top: $('#map').getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
+  muteFollow(1800);
+  if (!isWide()) window.scrollTo({ top: $('#map').getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
   MAP.flyTo(ok ? [lat, lon] : [p.lat, p.lon], Math.max(MAP.getZoom(), ok ? 10 : 7), { duration: 1 });
   hotPins([pid], true); setTimeout(() => hotPins([pid], false), 2600);
   const m = MARKERS.get(pid); if (m && !ok) setTimeout(() => m.openPopup(), 1050);
@@ -1112,15 +1136,18 @@ function hotPins(ids, on) {
 // ── Map → list jumps, and copyable names in map popups ──
 function flashEl(el) { if (!el) return; el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1800); }
 function jumpToProvince(cc, zh) {
+  muteFollow(1800);
   const el = document.querySelector(`.prov[data-prov="${CSS.escape(zh)}"]`); if (!el) return jumpToCountry(cc);
   const sec = el.closest('.country'); if (sec && !sec.classList.contains('open')) setCountryOpen(sec, true);
   requestAnimationFrame(() => { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); flashEl(el); });
 }
 function jumpToCity(pid) {
+  muteFollow(1800);
   revealCity(pid, 'start');
   setTimeout(() => flashEl(document.querySelector(`.city[data-pid="${CSS.escape(pid)}"]`)), 120);
 }
 function jumpToSight(pid, sid) {
+  muteFollow(1800);
   const card = document.querySelector(`.city[data-pid="${CSS.escape(pid)}"]`); if (!card) return;
   const sec = card.closest('.country'); if (sec && !sec.classList.contains('open') && !card.classList.contains('hl')) setCountryOpen(sec, true);
   const chip = card.querySelector(`.sight[data-sid="${CSS.escape(sid)}"]`);
@@ -1144,10 +1171,58 @@ document.addEventListener('click', async e => {
   const ok = await copyText(b.dataset.copy), old = b.textContent;
   b.textContent = ok ? (LANG === 'zh' ? '已复制' : 'Copied') : (LANG === 'zh' ? '请手动选中复制' : 'Select the text to copy'); setTimeout(() => { b.textContent = old; }, 1400);
 });
+// ── Wide layout: map beside the list; the map follows the city card in view ──
+const WIDE_MQ = matchMedia('(min-width: 1200px)');
+const isWide = () => WIDE_MQ.matches;
+let FOLLOW = true; try { FOLLOW = localStorage.getItem('fp_follow') !== '0'; } catch (e) {}
+let FOLLOW_MUTE = 0, FOLLOW_IO = null, FOLLOW_T = 0, FOLLOW_CUR = '';
+const muteFollow = (ms = 1500) => { FOLLOW_MUTE = Date.now() + ms; };
+function syncTopBar() { const tb = document.querySelector('.top-bar'); if (tb) document.documentElement.style.setProperty('--tb', tb.offsetHeight + 'px'); }
+function markCurrent(pid) {
+  if (FOLLOW_CUR === pid) return;
+  if (FOLLOW_CUR) MARKERS.get(FOLLOW_CUR)?.getElement()?.querySelector('.fp-pin')?.classList.remove('cur');
+  FOLLOW_CUR = pid; const m = MARKERS.get(pid);
+  if (m) { m.getElement()?.querySelector('.fp-pin')?.classList.add('cur'); m.setZIndexOffset(900); }
+}
+function wireFollow() {
+  FOLLOW_IO?.disconnect(); FOLLOW_IO = null;
+  if (!('IntersectionObserver' in window)) return;
+  FOLLOW_IO = new IntersectionObserver(entries => {
+    if (!isWide() || !FOLLOW || !MAP || Date.now() < FOLLOW_MUTE) return;
+    const hit = entries.filter(e => e.isIntersecting).map(e => e.target)[0]; if (!hit) return;
+    clearTimeout(FOLLOW_T);
+    FOLLOW_T = setTimeout(() => {
+      if (Date.now() < FOLLOW_MUTE) return;
+      const p = placeById(hit.dataset.pid); if (!p || typeof p.lat !== 'number') return;
+      if (FOLLOW_CUR === p.id) return;
+      markCurrent(p.id);
+      const z = MAP.getZoom(), target = L.latLng(p.lat, p.lon);
+      if (MAP.getBounds().pad(-0.2).contains(target) && z >= 4) MAP.panTo(target, { animate: true, duration: 0.6 });
+      else MAP.flyTo(target, Math.max(z, 5), { duration: 0.8 });
+    }, 320);
+  }, { rootMargin: '-35% 0px -55% 0px' });
+  document.querySelectorAll('#list .city').forEach(c => FOLLOW_IO.observe(c));
+}
+function addFollowControl() {
+  if (!MAP || MAP._followCtl) return;
+  const Ctl = L.Control.extend({ options: { position: 'topright' }, onAdd() {
+    const b = L.DomUtil.create('button', 'fp-follow' + (FOLLOW ? ' on' : '')); b.type = 'button';
+    const paint = () => { b.classList.toggle('on', FOLLOW); b.innerHTML = `<i></i>${LANG === 'zh' ? '地图跟随列表' : 'Follow the list'}`; b.title = LANG === 'zh' ? '滚动右侧列表时，地图移到正在看的城市' : 'While you scroll the list, the map moves to the city in view'; };
+    paint(); b._paint = paint;
+    L.DomEvent.disableClickPropagation(b);
+    b.onclick = () => { FOLLOW = !FOLLOW; try { localStorage.setItem('fp_follow', FOLLOW ? '1' : '0'); } catch (e) {} paint(); if (!FOLLOW && FOLLOW_CUR) { MARKERS.get(FOLLOW_CUR)?.getElement()?.querySelector('.fp-pin')?.classList.remove('cur'); FOLLOW_CUR = ''; } };
+    return b; } });
+  MAP._followCtl = new Ctl().addTo(MAP);
+  const sync = () => { const el = MAP._followCtl.getContainer(); el.style.display = isWide() ? '' : 'none'; el._paint?.(); };
+  sync(); MAP._followSync = sync;
+}
+WIDE_MQ.addEventListener?.('change', () => { syncTopBar(); if (MAP) { setTimeout(() => MAP.invalidateSize(), 60); MAP._followSync?.(); } });
+window.addEventListener('resize', syncTopBar);
 function placeById(id) { return (DATA.places || []).find(p => p.id === id); }
 function focusPlace(id) {
   const p = placeById(id); if (!p || !MAP) return;
-  window.scrollTo({ top: $('#map').getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
+  muteFollow(1600);
+  if (!isWide()) window.scrollTo({ top: $('#map').getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
   MAP.flyTo([p.lat, p.lon], Math.max(MAP.getZoom(), 6), { duration: 0.9 });
   const m = MARKERS.get(id); if (m) setTimeout(() => m.openPopup(), 950);
 }
@@ -1172,7 +1247,10 @@ async function renderMap() {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(MAP);
     MAP.setView([25, 15], 2);
     MAP.createPane('countries'); MAP.getPane('countries').style.zIndex = 350;
+    syncTopBar(); setTimeout(() => MAP.invalidateSize(), 50);
   }
+  addFollowControl(); MAP._followSync?.();
+  if (FOLLOW_CUR) setTimeout(() => { const c = FOLLOW_CUR; FOLLOW_CUR = ''; markCurrent(c); }, 0);
   // City markers
   MARKERS.forEach(m => m.remove()); MARKERS.clear();
   const bounds = [];
