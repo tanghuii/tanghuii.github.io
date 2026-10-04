@@ -107,7 +107,7 @@
   }
 
   // ── UI ──
-  const GROUPS = [['pub', ['Publications', '论文']], ['prov', ['Provinces', '省份']], ['place', ['Conferences & visits', '学术足迹']], ['trip', ['Travel (private)', '旅行（私密）']], ['sight', ['Sights', '景点']], ['about', ['About', '个人信息']]];
+  const GROUPS = [['pub', ['Publications', '论文']], ['prov', ['Provinces', '省份']], ['place', ['Conferences & visits', '学术足迹']], ['trip', ['Life in Passage (private)', '山河逆旅（私密）']], ['sight', ['Sights', '景点']], ['about', ['About', '个人信息']]];
   const ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
   const css = `
   .ss-btn svg { width: 18px; height: 18px; }

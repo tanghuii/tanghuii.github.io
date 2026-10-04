@@ -949,7 +949,7 @@ function renderHeader() {
   const places = DATA.places || [];
   const nCountries = new Set(places.map(p => normCC(p.cc) || t(p.country))).size;
   const nPhotos = places.reduce((n, p) => n + (p.photos || []).length, 0);
-  const title = t(DATA.title) || (PRIVATE ? (LANG === 'zh' ? '我的旅行足迹' : 'Places I have been') : (LANG === 'zh' ? '学术足迹' : 'Academic footprint'));
+  const title = (PRIVATE && (!DATA.title || /旅行足迹|Places I have/.test(t(DATA.title))) ? (LANG === 'zh' ? '山河逆旅' : 'Life in Passage') : t(DATA.title)) || (PRIVATE ? (LANG === 'zh' ? '山河逆旅' : 'Life in Passage') : (LANG === 'zh' ? '学术足迹' : 'Academic footprint'));
   $('#title').innerHTML = esc(title).replace(/\*([^*]+)\*/g, '<em>$1</em>');
   $('#intro').textContent = t(DATA.intro) || '';
   $('#intro').hidden = !t(DATA.intro);
@@ -1736,7 +1736,7 @@ function applyLang(lang) {
   document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
   document.querySelectorAll('[data-en][data-zh]').forEach(el => { el.textContent = el.getAttribute('data-' + lang); });
   document.querySelectorAll('[data-tip-en]').forEach(el => { el.title = el.getAttribute('data-tip-' + lang); });
-  document.title = PRIVATE ? (lang === 'zh' ? '旅行足迹 | 唐辉' : 'Travel | Hui Tang') : (lang === 'zh' ? '学术足迹 | 唐辉' : 'Academic footprint | Hui Tang');
+  document.title = PRIVATE ? (lang === 'zh' ? '山河逆旅 | 唐辉' : 'Life in Passage | Hui Tang') : (lang === 'zh' ? '学术足迹 | 唐辉' : 'Academic footprint | Hui Tang');
   if (DATA && !$('#app').hidden) { renderHeader(); renderList(); renderMap(); }
 }
 $('#lang-toggle').addEventListener('click', e => { const b = e.target.closest('.lang-btn'); if (b && b.dataset.lang !== LANG) applyLang(b.dataset.lang); });

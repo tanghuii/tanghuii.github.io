@@ -1807,7 +1807,7 @@ async function ghDeleteFile(path, message) {
 }
 function normalizeFP(d) {
   d.v ||= 1; d.places ||= []; d.flights ||= [];
-  d.title ||= { en: 'Places I have *been*', zh: '我的旅行足迹' }; d.intro ||= { en: '', zh: '' };
+  d.title ||= { en: 'Life in *Passage*', zh: '山河逆旅' }; d.intro ||= { en: '', zh: '' };
   d.pub_title ||= { en: 'Academic *footprint*', zh: '学术足迹' }; d.pub_intro ||= { en: 'Conferences, workshops and research visits.', zh: '参加过的学术会议、研讨会与学术访问。' };
   d.places.forEach(p => { p.id ||= 'pl-' + rid(); p.photos ||= []; p.note ||= { en: '', zh: '' }; p.city ||= { en: '', zh: '' }; p.country ||= { en: '', zh: '' }; p.when ||= '';
     p.academic = !!p.academic; p.trip ||= ''; p.icon ||= ''; p.kind ||= 'conference'; p.event ||= { en: '', zh: '' }; p.talk ||= ''; p.talk_type ||= '';
