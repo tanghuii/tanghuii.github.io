@@ -12,7 +12,7 @@
  *
  * Usage: Fleet3D.load().then(ok => …); Fleet3D.card(canvas, { type, airline }); Fleet3D.setAirline(canvas, al);
  *        Fleet3D.setTheme('light' | 'dark'); Fleet3D.viewer(host, { type, airline }) → { setAirline, setTheme, destroy };
- *        Fleet3D.liveryName(iata, lang)
+ *        Fleet3D.liveryName(iata, lang); Fleet3D.sprite({ type, airline }) → data URL of a top-down view (route animation)
  */
 (function () {
   'use strict';
@@ -349,7 +349,7 @@
   }
 
   // Fuselage texture: u along the length (nose → tail), v around (0 top, .25 side z+, .5 belly, .75 side z−)
-  function paintFuselage(liv, L, R) {
+  function paintFuselage(liv, L, R, hf = 1.03) {
     const cw = 2048, ch = 512, c = cnv(cw, ch), x = c.getContext('2d');
     const k = (2 * Math.PI * R / ch) / (L / cw);   // texel aspect: a texel is k times taller (around) than long
     const U = u => u * cw, V = v => v * ch;
@@ -383,7 +383,14 @@
       x.beginPath(); x.roundRect(u * cw, winV * ch - winH / 2, winW, winH, winW / 2); x.fill();
       x.beginPath(); x.roundRect(u * cw, (1 - winV) * ch - winH / 2, winW, winH, winW / 2); x.fill();
     }
-    x.fillStyle = '#121a24'; x.fillRect(0.022 * cw, 0.155 * ch, 0.03 * cw, 0.035 * ch); x.fillRect(0.022 * cw, (0.845 - 0.035) * ch, 0.03 * cw, 0.035 * ch);
+    // cockpit windows: one band at windshield height, worked out from the nose profile so it wraps round the front without a break
+    const tn = Math.min(0.13, 2.1 * R / L), cs = 1; x.fillStyle = '#121a24';
+    for (let px = 0; px < tn * cw; px += cs) for (let py = 0; py < 0.3 * ch; py += cs) {
+      const a = (px + cs / 2) / (tn * cw), e = Math.sqrt(Math.max(0, 1 - (1 - a) ** 2)), th = (py + cs / 2) / ch * 2 * Math.PI;
+      const y = (-0.28 * (1 - a) ** 2 + hf * e * Math.cos(th)) / 0.27 - 0.2 / 0.27, z = Math.abs(e * Math.sin(th));   // y: 0…1 across the windshield height
+      if (y < 0 || y > 1 || a < 0.06 || a > 0.66 - 0.12 * y || z < 0.025 || Math.abs(z - 0.42) < 0.02 || Math.abs(z - 0.74) < 0.02) continue;
+      x.fillRect(px, py, cs, cs); x.fillRect(px, ch - py - cs, cs, cs);
+    }
     x.strokeStyle = 'rgba(40,50,62,0.35)'; x.lineWidth = 2;
     [0.1, 0.42, 0.86].forEach(u => [0.19, 0.81].forEach(v => x.strokeRect(u * cw, (v - 0.045) * ch, 0.9 / L * cw, 0.11 * ch)));
     if (liv.over) liv.over(P);
@@ -444,7 +451,7 @@
     }
     for (let i = 0; i < NS; i++) for (let j = 0; j < NC; j++) { const a = i * (NC + 1) + j, b = a + NC + 1; idx.push(a, a + 1, b, b, a + 1, b + 1); }   // counter-clockwise seen from outside
     const fg = new T.BufferGeometry(); fg.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); fg.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); fg.setIndex(idx); fg.computeVertexNormals();
-    grp.add(new T.Mesh(fg, new T.MeshStandardMaterial({ map: tex(paintFuselage(liv, L, R)), roughness: 0.35, metalness: 0.1 })));
+    grp.add(new T.Mesh(fg, new T.MeshStandardMaterial({ map: tex(paintFuselage(liv, L, R, hf)), roughness: 0.35, metalness: 0.1 })));
 
     // Wings
     const high = o.wing === 'high', yw = high ? R * 0.82 : -R * 0.5, zr = R * 0.75, b = S / 2 - zr;
@@ -547,7 +554,7 @@
   // Models exist only while they are drawn (a card snapshot) or hovered, so memory stays low.
   const RW = 560, RH = 350, YAW0 = -0.15;
   let R0 = null, SCENE = null, CAM = null, IO = null, HOVER = null;
-  const CARDS = new Map(), QUEUE = [];
+  const CARDS = new Map(), QUEUE = [], SPRITES = new Map();
   function ensureShared() {
     if (R0) return;
     R0 = new T.WebGLRenderer({ canvas: cnv(RW, RH), antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'low-power' });
@@ -615,6 +622,19 @@
       if (!R0) return;
       dispose(SCENE); SCENE = makeScene(THEME);
       for (const [cv, st] of CARDS) { if (!cv.isConnected) { CARDS.delete(cv); IO.unobserve(cv); continue; } st.done = false; if (st.visible) enqueue(cv); }
+    },
+    // Top-down picture (nose up) of a type in an airline's livery, as a PNG data URL; drawn with the shared renderer and cached
+    sprite({ type, airline }, px = 192) {
+      const key = `${type}|${airline?.iata || airline?.name || ''}|${px}`;
+      if (SPRITES.has(key)) return SPRITES.get(key);
+      ensureShared();
+      const sc = new T.Scene(); sc.add(new T.HemisphereLight('#ffffff', '#8a97a8', 1.5));
+      const sun = new T.DirectionalLight('#ffffff', 1.5); sun.position.set(-1, 4, 1.5); sc.add(sun);
+      const cam = new T.OrthographicCamera(-1.04, 1.04, 1.04, -1.04, 0.1, 20); cam.position.set(0, 6, 2.2); cam.up.set(-1, 0, 0); cam.lookAt(0, 0, 0);
+      const m = buildAircraft(type, airline); sc.add(m);
+      R0.setSize(px, px, false); R0.render(sc, cam); const url = R0.domElement.toDataURL('image/png');
+      R0.setSize(RW, RH, false); dispose(m); dispose(sc);
+      SPRITES.set(key, url); return url;
     },
     // Full-size viewer with its own renderer: slow rotation, drag to turn, wheel / pinch to zoom
     viewer(host, { type, airline, yaw = YAW0, zoom = 1 }) {
