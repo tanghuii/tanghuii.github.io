@@ -386,6 +386,15 @@
   .sights { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
   .sights-label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ok); margin-right: 0.2rem; }
   .sights-label svg { width: 15px; height: 15px; }
+  .flights { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+  .sights-label.fl-label { color: var(--accent-light); }
+  .fl-chip { display: inline-flex; align-items: baseline; gap: 0.4rem; padding: 0.22rem 0.7rem 0.22rem 0.55rem; border: 1px solid var(--subtle); border-radius: 16px; background: var(--card-bg); font-size: 0.84rem; line-height: 1.35; color: var(--ink); text-decoration: none; transition: border-color 0.2s, background 0.2s; }
+  .fl-chip:hover, .fl-chip:focus-visible { border-color: var(--accent); background: var(--highlight); }
+  .fl-chip .dir { color: var(--accent-light); font-weight: 700; }
+  .fl-chip.out .dir { color: var(--muted); }
+  .fl-chip b { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 600; letter-spacing: 0.02em; }
+  .fl-chip .rt { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.8rem; color: var(--muted); }
+  .fl-chip .d { font-size: 0.78rem; color: var(--muted); }
   body.zh .sights-label { letter-spacing: 0.12em; }
   .sight { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0.25rem 0.4rem; max-width: 100%; padding: 0.25rem 0.7rem 0.25rem 0.55rem; border: 1px solid var(--subtle); border-radius: 16px; background: var(--card-bg); font-size: 0.88rem; line-height: 1.35; color: var(--ink); text-decoration: none; transition: border-color 0.2s, background 0.2s, transform 0.2s; }
   .sight .sg-name { min-width: 0; }
@@ -1019,6 +1028,25 @@ function provinceGroups(c) {
   if (other.places.length) arr.push(other);
   return arr;
 }
+// Flights linked to a place (Site Manager → Footprints → Flights): chips that open the flight on flights.html.
+// ↘ when the plane landed near the place, ↗ when it took off from near it.
+const PLANE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
+const near2 = (a, p) => (a.lat - p.lat) ** 2 + ((a.lon - p.lon) * Math.cos(p.lat * Math.PI / 180)) ** 2;
+const fmtDay = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ''); if (!m) return d || ''; return LANG === 'zh' ? `${m[1]}年${+m[2]}月${+m[3]}日` : `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}`; };
+function placeFlights(p) {
+  if (!PRIVATE || !(p.flights || []).length) return [];
+  const byId = new Map((DATA.flights || []).map(f => [f.id, f]));
+  return p.flights.map(id => byId.get(id)).filter(f => f && f.from && f.to).sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.dep || '').localeCompare(String(b.dep || '')));
+}
+function flightsHtml(p) {
+  const fs = placeFlights(p); if (!fs.length) return '';
+  const apCity = a => (LANG === 'zh' ? (a.city_zh || a.city) : a.city) || a.iata;
+  return `<div class="flights"><span class="sights-label fl-label">${PLANE_SVG}${LANG === 'zh' ? '航班' : 'Flights'}</span>${fs.map(f => {
+    const inb = typeof p.lat !== 'number' || near2(f.to, p) <= near2(f.from, p);
+    const tip = `${apCity(f.from)} → ${apCity(f.to)} · ${fmtDay(f.date)}${f.airline?.name ? ' · ' + (LANG === 'zh' ? f.airline.zh || f.airline.name : f.airline.name) : ''}${f.ac ? ' · ' + f.ac : ''}${f.reg ? ' · ' + f.reg : ''}`;
+    return `<a class="fl-chip ${inb ? 'in' : 'out'}" href="flights.html#fl=${esc(encodeURIComponent(f.id))}" title="${esc(tip)}"><span class="dir">${inb ? '↘' : '↗'}</span><b>${esc(f.no || '—')}</b><span class="rt">${esc(f.from.iata)}→${esc(f.to.iata)}</span><span class="d">${esc(fmtDay(f.date).replace(/^\d{4}年|\s\d{4}$/, ''))}</span></a>`;
+  }).join('')}</div>`;
+}
 function cityCard(p) {
   const photosLabel = n => LANG === 'zh' ? `${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`;
       const ph = p.photos || [];
@@ -1028,7 +1056,7 @@ function cityCard(p) {
           ${p.academic && t(p.event) ? `<div class="city-event">${esc(t(p.event))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="city-talk">${p.talk_type ? `<span class="talk-type">${esc(talkLabel(p.talk_type))}</span>` : ''}${p.talk ? `“${esc(p.talk)}”` : ''}</div>` : ''}${t(p.note) ? `<div class="city-note">${esc(t(p.note))}</div>` : ''}${PRIVATE && t(p.pnote) ? `<div class="city-note">${esc(t(p.pnote))}</div>` : ''}</div>
         <div class="city-actions"><button class="small-btn ghost" data-map="${esc(p.id)}"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${LANG === 'zh' ? '地图' : 'Map'}</button>
           ${ph.length ? `<button class="small-btn" data-gallery="${esc(p.id)}">${photosLabel(ph.length)}</button>` : ''}</div>
-        ${(p.sights || []).length ? `<div class="sights"><span class="sights-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.5L16 9.5"/></svg>${LANG === 'zh' ? '去过' : 'Visited'}</span>${(() => { const gs = sightGroups(p.sights), more = gs.length - SIGHTS_SHOWN; return gs.map((grp, k) => k < SIGHTS_SHOWN ? sightGroupHtml(grp, p) : sightGroupHtml(grp, p).replace(/^<(a|span) class="/, '<$1 hidden data-more class="')).join('') + (more > 0 ? `<button type="button" class="sights-more" data-more-btn data-n="${more}">${LANG === 'zh' ? `再显示 ${more} 个` : `+ ${more} more`}</button>` : ''); })()}</div>` : ''}${strip}</div>`;
+        ${(p.sights || []).length ? `<div class="sights"><span class="sights-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.5L16 9.5"/></svg>${LANG === 'zh' ? '去过' : 'Visited'}</span>${(() => { const gs = sightGroups(p.sights), more = gs.length - SIGHTS_SHOWN; return gs.map((grp, k) => k < SIGHTS_SHOWN ? sightGroupHtml(grp, p) : sightGroupHtml(grp, p).replace(/^<(a|span) class="/, '<$1 hidden data-more class="')).join('') + (more > 0 ? `<button type="button" class="sights-more" data-more-btn data-n="${more}">${LANG === 'zh' ? `再显示 ${more} 个` : `+ ${more} more`}</button>` : ''); })()}</div>` : ''}${flightsHtml(p)}${strip}</div>`;
 }
 function renderList() {
   const list = $('#list');
@@ -1774,8 +1802,14 @@ $('#lang-toggle').addEventListener('click', e => { const b = e.target.closest('.
 
 function showApp() {
   $('#gate').hidden = true; $('#app').hidden = false; $('#btn-lock').hidden = !PRIVATE; $('#btn-flights').hidden = !PRIVATE;
-  renderHeader(); renderList(); renderMap();
+  renderHeader(); renderList();
+  const ready = renderMap(), id = hashPlace();
+  if (id) { jumpToCity(id); Promise.resolve(ready).then(() => { if (isWide()) focusPlace(id); }).catch(() => {}); }
 }
+// Deep link #pl=<place id> (from a flight on flights.html): open the place's card and, on wide screens, fly the map to it
+function hashPlace() { const m = /^#pl=(.+)$/.exec(location.hash || ''); if (!m || !DATA) return null; const id = decodeURIComponent(m[1]); return placeById(id) ? id : null; }
+function goToHashPlace() { const id = hashPlace(); if (!id) return; jumpToCity(id); if (MAP && isWide()) focusPlace(id); }
+addEventListener('hashchange', () => { if (!$('#app').hidden) goToHashPlace(); });
 if (LANG !== 'en') applyLang(LANG);   // open in the language remembered from the rest of the site
 (async () => {
   if (!PRIVATE) {

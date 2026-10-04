@@ -379,7 +379,7 @@
   .pl-fin { width: 40px; height: 38px; }
   .pl-fin .tl-fb, .pl-fin img { width: 100%; height: 100%; }
   .al-fin { display: inline-block; width: 84px; height: 80px; clip-path: polygon(0 100%, 62% 100%, 100% 0, 74% 0); background: var(--line-2); flex: none; }
-  .dmap { height: clamp(300px, 46vh, 520px); border-radius: 4px; background: var(--map-bg); }
+  .dmap { height: clamp(300px, 46vh, 520px); border-radius: 4px; background: var(--map-bg); isolation: isolate; }
   .dmap .leaflet-tile-pane { filter: var(--tile-filter); }
   .dlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.9rem; align-items: start; }
   .dlist .rank .rk .c small { color: var(--dim); margin-left: 0.3em; font-size: 0.8em; }
@@ -395,6 +395,62 @@
   .plist .nm small { display: block; color: var(--muted); font-size: 0.8rem; }
   .plist .c { font-family: var(--f-mono); color: var(--muted); white-space: nowrap; }
   .plist img { width: 30px; height: 22px; object-fit: cover; border-radius: 2px; }
+  /* one flight (#fl=…) */
+  .fl-nav { font-size: 1.3rem; text-decoration: none; }
+  .fl-nav.off { opacity: 0.3; pointer-events: none; }
+  .detail-head .al-head { display: flex; align-items: center; gap: 0.9rem; }
+  .detail-head h2 .tag { font-size: 0.8rem; vertical-align: middle; -webkit-text-fill-color: var(--amber); }
+  .detail-head .sub a.dl { color: var(--ink); text-decoration: none; }
+  .detail-head .sub a.dl:hover { color: var(--cyan); }
+  .fl-acts { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .fl-acts a.chip { text-decoration: none; }
+  .fpass { display: grid; grid-template-columns: minmax(0, 1fr) minmax(90px, 0.7fr) minmax(0, 1fr); gap: 1rem; align-items: center; padding: 1.1rem 1.3rem; margin-bottom: 1.2rem; }
+  .fp-end { min-width: 0; }
+  .fp-end.to { text-align: right; }
+  .fp-end .kicker::before { display: none; }
+  .fp-code { display: block; font-family: var(--f-mono); font-weight: 700; font-size: clamp(2.2rem, 6vw, 3.4rem); line-height: 1.05; color: var(--ink-strong); text-decoration: none; text-shadow: 0 0 22px rgba(var(--cyan-rgb), var(--glow)); }
+  .fp-code:hover { color: var(--cyan); }
+  .fp-city { font-family: var(--f-hud); font-weight: 600; font-size: 1.05rem; }
+  .fp-flag { width: 20px; height: 14px; object-fit: cover; border-radius: 2px; vertical-align: -1px; margin-left: 0.2rem; }
+  .fp-ap { color: var(--muted); font-size: 0.85rem; }
+  .fp-times { display: flex; gap: 1.1rem; margin-top: 0.6rem; flex-wrap: wrap; }
+  .fp-end.to .fp-times { justify-content: flex-end; }
+  .fp-times small { display: block; font-family: var(--f-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .fp-times b { font-family: var(--f-mono); font-size: 1.25rem; color: var(--ink-strong); }
+  .fp-times em { display: block; font-style: normal; font-family: var(--f-mono); font-size: 0.72rem; }
+  .fp-times em.late { color: var(--amber); } .fp-times em.early, .fp-times em.ontime { color: var(--ok, #2f9e6b); }
+  html[data-theme="light"] .fp-times em.early, html[data-theme="light"] .fp-times em.ontime { color: #1d7a4f; }
+  .fp-mid { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; font-family: var(--f-mono); font-size: 0.82rem; color: var(--muted); text-align: center; }
+  .fp-line { position: relative; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--cyan) 15%, var(--cyan) 85%, transparent); opacity: 0.85; }
+  .fp-plane { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; transform: translate(-50%, -50%) rotate(90deg); color: var(--cyan); background: var(--panel-2); border-radius: 50%; padding: 3px; }
+  .fp-plane svg { width: 100%; height: 100%; display: block; }
+  .fac { overflow: hidden; }
+  .fac-stage { aspect-ratio: 16 / 9; }
+  .fac-stage.is3d .ac-sil { display: none; }
+  .fac-stage .v3d-canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; }
+  .fac-stage.is3d .ac-open { display: grid; }
+  .fac-body { padding: 0.9rem 1.1rem 1.1rem; display: grid; gap: 0.55rem; }
+  .fac-body h3 { font-family: var(--f-hud); font-size: 1.35rem; font-weight: 600; }
+  .fac-body h3 a { color: inherit; text-decoration: none; } .fac-body h3 a:hover { color: var(--cyan); }
+  .fac-reg { display: flex; gap: 0.8rem; align-items: baseline; flex-wrap: wrap; color: var(--muted); font-size: 0.9rem; }
+  .fac-reg .mono { font-size: 1.05rem; color: var(--ink-strong); padding: 0.05rem 0.45rem; border: 1px solid var(--line-2); border-radius: 3px; }
+  .fac-spec { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.45rem 0.8rem; }
+  .fac-spec dt { font-family: var(--f-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .fac-spec dd { font-family: var(--f-mono); color: var(--ink-strong); }
+  .fac-same { display: grid; gap: 0.25rem; font-size: 0.88rem; }
+  .fac-same b { font-weight: 600; }
+  .fac-same a, .fl-trip a { color: var(--ink); text-decoration: none; }
+  .fac-same a:hover { color: var(--cyan); }
+  .fac-same small { color: var(--muted); }
+  .fl-trip { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.7rem; margin-bottom: 0.9rem; }
+  .fl-trip a { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.7rem; padding: 0.7rem 0.9rem; }
+  .fl-trip a:hover { border-color: var(--cyan); }
+  .fl-trip img { width: 28px; height: 20px; object-fit: cover; border-radius: 2px; }
+  .fl-trip .nm { font-weight: 600; line-height: 1.3; min-width: 0; }
+  .fl-trip .nm small { display: block; color: var(--muted); font-weight: 400; font-size: 0.8rem; }
+  .fl-trip .go { font-family: var(--f-mono); font-size: 0.75rem; color: var(--cyan); white-space: nowrap; }
+  @media (max-width: 520px) { .detail-top .crumb:has(+ .fl-nav) b { display: none; } }
+  @media (max-width: 640px) { .fpass { grid-template-columns: 1fr; text-align: left; } .fp-end.to { text-align: left; } .fp-end.to .fp-times { justify-content: flex-start; } .fp-mid { flex-direction: row; } .fp-line { flex: 1; } }
   @media (max-width: 720px) {
     .back-link { font-size: 1.4rem; }
     .layout { gap: 0.9rem; padding-top: 0.9rem; }
@@ -560,7 +616,7 @@ const b64u8 = a => { let s = ''; a.forEach(x => { s += String.fromCharCode(x); }
 const A = window.Aviation;
 const EARTH = 40075, MOON = 384400;
 
-let LANG = window.SiteLang ? SiteLang.initial() : 'en', FLIGHTS = [], YEAR = 'all', PURPOSE = 'all', Q = '', SEL = null, MAP = null, LAYER = null, FIRST_FIT = true, FLAG_SORT = 'n', VIEWER = null, ALL_BOUNDS = null;
+let LANG = window.SiteLang ? SiteLang.initial() : 'en', FLIGHTS = [], PLACES = [], YEAR = 'all', PURPOSE = 'all', Q = '', SEL = null, MAP = null, LAYER = null, FIRST_FIT = true, FLAG_SORT = 'n', VIEWER = null, ALL_BOUNDS = null;
 const L10N = {
   all: ['All', '全部'], allYears: ['All years', '全部年份'], personal: ['Personal', '私人'], academic: ['Academic', '学术'],
   flights: ['Flights', '航班'], distance: ['Distance', '飞行距离'], time: ['Time aloft', '飞行时长'], airports: ['Airports', '机场'],
@@ -572,7 +628,7 @@ const L10N = {
   empty: ['No flights yet. Add them in Site Manager → Flights.', '还没有飞行记录。请在 Site Manager → Flights 中添加。'],
   clear: ['clear', '清除'], unknownType: ['Other / unknown', '其他 / 未知'], est: ['estimated', '估算'], details: ['Details', '查看详情'],
   back: ['Back', '返回'], movements: ['Take-offs and landings', '起降次数'], regs: ['Aircraft flown', '乘坐过的飞机'], years: ['By year', '按年份'],
-  first2: ['First', '首次'], last: ['Latest', '最近'], hours: ['Hours', '小时'], newTab: ['Open in a new tab', '在新标签页打开'], destinations: ['Destinations', '目的地'],
+  flight: ['Flight', '航班'], first2: ['First', '首次'], last: ['Latest', '最近'], hours: ['Hours', '小时'], newTab: ['Open in a new tab', '在新标签页打开'], destinations: ['Destinations', '目的地'],
 };
 const tr = k => (L10N[k] || [k, k])[LANG === 'zh' ? 1 : 0];
 const nf = (n, d = 0) => Number(n).toLocaleString(LANG === 'zh' ? 'zh-CN' : 'en', { maximumFractionDigits: d, minimumFractionDigits: d });
@@ -608,6 +664,8 @@ async function unlockWith(key, file) {
     const km = A.distKm(f.from, f.to);
     return { ...f, km, min: f.dur > 0 ? f.dur : A.estMinutes(km), est: !(f.dur > 0), year: String(f.date || '').slice(0, 4) || '—' };
   }).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.no).localeCompare(String(a.no)));
+  // places on travel.html this flight belongs to (the place keeps the flight ids it is linked to)
+  PLACES = (data.places || []).filter(p => (p.flights || []).length).map(p => ({ id: p.id, city: p.city, country: p.country, cc: p.cc, when: p.when, flights: p.flights }));
 }
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function lsSet(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
@@ -1113,7 +1171,7 @@ function rowsHtml(rows, clickable = true) {
     const ap = a => `<a class="dl" href="#ap=${esc(a.iata)}"><b>${esc(a.iata)}</b></a>`, alk = alKey(f), ack = acKey(f);
     html += `<tr class="fl${clickable && SEL && selMatch(f) ? ' sel' : ''}" data-route="${esc(routeKey(f))}" data-i="${FLIGHTS.indexOf(f)}">
       <td class="mono" style="white-space:nowrap">${esc(fmtDate(f.date))}${times}</td>
-      <td class="mono fno">${esc(f.no || '—')}${acad ? `<span class="tag">${LANG === 'zh' ? '学术' : 'ACAD'}</span>` : ''}</td>
+      <td class="mono fno"><a class="dl" href="#fl=${esc(encodeURIComponent(f.id))}" title="${esc(LANG === 'zh' ? '航班详情' : 'Flight details')}">${esc(f.no || '—')}</a>${acad ? `<span class="tag">${LANG === 'zh' ? '学术' : 'ACAD'}</span>` : ''}</td>
       <td><span class="route${acad ? ' acad' : ''}">${ap(f.from)}<span class="arrow">→</span>${ap(f.to)}</span><span class="s">${esc(apName(f.from))} – ${esc(apName(f.to))}</span></td>
       <td class="col-x">${alk ? `<a class="dl" href="#al=${esc(encodeURIComponent(alk))}">${esc(A.airlineName(f.airline, LANG))}</a>` : ''}</td>
       <td><span class="s only-m" style="color:var(--ink)">${esc(A.airlineName(f.airline, LANG))}</span>${ack ? `<a class="dl" href="#ac=${esc(encodeURIComponent(ack))}">${esc(acName(f))}</a>` : esc(acName(f))}${extra ? `<span class="s">${esc(extra)}</span>` : ''}</td>
@@ -1150,19 +1208,20 @@ function renderAll() {
 }
 $('#q').addEventListener('input', e => { Q = e.target.value; renderLog(scoped()); });
 
-// ── Detail views: #al=CA (airline), #ap=PEK (airport), #cc=CN (country), #ac=A359 (type), #rt=AMS-PEK (route), #list=airlines|airports|countries|types|routes ──
+// ── Detail views: #al=CA (airline), #ap=PEK (airport), #cc=CN (country), #ac=A359 (type), #rt=AMS-PEK (route), #fl=fl-… (one flight), #list=airlines|airports|countries|types|routes ──
 // Each is a plain link, so it opens in the same view or (middle-click) in a new tab; the hash is the state.
-let DMAP = null;
+let DMAP = null, FL_VIEWER = null;
 const DETAIL_KINDS = { al: 'airlines', ap: 'airports', cc: 'countries', ac: 'types', rt: 'routes' };
-function detailOf(hash) { if (/^#(log|hangar|records|explore)$/.test(hash || '')) return { kind: 'page', key: hash.slice(1) }; const m = /^#(al|ap|cc|ac|rt|list)=(.+)$/.exec(hash || ''); return m ? { kind: m[1], key: decodeURIComponent(m[2]) } : null; }
+function detailOf(hash) { if (/^#(log|hangar|records|explore)$/.test(hash || '')) return { kind: 'page', key: hash.slice(1) }; const m = /^#(al|ap|cc|ac|rt|fl|list)=(.+)$/.exec(hash || ''); return m ? { kind: m[1], key: decodeURIComponent(m[2]) } : null; }
 const inDetail = (d, f) => d.kind === 'al' ? alKey(f) === d.key : d.kind === 'ap' ? (f.from.iata === d.key || f.to.iata === d.key) : d.kind === 'cc' ? (A.statCC(f.from.cc) === d.key || A.statCC(f.to.cc) === d.key)
   : d.kind === 'ac' ? acKey(f) === d.key : d.kind === 'rt' ? routeKey(f) === d.key : true;
 function closeDetail() {
   const el = $('#detail'); if (!el) return;
-  if (DMAP) { DMAP.remove(); DMAP = null; } el.remove(); document.body.style.overflow = '';
+  if (DMAP) { DMAP.remove(); DMAP = null; } if (FL_VIEWER) { FL_VIEWER.destroy(); FL_VIEWER = null; } el.remove(); document.body.style.overflow = '';
 }
 function renderDetail() {
   const d = detailOf(location.hash); closeDetail(); if (!d || !FLIGHTS.length) return;
+  if (d.kind === 'fl') return renderFlight(d.key);
   const zh = LANG === 'zh', all = FLIGHTS.filter(f => inDetail(d, f)), list = all.filter(inYear);
   const el = document.createElement('div'); el.id = 'detail'; el.className = 'detail'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
   // header: what this is
@@ -1236,6 +1295,105 @@ function renderDetail() {
   if (d.kind === 'page' && d.key === 'hangar') mountFleet($('#dfleet'), list);
   if (d.kind === 'page' && d.key === 'explore') mountExplore($('#xfleet'), list);
 }
+// ── One flight (#fl=<id>): boarding-pass header with scheduled and actual times, the route on a map, the aircraft in 3D
+// with its specs and registration, and the trip it belongs to on travel.html (places that list this flight's id).
+const SCHED_RE = /(?:计划|sched(?:uled)?\.?)\s*(\d{1,2}:\d{2})\s*[-–~→]\s*(\d{1,2}:\d{2}(?:\s*\+\d)?)/i;
+const hm = s => { const m = /^(\d{1,2}):(\d{2})\s*(?:\+(\d))?/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) + (m[3] ? +m[3] * 1440 : 0) : null; };
+function delayMin(sched, act) { const a = hm(sched), b = hm(act); if (a === null || b === null) return null; let d = b - a; if (d > 720) d -= 1440; if (d < -720) d += 1440; return d; }
+const tv = o => (o && typeof o === 'object') ? (o[LANG] || o.en || o.zh || '') : (o || '');
+const WEEKDAYS = [['Sun', '周日'], ['Mon', '周一'], ['Tue', '周二'], ['Wed', '周三'], ['Thu', '周四'], ['Fri', '周五'], ['Sat', '周六']];
+const weekday = d => { const t = Date.parse(String(d) + 'T00:00:00Z'); return isNaN(t) ? '' : WEEKDAYS[new Date(t).getUTCDay()][LANG === 'zh' ? 1 : 0]; };
+const placesOf = f => PLACES.filter(p => p.flights.includes(f.id));
+function renderFlight(id) {
+  const zh = LANG === 'zh', f = FLIGHTS.find(x => x.id === id);
+  const el = document.createElement('div'); el.id = 'detail'; el.className = 'detail'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+  const top = (title, nav = '') => `<div class="detail-top"><button type="button" class="icon-btn" id="detail-back" aria-label="${esc(tr('back'))}" title="${esc(tr('back'))}">←</button>
+      <div class="crumb"><span class="kicker">${esc(tr('flight'))}</span><b>${esc(title)}</b></div>${nav}
+      <div class="lang-toggle detail-lang" role="group" aria-label="Language"><button type="button" class="lang-btn${LANG === 'en' ? ' active' : ''}" data-lang="en">EN</button><button type="button" class="lang-btn${LANG === 'zh' ? ' active' : ''}" data-lang="zh">中</button></div>
+      <a class="icon-btn" href="${esc(location.hash)}" target="_blank" rel="noopener" title="${esc(tr('newTab'))}" aria-label="${esc(tr('newTab'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M21 3l-9 9M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></a></div>`;
+  if (!f) {
+    el.innerHTML = top('—') + `<p class="empty" style="padding:2rem 0">${esc(zh ? '找不到这个航班，它可能已被删除。' : 'This flight is not in the log (it may have been deleted).')}</p>`;
+    document.body.appendChild(el); document.body.style.overflow = 'hidden';
+    $('#detail-back').onclick = () => { if (history.state?.fromPage) history.back(); else location.hash = ''; };
+    return;
+  }
+  // neighbours in the log (FLIGHTS is newest first)
+  const i = FLIGHTS.indexOf(f), older = FLIGHTS[i + 1], newer = FLIGHTS[i - 1];
+  const navBtn = (g, label, arrow) => g ? `<a class="icon-btn dl fl-nav" href="#fl=${esc(encodeURIComponent(g.id))}" title="${esc(`${label}: ${g.no || ''} ${g.from.iata}→${g.to.iata} · ${fmtDateY(g.date)}`)}" aria-label="${esc(label)}">${arrow}</a>` : `<span class="icon-btn fl-nav off" aria-hidden="true">${arrow}</span>`;
+  const nav = navBtn(older, zh ? '上一班' : 'Earlier flight', '‹') + navBtn(newer, zh ? '下一班' : 'Later flight', '›');
+  // times: scheduled ones come from the note ("计划 14:15-18:30"), actual ones from dep / arr
+  const sm = SCHED_RE.exec(f.note || ''), sDep = sm?.[1] || '', sArr = sm?.[2] || '';
+  const note = String(f.note || '').replace(SCHED_RE, '').replace(/^[\s·,;|]+|[\s·,;|]+$/g, '');
+  const late = d => d === null ? '' : d > 15 ? `<em class="late">+${d} ${zh ? '分钟' : 'min'}</em>` : d < -5 ? `<em class="early">${zh ? `提前 ${-d} 分钟` : `${-d} min early`}</em>` : `<em class="ontime">${zh ? '准点' : 'on time'}</em>`;
+  const times = (sch, act) => !sch && !act ? '' : `<div class="fp-times">${sch ? `<div><small>${zh ? '计划' : 'Scheduled'}</small><b>${fmtArr(sch)}</b></div>` : ''}${act ? `<div><small>${zh ? '实际' : 'Actual'}</small><b>${fmtArr(act)}</b>${late(delayMin(sch, act))}</div>` : ''}</div>`;
+  const end = (ap, kick, sch, act, cls = '') => `<div class="fp-end ${cls}"><span class="kicker">${esc(kick)}</span><a class="dl fp-code" href="#ap=${esc(ap.iata)}">${esc(ap.iata)}</a>
+      <div class="fp-city">${esc(city(ap))}${ap.cc ? ` <img class="fp-flag" src="https://flagcdn.com/w40/${esc(String(ap.cc).toLowerCase())}.png" alt="" onerror="this.remove()">` : ''}</div><div class="fp-ap">${esc(apName(ap))}${ap.icao ? ` · <span class="mono">${esc(ap.icao)}</span>` : ''}</div>${times(sch, act)}</div>`;
+  const acad = f.purpose === 'academic', ty = f.ac ? A.type(f.ac) : null, al = A.airlineName(f.airline, LANG) || f.airline?.name || '';
+  const cls = { economy: ['Economy', '经济舱'], premium: ['Premium economy', '超级经济舱'], business: ['Business', '公务舱'], first: ['First', '头等舱'] }[f.cls];
+  const stat = (n, l, s2 = '') => `<div class="hud stat"><div class="n">${n}</div><div class="l">${esc(l)}</div>${s2 ? `<div class="s">${esc(s2)}</div>` : ''}</div>`;
+  const stats = [stat(`${nf(f.km)}<small>km</small>`, tr('distance'), `${nf(f.km / EARTH * 100, 1)}% ${zh ? '地球周长' : 'of the way around the Earth'}`),
+    stat(esc(fmtH(f.min)), tr('time'), f.est ? tr('est') : ''),
+    f.age > 0 ? stat(`${nf(f.age, f.age % 1 ? 1 : 0)}<small>${zh ? '年' : 'yrs'}</small>`, zh ? '机龄' : 'Aircraft age', f.reg || '') : '',
+    f.seat || cls ? stat(esc(f.seat || '—'), zh ? '座位' : 'Seat', cls ? cls[zh ? 1 : 0] : '') : '',
+    fmtFare(f) ? stat(`<span style="font-size:0.8em">${esc(fmtFare(f))}</span>`, zh ? '票价' : 'Fare') : ''].join('');
+  // the aircraft: same registration on other flights, and how often this type was flown
+  const sameReg = f.reg ? FLIGHTS.filter(x => x !== f && x.reg && x.reg === f.reg) : [], sameType = FLIGHTS.filter(x => acKey(x) === acKey(f));
+  const spec = ty ? [[zh ? '制造商' : 'Manufacturer', A.mfrName(ty.mfr, LANG)], [zh ? '全长' : 'Length', `${ty.len} m`], [zh ? '翼展' : 'Wingspan', `${ty.span} m`], [zh ? '高度' : 'Height', `${ty.height} m`],
+    [zh ? '典型座位' : 'Typical seats', String(ty.seats)], [zh ? '航程' : 'Range', `${nf(ty.range)} km`], [zh ? '首飞' : 'First flight', String(ty.year)]] : [];
+  const fltLink = g => `<a class="dl" href="#fl=${esc(encodeURIComponent(g.id))}"><span class="mono">${esc(g.no || '—')}</span> ${esc(g.from.iata)}→${esc(g.to.iata)} <small>${esc(fmtDateY(g.date))}</small></a>`;
+  const acCard = `<div class="hud fac"><div class="fac-stage ac-pic">${A.silhouette(ty?.body || 'narrow')}${f.ac ? `<button type="button" class="ac-open" aria-label="${esc(zh ? '打开三维查看器' : 'Open the 3D viewer')}">${OPEN_ICON}</button>` : ''}</div>
+      <div class="fac-body"><p class="kicker">${esc(f.ac || (zh ? '机型' : 'Aircraft'))}</p><h3>${acKey(f) ? `<a class="dl" href="#ac=${esc(encodeURIComponent(acKey(f)))}">${esc(acName(f) || tr('unknownType'))}</a>` : esc(acName(f) || tr('unknownType'))}</h3>
+      ${f.reg ? `<div class="fac-reg"><span class="mono">${esc(f.reg)}</span>${f.age > 0 ? `<span>${zh ? `机龄 ${nf(f.age, f.age % 1 ? 1 : 0)} 年` : `${nf(f.age, f.age % 1 ? 1 : 0)} years old`}</span>` : ''}</div>` : ''}
+      ${spec.length ? `<dl class="fac-spec">${spec.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
+      <p class="ac-meta">${zh ? `这个机型共乘坐 ${sameType.length} 次` : `${sameType.length} ${sameType.length === 1 ? 'flight' : 'flights'} on this type`}</p>
+      ${sameReg.length ? `<div class="fac-same"><b>${zh ? '同一架飞机的其他航班' : 'Also flown on this very aircraft'}</b>${sameReg.map(fltLink).join('')}</div>` : ''}</div></div>`;
+  // the trip: places on travel.html that list this flight, and the other flights those places list
+  const places = placesOf(f), legs = [...new Set(places.flatMap(p => p.flights))].map(k => FLIGHTS.find(x => x.id === k)).filter(Boolean).sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.dep).localeCompare(String(b.dep)));
+  const tripHtml = places.length ? `<div class="span"><h2 class="sec small"><span>${zh ? '这次旅行' : 'On this trip'}</span><span class="kicker">${places.length}</span></h2>
+      <div class="fl-trip">${places.map(p => `<a class="hud" href="travel.html#pl=${esc(encodeURIComponent(p.id))}"><img src="https://flagcdn.com/w40/${esc(String(p.cc || '').toLowerCase())}.png" alt="" onerror="this.remove()"><span class="nm">${esc(tv(p.city))}<small>${esc([tv(p.country), p.when].filter(Boolean).join(' · '))}</small></span><span class="go">${zh ? '足迹地图' : 'Travel map'} ›</span></a>`).join('')}</div>
+      ${legs.length > 1 ? `<div class="hud log"><table><tbody>${rowsHtml(legs, false).replace(/<tr class="fl([^"]*)" data-route="[^"]*" data-i="(\d+)">/g, (m, c, k) => `<tr class="fl${c}${FLIGHTS[+k] === f ? ' sel' : ''}">`)}</tbody></table></div>` : ''}</div>` : '';
+  el.innerHTML = top(`${f.no || ''} ${f.from.iata} → ${f.to.iata}`, nav) + `
+    <div class="detail-head"><div class="al-head">${alKey(f) ? `<span class="al-fin" data-tail="${esc(alKey(f))}"></span>` : ''}<div><h2>${esc(f.no || `${f.from.iata} → ${f.to.iata}`)}${acad ? `<span class="tag">${esc(tr('academic'))}</span>` : ''}</h2>
+      <p class="sub">${alKey(f) ? `<a class="dl" href="#al=${esc(encodeURIComponent(alKey(f)))}">${esc(al)}</a> · ` : ''}${esc(fmtDateY(f.date))} ${esc(weekday(f.date))}${note ? ` · ${esc(note)}` : ''}</p></div></div>
+      <div class="fl-acts"><button type="button" class="chip" id="fl-replay">${zh ? '在地图上重放' : 'Replay on the map'} ✈</button><a class="chip dl" href="#rt=${esc(encodeURIComponent(routeKey(f)))}">${zh ? '这条航线' : 'This route'} ›</a></div></div>
+    <div class="hud fpass">${end(f.from, zh ? '出发' : 'From', sDep, f.dep)}
+      <div class="fp-mid"><span>${esc(fmtH(f.min))}${f.est ? '*' : ''}</span><div class="fp-line"><span class="fp-plane">${PLANE_I}</span></div><span>${nf(f.km)} km</span></div>
+      ${end(f.to, zh ? '到达' : 'To', sArr, f.arr, 'to')}</div>
+    <div class="stats">${stats}</div>
+    <div class="detail-grid"><div class="hud map-card"><div class="dmap" id="dmap"></div></div>${acCard}${tripHtml}</div>`;
+  document.body.appendChild(el); document.body.style.overflow = 'hidden';
+  $('#detail-back').onclick = () => { if (history.state?.fromPage) history.back(); else location.hash = ''; };
+  $('#fl-replay').onclick = () => {
+    location.hash = ''; closeDetail();
+    SEL = { kind: 'route', key: routeKey(f), label: `${f.from.iata} ⇄ ${f.to.iata}` }; renderAll();
+    $('#map').scrollIntoView({ behavior: 'smooth', block: 'center' }); flyRoute(f);
+  };
+  // map: the great circle with its direction, both airports labelled, and the aircraft halfway along
+  DMAP = L.map('dmap', { worldCopyJump: true, minZoom: 2, maxZoom: 12, zoomSnap: 0.25, attributionControl: true }).setView([35, 60], 2);
+  MapBase.attach(DMAP, LANG);
+  const C = mapColors(), col = acad ? C.acad : C.route, path = A.greatCircle(f.from, f.to, 160);
+  L.polyline(path, { color: col, weight: 12, opacity: 0.14, interactive: false }).addTo(DMAP); L.polyline(path, { color: col, weight: 3, opacity: 0.85, interactive: false }).addTo(DMAP);
+  [f.from, f.to].forEach(a => L.circleMarker([a.lat, a.lon], { radius: 6, color: C.dot, weight: 2, fillColor: C.dotFill, fillOpacity: 1 }).addTo(DMAP)
+    .bindTooltip(`<b>${esc(a.iata)}</b> ${esc(apName(a))}`, { className: 'fl-tip', direction: 'top', offset: [0, -6], permanent: true }).on('click', () => { location.hash = '#ap=' + a.iata; }));
+  DMAP.fitBounds(L.latLngBounds([[f.from.lat, f.from.lon], [f.to.lat, f.to.lon]]).pad(0.25), { maxZoom: 7, animate: false });
+  routeArrows(DMAP, path, 1, 0, col);
+  const mid = Math.floor(path.length / 2), pa = DMAP.latLngToLayerPoint(path[mid - 1]), pb = DMAP.latLngToLayerPoint(path[mid + 1]), deg = Math.atan2(pb.y - pa.y, pb.x - pa.x) * 180 / Math.PI + 90;
+  const planeAt = html => L.marker(path[mid], { icon: L.divIcon({ className: 'fl-plane', iconSize: [48, 48], iconAnchor: [24, 24], html }), interactive: false, keyboard: false, zIndexOffset: 1000 }).addTo(DMAP);
+  const marker = planeAt(`<span class="fl-plane-svg" style="transform:rotate(${deg}deg)">${PLANE_I}</span>`);
+  el.scrollTop = 0;
+  if (alKey(f)) paintTails([[alKey(f), f.airline]]);
+  // the aircraft in 3D, in this airline's livery (a blueprint silhouette until WebGL is ready, or without it)
+  window.Fleet3D?.load().then(async ok => {
+    if (!ok || $('#detail') !== el) return;
+    try { await Fleet3D.prepare(f.airline, f.ac || 'A320'); } catch (e) {}
+    if ($('#detail') !== el) return;
+    try { const src = Fleet3D.sprite({ type: f.ac || 'A320', airline: f.airline }, 128); if (src) marker.setIcon(L.divIcon({ className: 'fl-plane', iconSize: [48, 48], iconAnchor: [24, 24], html: `<img src="${src}" alt="" style="transform:rotate(${deg}deg)">` })); } catch (e) {}
+    if (!f.ac) return;
+    const stage = el.querySelector('.fac-stage'); stage.classList.add('is3d');
+    FL_VIEWER = Fleet3D.viewer(stage, { type: f.ac, airline: f.airline, zoom: 1.15 });
+    stage.querySelector('.ac-open').onclick = () => openViewer({ code: f.ac, key: acKey(f), label: acName(f), n: sameType.length, km: sameType.reduce((s, x) => s + x.km, 0), als: [{ al: f.airline, n: 1, label: al }] }, 0);
+  });
+}
 addEventListener('hashchange', () => { if (!$('#app').hidden) renderDetail(); });
 document.addEventListener('click', e => { const a = e.target.closest('a.dl'); if (a && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0 && a.getAttribute('href')?.startsWith('#')) { e.preventDefault(); const h = a.getAttribute('href'); if (location.hash !== h) history.pushState({ fromPage: !$('#detail') || history.state?.fromPage }, '', h); renderDetail(); } });
 addEventListener('popstate', () => { if (!$('#app').hidden) renderDetail(); });
@@ -1268,7 +1426,7 @@ function applyTheme(t, save) {
   if (save) lsSet('site-theme', t);
   document.querySelector('meta[name="theme-color"]').content = t === 'light' ? '#eef3f8' : '#050b16';
   if (typeof applyBg === 'function') applyBg();
-  paintThemeBtn(); window.Fleet3D?.setTheme(t); VIEWER?.setTheme(t);
+  paintThemeBtn(); window.Fleet3D?.setTheme(t); VIEWER?.setTheme(t); FL_VIEWER?.setTheme(t);
   if (!$('#app').hidden) { renderMap(scoped()); if ($('#detail')) renderDetail(); }
 }
 $('#btn-theme').onclick = () => applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light', true);

@@ -109,6 +109,12 @@ window.ADMIN_ZH = {
   '⬇ Export CSV': '⬇ 导出 CSV', 'Download every flight as a CSV (re-importable here)': '把全部航班下载为 CSV（可在此重新导入）', 'Choose a CSV file…': '选择 CSV 文件…', 'Paste a CSV with a header row. Recognised columns:': '粘贴带表头的 CSV。可识别的列：',
   'Merge duplicates': '合并重复', 'Keeps one of each, with any details only the copies had.': '每组只保留一条，并补上副本独有的信息。', 'Same flight number, date and route': '相同航班号、日期和航线', 'Same flight number, same day, same airports:': '相同航班号、同一天、相同机场：', 'no duplicates': '没有重复',
   '. Airports may be written as IATA codes (': '。机场可写 IATA 代码（', ') or like': '）或写成', '; aircraft by name or ICAO code (': '；机型可写名称或 ICAO 代码（', 'adds the actual times to existing flights. A reason of “business” or “academic” marks the flight as academic.': '会把实际时间补到已有航班上。目的为“business”或“academic”时标记为学术飞行。',
+  // places ↔ flights
+  'Link flights to places': '把航班关联到地点', 'Link ticked flights': '关联已勾选的航班', '+ Link another flight…': '+ 关联其他航班…', 'Suggested:': '推荐：',
+  'No flights linked yet.': '还没有关联航班。', 'Unlink': '取消关联', '+ link': '+ 关联', 'Linked places (edit in Footprints)': '已关联的地点（在“足迹”中编辑）',
+  'No new suggestions: every matching flight is already linked.': '没有新的推荐：符合条件的航班都已关联。',
+  "Each place can list the flights that took you there or away; travel.html shows them on the place and they open the flight on flights.html, which links back. Suggestions are flights that landed or took off within 150 km of a place during one of its visits (±7 days), leaving out home airports (near a “lived here” place) and visits longer than two months. Untick any that are wrong, then link. One-off links can also be added in each place's": '每个地点可以记录去程和回程的航班；travel.html 会在地点上显示这些航班，点击即打开 flights.html 中的航班详情，详情页也会链接回地点。推荐规则：航班在某次访问期间（前后 7 天）于距该地点 150 公里内降落或起飞；居住地附近的机场（“曾居住”的地点）和超过两个月的访问不参与推荐。取消勾选不对的，再点关联。单个航班也可以在每个地点的',
+  'field.': '栏中添加。',
   // cv & settings
   'The CV download card, page titles, analytics IDs and your admin sign-in.': '简历下载卡片、页面标题、统计 ID 和管理员登录。', 'Curriculum vitae': '简历', 'CV file name': '简历文件名', 'PDF in the repository root. Spaces are fine.': '仓库根目录中的 PDF，文件名可含空格。',
   'Upload new CV (PDF)…': '上传新简历（PDF）…', '“Last updated” line': '“最近更新”一行', 'Site': '站点', 'Homepage title': '主页标题', 'Publications page title': '论文页标题', 'Footer year': '页脚年份', 'Your author short name': '你的作者简称',
