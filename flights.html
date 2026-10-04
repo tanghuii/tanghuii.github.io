@@ -665,7 +665,7 @@ async function unlockWith(key, file) {
     return { ...f, km, min: f.dur > 0 ? f.dur : A.estMinutes(km), est: !(f.dur > 0), year: String(f.date || '').slice(0, 4) || '—' };
   }).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.no).localeCompare(String(a.no)));
   // places on travel.html this flight belongs to (the place keeps the flight ids it is linked to)
-  PLACES = (data.places || []).filter(p => (p.flights || []).length).map(p => ({ id: p.id, city: p.city, country: p.country, cc: p.cc, when: p.when, flights: p.flights }));
+  PLACES = (data.places || []).filter(p => (p.flights || []).length).map(p => ({ id: p.id, city: p.city, country: p.country, cc: p.cc, lat: p.lat, lon: p.lon, when: p.when, trip: p.trip, flights: p.flights }));
 }
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function lsSet(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
@@ -1304,6 +1304,15 @@ const tv = o => (o && typeof o === 'object') ? (o[LANG] || o.en || o.zh || '') :
 const WEEKDAYS = [['Sun', '周日'], ['Mon', '周一'], ['Tue', '周二'], ['Wed', '周三'], ['Thu', '周四'], ['Fri', '周五'], ['Sat', '周六']];
 const weekday = d => { const t = Date.parse(String(d) + 'T00:00:00Z'); return isNaN(t) ? '' : WEEKDAYS[new Date(t).getUTCDay()][LANG === 'zh' ? 1 : 0]; };
 const placesOf = f => PLACES.filter(p => p.flights.includes(f.id));
+// A home base (lived there, or dated only by years such as Amsterdam "2025-2026") does not make a trip; any other place does
+const isBase = p => p.trip === 'lived' || !String(p.when || '').split(/\s*[;,，、|；]\s*/).some(v => /^\d{4}[-/.]\d{1,2}([-/.]\d{1,2})?$/.test(v.trim()));
+const TRIP_DAYS = 21;
+// The legs of this flight's trip: flights linked to the same non-base places within three weeks of it
+function tripLegs(f, places) {
+  const t0 = Date.parse(f.date), ids = new Set(places.filter(p => !isBase(p)).flatMap(p => p.flights));
+  return FLIGHTS.filter(g => ids.has(g.id) && Math.abs(Date.parse(g.date) - t0) <= TRIP_DAYS * 864e5)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.dep || '').localeCompare(String(b.dep || '')));
+}
 function renderFlight(id) {
   const zh = LANG === 'zh', f = FLIGHTS.find(x => x.id === id);
   const el = document.createElement('div'); el.id = 'detail'; el.className = 'detail'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
@@ -1348,10 +1357,11 @@ function renderFlight(id) {
       <p class="ac-meta">${zh ? `这个机型共乘坐 ${sameType.length} 次` : `${sameType.length} ${sameType.length === 1 ? 'flight' : 'flights'} on this type`}</p>
       ${sameReg.length ? `<div class="fac-same"><b>${zh ? '同一架飞机的其他航班' : 'Also flown on this very aircraft'}</b>${sameReg.map(fltLink).join('')}</div>` : ''}</div></div>`;
   // the trip: places on travel.html that list this flight, and the other flights those places list
-  const places = placesOf(f), legs = [...new Set(places.flatMap(p => p.flights))].map(k => FLIGHTS.find(x => x.id === k)).filter(Boolean).sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.dep).localeCompare(String(b.dep)));
-  const tripHtml = places.length ? `<div class="span"><h2 class="sec small"><span>${zh ? '这次旅行' : 'On this trip'}</span><span class="kicker">${places.length}</span></h2>
+  const fromSide = p => typeof p.lat === 'number' && A.distKm(p, f.from) < A.distKm(p, f.to);   // departure city first, then arrival
+  const places = placesOf(f).sort((a, b) => fromSide(b) - fromSide(a)), legs = tripLegs(f, places);
+  const tripHtml = places.length ? `<div class="span"><h2 class="sec small"><span>${zh ? '足迹地图上的地点' : 'On the travel map'}</span><span class="kicker">${places.length}</span></h2>
       <div class="fl-trip">${places.map(p => `<a class="hud" href="travel.html#pl=${esc(encodeURIComponent(p.id))}"><img src="https://flagcdn.com/w40/${esc(String(p.cc || '').toLowerCase())}.png" alt="" onerror="this.remove()"><span class="nm">${esc(tv(p.city))}<small>${esc([tv(p.country), p.when].filter(Boolean).join(' · '))}</small></span><span class="go">${zh ? '足迹地图' : 'Travel map'} ›</span></a>`).join('')}</div>
-      ${legs.length > 1 ? `<div class="hud log"><table><tbody>${rowsHtml(legs, false).replace(/<tr class="fl([^"]*)" data-route="[^"]*" data-i="(\d+)">/g, (m, c, k) => `<tr class="fl${c}${FLIGHTS[+k] === f ? ' sel' : ''}">`)}</tbody></table></div>` : ''}</div>` : '';
+      ${legs.length > 1 ? `<h2 class="sec small"><span>${zh ? '这次旅行的航段' : 'Legs of this trip'}</span><span class="kicker">${legs.length}</span></h2><div class="hud log"><table><tbody>${rowsHtml(legs, false).replace(/<tr class="fl([^"]*)" data-route="[^"]*" data-i="(\d+)">/g, (m, c, k) => `<tr class="fl${c}${FLIGHTS[+k] === f ? ' sel' : ''}">`)}</tbody></table></div>` : ''}</div>` : '';
   el.innerHTML = top(`${f.no || ''} ${f.from.iata} → ${f.to.iata}`, nav) + `
     <div class="detail-head"><div class="al-head">${alKey(f) ? `<span class="al-fin" data-tail="${esc(alKey(f))}"></span>` : ''}<div><h2>${esc(f.no || `${f.from.iata} → ${f.to.iata}`)}${acad ? `<span class="tag">${esc(tr('academic'))}</span>` : ''}</h2>
       <p class="sub">${alKey(f) ? `<a class="dl" href="#al=${esc(encodeURIComponent(alKey(f)))}">${esc(al)}</a> · ` : ''}${esc(fmtDateY(f.date))} ${esc(weekday(f.date))}${note ? ` · ${esc(note)}` : ''}</p></div></div>
