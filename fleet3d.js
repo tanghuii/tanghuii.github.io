@@ -68,9 +68,16 @@
       over: P => { const a = P.title('中国南方航空', 0.12, tv(0.05), 0.05, { col: '#14284b', w: 500, cjk: 1, sp: 0.3 }); P.title('CHINA SOUTHERN', a[1] + 0.03, tv(0.048), 0.048, { col: '#14284b', f: OPTIMA, w: 600 }); } },
     MU: { name: 'China Eastern', zh: '中国东方航空', engine: W, winglet: '#f2f3f5', tail: 'mu',
       over: P => { const a = P.title('中國東方航空', 0.11, tv(0.048), 0.048, { col: '#e3171f', w: 500, cjk: 1, sp: 0.15 }); P.title('CHINA EASTERN', a[1] + 0.035, tv(0.046), 0.046, { col: '#2a2774', w: 800 }); } },
-    MF: { name: 'Xiamen Air', zh: '厦门航空', engine: W, winglet: '#173f8f', tail: 'mf',
-      under: P => { P.band(0.232, 0.244, '#173f8f', 0.02, 0.93); P.band(0.248, 0.254, '#58b0e6', 0.02, 0.93); },
-      over: P => { const a = P.title('厦门航空', 0.12, tv(0.05), 0.05, { col: '#173f8f', w: 600, cjk: 1, sp: 0.2 }); P.title('XIAMENAIR', a[1] + 0.03, tv(0.046), 0.046, { col: '#173f8f', w: 800 }); } },
+    MF: { name: 'Xiamen Air', zh: '厦门航空', belly: '#1f7fcc', engine: W, winglet: '#1f86d0', tail: 'mf',
+      under: P => {   // blue lower fuselage rising into the tail, a light-blue line under the windows, darker belly with a white sweep
+        const top = u => 0.3 - 0.06 * Math.min(1, u / 0.8) - 0.22 * Math.max(0, (u - 0.8) / 0.2) ** 1.4 + 0.12 * Math.max(0, (0.06 - u) / 0.06);
+        P.ribbon(top, () => 0.5, -0.01, 1.01, '#1f7fcc');
+        P.ribbon(u => Math.min(0.236, top(u) - 0.022), u => Math.min(0.243, top(u) - 0.015), 0.01, 1.01, '#62b8ea');
+        const dk = u => 0.4 - 0.1 * Math.sin(Math.PI * Math.max(0, Math.min(1, (u - 0.3) / 0.55)));
+        P.ribbon(dk, () => 0.5, 0.3, 0.85, '#174f9e'); P.ribbon(u => dk(u) - 0.006, dk, 0.3, 0.85, '#ffffff'); },
+      over: P => { P.logo('mfegret', 0.125, tv(0.05), 0.09, '#1a5fae');
+        const a = P.title('厦门航空', 0.165, tv(0.046), 0.046, { col: '#1a5fae', w: 600, cjk: 1, sp: 0.15 });
+        P.title([{ t: 'XIAMEN', w: 800 }, { t: 'AIR', w: 400 }], a[1] + 0.015, tv(0.044), 0.044, { col: '#1a5fae' }); } },
     HU: { name: 'Hainan Airlines', zh: '海南航空', engine: W, winglet: '#c8102e', tail: 'hu',
       under: P => {   // red and gold ribbon from the tail, sweeping down under the windows to a point below the forward cabin
         const s = u => Math.max(0, Math.min(1, (u - 0.17) / 0.83));
@@ -241,6 +248,12 @@
       x.lineWidth = s * 0.025; x.beginPath(); x.moveTo(cx - s * 0.36, cy - s * 0.16); x.lineTo(cx - s * 0.5, cy - s * 0.14); x.stroke();
       x.beginPath(); x.moveTo(cx + s * 0.16, cy + s * 0.09); x.lineTo(cx + s * 0.46, cy + s * 0.16); x.stroke(); x.restore();
     },
+    mfegret(x, cx, cy, s, col = '#fff') {   // Xiamen Air: egret with a long beak and one crescent wing swept up and back
+      x.save(); x.translate(cx, cy); x.scale(s, s); x.fillStyle = col;
+      taper(x, [[-0.52, 0.0], [-0.2, -0.07], [0.08, 0.2], [0.46, 0.08]], 0, 0.13, 0.02);   // beak, head and body
+      x.beginPath(); x.moveTo(-0.14, 0.04); x.quadraticCurveTo(-0.02, -0.32, 0.46, -0.36); x.quadraticCurveTo(0.12, -0.16, 0.1, 0.1); x.closePath(); x.fill();
+      x.restore();
+    },
     crane(x, cx, cy, s, col = '#fff') {   // Lufthansa: crane in flight inside a ring
       x.save(); x.strokeStyle = col; x.lineWidth = s * 0.05; x.beginPath(); x.arc(cx, cy, s * 0.48, 0, Math.PI * 2); x.stroke(); x.restore();
       LOGO.egret(x, cx + s * 0.02, cy + s * 0.05, s * 0.74, col);
@@ -300,7 +313,7 @@
     ca(x, w, h, f) { bg(x, w, h, '#f4f5f7'); LOGO.phoenix(x, f.cx - f.s * 0.02, f.cy - f.s * 0.06, f.s * 1.08); },
     cz(x, w, h, f) { bg(x, w, h, '#1793d1'); LOGO.kapok(x, f.cx, f.cy - f.s * 0.04, f.s * 0.95); },
     mu(x, w, h, f) { bg(x, w, h, '#fbfbfc'); LOGO.swallow(x, f.cx, f.cy, f.s * 1.05); },
-    mf(x, w, h, f) { bg(x, w, h, '#58b0e6'); band(x, f, -0.1, 0.55, -0.1, 0.3, '#173f8f'); LOGO.egret(x, f.cx, f.cy, f.s * 0.95); },
+    mf(x, w, h, f) { bg(x, w, h, '#1f86d0'); LOGO.mfegret(x, f.cx, f.cy + f.s * 0.05, f.s * 1.3); },
     hu(x, w, h, f) { bg(x, w, h, '#c8102e'); LOGO.hna(x, f.cx + f.s * 0.05, f.cy - f.s * 0.05, f.s * 1.1, '#e0a526'); },
     '3u'(x, w, h, f) { bg(x, w, h, '#c8102e'); x.strokeStyle = '#f5c400'; x.lineWidth = f.s * 0.06; for (let i = 0; i < 4; i++) { x.beginPath(); x.arc(f.cx - f.s * 0.2 + i * f.s * 0.13, f.cy + f.s * 0.35 - i * f.s * 0.12, f.s * 0.45, Math.PI * 1.15, Math.PI * 1.75); x.stroke(); } },
     zh(x, w, h, f) { bg(x, w, h, '#c8102e'); disc(x, f.cx, f.cy, f.s * 0.4, '#f2b632'); LOGO.egret(x, f.cx, f.cy, f.s * 0.55, '#c8102e'); },
