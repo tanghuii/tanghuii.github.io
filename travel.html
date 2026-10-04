@@ -230,6 +230,7 @@
   /* Jump targets */
   .prov, .city, .sight { scroll-margin-top: 90px; }
   .prov.flash { border-left-color: var(--accent); background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.10), transparent 70%); transition: background 0.4s; }
+  .city.cur { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.18); }
   .city.flash { box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.35) !important; transition: box-shadow 0.3s; }
   .sight.flash { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.3); background: var(--highlight); }
   /* Popups: names are selectable text */
@@ -1373,11 +1374,11 @@ function wireFollow() {
   FOLLOW_IO?.disconnect(); FOLLOW_IO = null;
   if (!('IntersectionObserver' in window)) return;
   FOLLOW_IO = new IntersectionObserver(entries => {
-    if (!isWide() || !FOLLOW || !MAP || Date.now() < FOLLOW_MUTE) return;
+    if (!isWide() || !FOLLOW || !MAP || Date.now() < FOLLOW_MUTE || LIST_HOVER) return;
     const hit = entries.filter(e => e.isIntersecting).map(e => e.target)[0]; if (!hit) return;
     clearTimeout(FOLLOW_T);
     FOLLOW_T = setTimeout(() => {
-      if (Date.now() < FOLLOW_MUTE) return;
+      if (Date.now() < FOLLOW_MUTE || LIST_HOVER) return;
       const p = placeById(hit.dataset.pid); if (!p || typeof p.lat !== 'number') return;
       if (FOLLOW_CUR === p.id) return;
       markCurrent(p.id);
@@ -1474,7 +1475,7 @@ function r_navCenter() {
 }
 // The city in view: highlight it and open its country / province in the tree
 function setNavCurrent(pid, rerender = true) {
-  if (!pid || pid === NAV_CUR) return; NAV_CUR = pid;
+  if (!pid || pid === NAV_CUR) return; NAV_CUR = pid; markListCard(pid);
   const p = placeById(pid); if (!p) return;
   const key = normCC(p.cc) || t(p.country); NAV_AUTO = new Set(['c:' + key]);
   if (normCC(p.cc) === 'CN') { const pr = provinceOf(p); if (pr) NAV_AUTO.add('p:' + pr.zh); }
@@ -1485,11 +1486,37 @@ function wireNav() {
   renderNav();
   if (!('IntersectionObserver' in window)) return;
   NAV_IO = new IntersectionObserver(entries => {
-    if (!navVisible()) return;
+    if (!navVisible() || LIST_HOVER) return;
     const hit = entries.find(e => e.isIntersecting); if (hit) setNavCurrent(hit.target.dataset.pid);
   }, { rootMargin: '-35% 0px -55% 0px' });
   document.querySelectorAll('#list .city').forEach(c => NAV_IO.observe(c));
+  markListCard(NAV_CUR);
 }
+function markListCard(pid) {
+  document.querySelectorAll('#list .city.cur').forEach(c => c.classList.remove('cur'));
+  if (pid) document.querySelector(`#list .city[data-pid="${CSS.escape(pid)}"]`)?.classList.add('cur');
+}
+// Hovering a city card in the list makes it the current city everywhere:
+// the map moves to it and the navigator tree highlights and scrolls to it.
+let LIST_HOVER = '', LIST_HOVER_T = 0;
+function syncToCity(pid) {
+  const p = placeById(pid); if (!p) return;
+  setNavCurrent(pid);
+  if (!MAP || !FOLLOW || !isWide() || typeof p.lat !== 'number' || FOLLOW_CUR === pid) return;
+  markCurrent(pid);
+  const z = MAP.getZoom(), target = L.latLng(p.lat, p.lon);
+  if (MAP.getBounds().pad(-0.2).contains(target) && z >= 4) MAP.panTo(target, { animate: true, duration: 0.6 });
+  else MAP.flyTo(target, Math.max(z, 5), { duration: 0.8 });
+}
+(function wireListHover() {
+  const list = document.getElementById('list'); if (!list || !matchMedia('(hover: hover)').matches) return;
+  list.addEventListener('mouseover', e => {
+    const card = e.target.closest('.city[data-pid]'); if (!card || card.dataset.pid === LIST_HOVER) return;
+    LIST_HOVER = card.dataset.pid; clearTimeout(LIST_HOVER_T);
+    LIST_HOVER_T = setTimeout(() => { if (LIST_HOVER === card.dataset.pid && Date.now() >= FOLLOW_MUTE) syncToCity(LIST_HOVER); }, 180);
+  });
+  list.addEventListener('mouseleave', () => { clearTimeout(LIST_HOVER_T); LIST_HOVER = ''; });
+})();
 // ── National parks: one count per park (a park's parts, e.g. 扎陵湖 in 三江源, are the same park) ──
 let NAT_PARKS_PUB = null;
 function loadNatParks() { return loadNatParks.p ||= fetch('national-parks.json').then(r => r.json()).then(d => (NAT_PARKS_PUB = d)).catch(() => (NAT_PARKS_PUB = { cn: [] })); }
