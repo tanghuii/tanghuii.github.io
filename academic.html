@@ -1511,7 +1511,7 @@ function jumpToCountry(key) {
   el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600);
 }
 
-// ── Map (Leaflet + hybrid Gaode/OSM base from map-base.js + world-atlas country shapes) ──
+// ── Map (Leaflet + OSM + Gaode-in-China base from map-base.js + world-atlas country shapes) ──
 function loadScriptOnce(src, test) {
   if (test()) return Promise.resolve();
   return new Promise((ok, fail) => { const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = () => fail(new Error('Could not load ' + src)); document.head.appendChild(el); });
@@ -1521,7 +1521,7 @@ async function renderMap() {
   if (!MAP) {
     MAP = L.map('map', { worldCopyJump: true, minZoom: 2, maxZoom: 18, zoomControl: true, attributionControl: true });
     MAP.attributionControl.setPrefix('');
-    // Base map: Gaode whenever China is in view, OpenStreetMap only for views that do not touch China (map-base.js)
+    // Base map: OSM worldwide, with Gaode clipped to China's outline on top (map-base.js)
     MapBase.attach(MAP, LANG);
     MAP.setView([25, 15], 2);
     MAP.createPane('countries'); MAP.getPane('countries').style.zIndex = 350;
