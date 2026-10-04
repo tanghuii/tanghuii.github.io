@@ -91,17 +91,19 @@
       over: P => { const a = P.title([{ logo: 'hna', col: '#c8102e' }], 0.13, tv(0.05), 0.055); const b = P.title('海南航空', a[1] + 0.008, tv(0.048), 0.048, { col: '#c8102e', w: 600, cjk: 1, sp: 0.15 });
         P.title('Hainan Airlines', b[1] + 0.025, tv(0.046), 0.046, { col: '#c8102e', w: 700 }); } },
     '3U': { name: 'Sichuan Airlines', zh: '四川航空', engine: W, winglet: '#c8102e', tail: '3u', text: ['四川航空', 'SICHUAN AIRLINES'], textColor: '#b5121b' },
-    ZH: { name: 'Shenzhen Airlines', zh: '深圳航空', engine: W, winglet: '#c8102e', tail: 'zh', text: ['深圳航空', 'SHENZHEN AIRLINES'], textColor: '#b5121b' },
+    ZH: { img: 'ZH', overOnArt: true, name: 'Shenzhen Airlines', zh: '深圳航空', belly: '#e9ebee', engine: W, lip: '#c9d0d8', winglet: '#cd1e2b', tail: 'zh',
+      under: P => { P.below(0.42, '#e9ebee'); },
+      over: P => { const a = P.title('Shenzhen Airlines', 0.15, 0.142, 0.05, { col: '#1a1a1a', i: 1, w: 800 }); P.title('深圳航空', a[1] + 0.02, 0.142, 0.05, { col: '#1a1a1a', w: 700, cjk: 1, sp: 0.08 }); } },
     FM: { name: 'Shanghai Airlines', zh: '上海航空', engine: W, winglet: '#c8102e', tail: 'fm', text: ['上海航空', 'SHANGHAI AIRLINES'], textColor: '#b5121b' },
     KL: { img: 'KL', paintTail: true, name: 'KLM', zh: '荷兰皇家航空', body: '#dfe2e6', belly: '#dfe2e6', engine: '#dfe2e6', lip: '#c9d0d8', winglet: '#00a1de', tail: 'klm',
       under: P => { P.band(0, 0.262, '#00a1de'); P.band(0.262, 0.268, '#13286b', 0.004, 0.99); },
       over: P => { P.title([{ t: 'KLM', w: 900, above: { logo: 'klm', s: 0.9, dy: 1.15 } }, { gap: 0.25 }, { t: 'Royal Dutch Airlines', s: 0.42, w: 500, dy: 0.06 }], 0.09, tv(0.04) + 0.006, 0.04, { col: '#fff' }); } },
-    AF: { name: 'Air France', zh: '法国航空', engine: W, winglet: '#002157', tail: 'af',
+    AF: { img: 'AF', name: 'Air France', zh: '法国航空', engine: W, winglet: '#002157', tail: 'af',
       over: P => { P.title([{ t: 'AIRFRANCE', w: 900 }, { gap: 0.06 }, { slash: '#e2001a' }], 0.11, tv(0.058), 0.058, { col: '#002157' }); } },
-    LH: { name: 'Lufthansa', zh: '汉莎航空', engine: '#0a1d4f', lip: '#c9ced6', winglet: '#0a1d4f', tail: 'lh',
+    LH: { img: 'LH', name: 'Lufthansa', zh: '汉莎航空', engine: '#0a1d4f', lip: '#c9ced6', winglet: '#0a1d4f', tail: 'lh',
       under: P => { P.poly([[0.84, 0], [1.01, 0], [1.01, 0.13], [0.93, 0.07]], '#0a1d4f'); },   // the navy tail wraps onto the fuselage at the fin root
       over: P => { P.title('Lufthansa', 0.11, tv(0.078), 0.078, { col: '#0a1d4f', w: 800 }); } },
-    AY: { name: 'Finnair', zh: '芬兰航空', engine: W, winglet: '#0b86c8', tail: 'ay',
+    AY: { img: 'AY', name: 'Finnair', zh: '芬兰航空', engine: W, winglet: '#0b86c8', tail: 'ay',
       over: P => { P.title([{ t: 'FINNAIR', i: 1, w: 900, sp: 0.06 }], 0.09, tv(0.066), 0.066, { col: '#0b86c8' }); } },
     BA: { img: 'BA', name: 'British Airways', zh: '英国航空', belly: '#001F4E', engine: W, lip: '#c9d0d8', winglet: '#D52B1E', tail: 'ba',
       under: P => {   // midnight blue over the whole lower half, thinning towards the nose; the red-and-blue Speedmarque ribbon under the cockpit
@@ -117,7 +119,7 @@
       over: P => { P.title('SINGAPORE AIRLINES', 0.12, tv(0.042), 0.042, { col: '#0b2a6f', w: 600 }); } },
     EK: { name: 'Emirates', zh: '阿联酋航空', engine: '#d9dee5', winglet: '#d0021b', tail: 'ek',
       over: P => { P.title('Emirates', 0.28, tv(0.07), 0.07, { col: '#9a7b2f', f: SERIF, w: 700 }); } },
-    TK: { name: 'Turkish Airlines', zh: '土耳其航空', engine: '#e9ecef', winglet: '#c8102e', tail: 'tk',
+    TK: { img: 'TK', name: 'Turkish Airlines', zh: '土耳其航空', engine: '#e9ecef', winglet: '#c8102e', tail: 'tk',
       over: P => { const a = P.title('TURKISH AIRLINES', 0.12, tv(0.048), 0.048, { col: '#1b4f9c', w: 800 }); P.title([{ flag: 'tr' }], a[1] + 0.02, tv(0.03), 0.03); } },
     NH: { img: 'NH', name: 'ANA', zh: '全日空', belly: '#e4e6e9', engine: '#e4e6e9', winglet: '#1d3c97', tail: 'nh',
       under: P => {   // Triton blue and Mohican blue bands: under the windows at the front, sweeping up the rear fuselage into the fin
