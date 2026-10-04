@@ -2,12 +2,17 @@
  *
  * Each model is built from the type's real dimensions (length, span, fuselage diameter, wing sweep,
  * engine size, engine and tail layout, winglets); liveries are simplified renderings of the airlines'
- * standard colour schemes, painted onto canvas textures (fuselage, tail fin, engines).
- * Three.js (vendor/three.min.js) is loaded on demand. All hangar cards share ONE WebGL renderer
- * (browsers cap the number of WebGL contexts), and each card is a 2D canvas the frame is copied into.
+ * standard schemes (colours, cheatlines, titles, logos inside the real fin outline, engines, winglets),
+ * painted onto canvas textures. They are approximations, not official artwork.
  *
- * Usage: Fleet3D.load().then(ok => …); Fleet3D.card(canvas, { type, airline }); Fleet3D.setAirline(canvas, iata);
- *        Fleet3D.viewer(host, { type, airlines, airline }) → { setAirline, destroy }; Fleet3D.liveryName(iata, lang)
+ * Memory: Three.js (vendor/three.min.js) is loaded on demand; the hangar uses ONE shared WebGL renderer,
+ * draws each card once as a still picture when it scrolls into view, and builds a live model only for
+ * the card under the mouse (rotating while hovered) or for the full-size viewer. Models are disposed as
+ * soon as they are no longer shown.
+ *
+ * Usage: Fleet3D.load().then(ok => …); Fleet3D.card(canvas, { type, airline }); Fleet3D.setAirline(canvas, al);
+ *        Fleet3D.setTheme('light' | 'dark'); Fleet3D.viewer(host, { type, airline }) → { setAirline, setTheme, destroy };
+ *        Fleet3D.liveryName(iata, lang)
  */
 (function () {
   'use strict';
@@ -42,38 +47,100 @@
   };
   const FALLBACK = { narrow: 'A320', wide: 'B788', quad: 'B744', regional: 'E190', turboprop: 'AT76' };
 
-  // ── Liveries (simplified) ──
-  // body/belly/top colours, cheatlines (v positions on the fuselage texture), lettering, engine colour, tail art
-  const W = '#f7f8fa', GREY = '#d8dde4';
+  // ── Liveries: simplified renderings of each airline's standard scheme, laid out after real livery textures ──
+  // Fuselage coordinates: u along the length (0 nose … 1 tail), v around (0 crown, 0.205 window line, 0.25 side, 0.5 belly).
+  // under(P): paint below the windows (belly, cheatlines, ribbons); over(P): titles, logos and flags on top.
+  // engine / lip / winglet: colours; belly: belly-fairing colour; tail: painter in TAILS.
+  const W = '#f7f8fa';
+  const FONT = '"Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif';
+  const SERIF = 'Georgia, "Times New Roman", "Songti SC", serif';
+  const KAI = '"Kaiti SC", STKaiti, KaiTi, "AR PL UKai CN", "Noto Serif CJK SC", "Songti SC", serif';
+  const OPTIMA = 'Optima, Candara, "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+  const ROUND = '"Arial Rounded MT Bold", "Varela Round", Nunito, "Helvetica Neue", Arial, sans-serif';
+  const tv = hv => 0.184 - hv * 0.56;   // v of a title of cap height hv, sitting just above the windows
   const LIV = {
-    KL: { name: 'KLM', zh: '荷兰皇家航空', top: '#00a1de', topTo: 0.29, cheat: [[0.3, 0.008, '#ffffff'], [0.312, 0.004, '#0c2e6d']], text: ['KLM', 'Royal Dutch Airlines'], textColor: '#ffffff', textOnTop: true, engine: '#00a1de', tail: 'klm' },
-    AF: { name: 'Air France', zh: '法国航空', text: ['AIRFRANCE'], textColor: '#002157', engine: '#f2f4f7', tail: 'af', belly: '#e9ecf0' },
-    CZ: { name: 'China Southern', zh: '中国南方航空', cheat: [[0.315, 0.012, '#4f9ed8']], text: ['中国南方航空', 'CHINA SOUTHERN'], textColor: '#0c4d97', engine: W, tail: 'cz' },
-    CA: { name: 'Air China', zh: '中国国际航空', text: ['中国国际航空公司', 'AIR CHINA'], textColor: '#1a1a1a', engine: W, tail: 'ca' },
-    MF: { name: 'Xiamen Air', zh: '厦门航空', text: ['厦门航空', 'XIAMENAIR'], textColor: '#16428f', engine: '#16428f', tail: 'mf' },
-    MU: { name: 'China Eastern', zh: '中国东方航空', text: ['中国东方航空', 'CHINA EASTERN'], textColor: '#13336b', engine: W, tail: 'mu' },
-    HU: { name: 'Hainan Airlines', zh: '海南航空', text: ['海南航空', 'HAINAN AIRLINES'], textColor: '#b5121b', engine: W, tail: 'hu' },
-    '3U': { name: 'Sichuan Airlines', zh: '四川航空', text: ['四川航空', 'SICHUAN AIRLINES'], textColor: '#b5121b', engine: W, tail: '3u' },
-    ZH: { name: 'Shenzhen Airlines', zh: '深圳航空', text: ['深圳航空', 'SHENZHEN AIRLINES'], textColor: '#b5121b', engine: W, tail: 'zh' },
-    FM: { name: 'Shanghai Airlines', zh: '上海航空', text: ['上海航空', 'SHANGHAI AIRLINES'], textColor: '#b5121b', engine: W, tail: 'fm' },
-    LH: { name: 'Lufthansa', zh: '汉莎航空', text: ['Lufthansa'], textColor: '#05164d', serif: true, engine: '#05164d', tail: 'lh' },
-    AY: { name: 'Finnair', zh: '芬兰航空', text: ['FINNAIR'], textColor: '#0b1560', engine: W, tail: 'ay' },
-    BA: { name: 'British Airways', zh: '英国航空', belly: '#1b2b5a', bellyFrom: 0.36, cheat: [[0.355, 0.006, '#c8102e']], text: ['BRITISH AIRWAYS'], textColor: '#1b2b5a', engine: '#e9ecf0', tail: 'ba' },
-    CX: { name: 'Cathay Pacific', zh: '国泰航空', cheat: [[0.33, 0.01, '#8fa8a5']], text: ['CATHAY PACIFIC', '國泰航空'], textColor: '#005d63', engine: '#e9ecf0', tail: 'cx' },
-    SQ: { name: 'Singapore Airlines', zh: '新加坡航空', cheat: [[0.325, 0.006, '#f0ab00'], [0.334, 0.01, '#0b2a6f']], text: ['SINGAPORE AIRLINES'], textColor: '#0b2a6f', engine: '#e9ecf0', tail: 'sq' },
-    EK: { name: 'Emirates', zh: '阿联酋航空', text: ['Emirates'], textColor: '#9a7b2f', serif: true, engine: '#e9ecf0', tail: 'ek' },
-    TK: { name: 'Turkish Airlines', zh: '土耳其航空', text: ['TURKISH AIRLINES'], textColor: '#1b2b5a', engine: '#e9ecf0', tail: 'tk' },
-    NH: { name: 'ANA', zh: '全日空', cheat: [[0.322, 0.01, '#13448f'], [0.336, 0.006, '#00a3e0']], text: ['ANA'], textColor: '#13448f', engine: '#e9ecf0', tail: 'nh' },
-    TO: { name: 'Transavia', zh: '泛航航空', text: ['transavia'], textColor: '#00a651', engine: '#e9ecf0', tail: 'to' },
-    OS: { name: 'Austrian', zh: '奥地利航空', text: ['Austrian'], textColor: '#d8001a', engine: '#e9ecf0', tail: 'os' },
-    FR: { name: 'Ryanair', zh: '瑞安航空', belly: '#073590', bellyFrom: 0.34, cheat: [[0.335, 0.006, '#f1c933']], text: ['RYANAIR'], textColor: '#073590', engine: '#e9ecf0', tail: 'fr' },
-    VY: { name: 'Vueling', zh: '伏林航空', text: ['vueling'], textColor: '#4a4a4a', engine: '#e9ecf0', tail: 'vy' },
-    QR: { name: 'Qatar Airways', zh: '卡塔尔航空', text: ['QATAR AIRWAYS'], textColor: '#5c0632', engine: '#5c0632', tail: 'qr' },
+    CA: { name: 'Air China', zh: '中国国际航空', belly: '#a6aaaf', engine: '#a6aaaf', lip: '#d5d9de', winglet: '#f2f3f5', tail: 'ca',
+      under: P => { P.below(0.236, '#a6aaaf'); P.band(0.218, 0.222, '#2b5aa8', 0.008, 0.975); P.band(0.226, 0.235, '#1b3a7a', 0.008, 0.975); },
+      over: P => { const a = P.title([{ flag: 'cn' }], 0.14, tv(0.038), 0.04); const b = P.title([{ t: 'AIR CHINA', i: 1, w: 900 }], a[1] + 0.012, tv(0.04), 0.04, { col: '#111' });
+        P.title('中国国际航空公司', b[1] + 0.045, tv(0.062), 0.062, { col: '#111', f: KAI, w: 400, cjk: 1, sp: 0.4 }); } },
+    CZ: { name: 'China Southern', zh: '中国南方航空', engine: W, winglet: '#1793d1', tail: 'cz',
+      under: P => { P.band(0.219, 0.225, '#1aa0dc', 0.012, 0.955); P.band(0.229, 0.241, '#0c2c66', 0.012, 0.955); P.band(0.246, 0.25, '#1aa0dc', 0.012, 0.955); },
+      over: P => { const a = P.title('中国南方航空', 0.12, tv(0.05), 0.05, { col: '#14284b', w: 500, cjk: 1, sp: 0.3 }); P.title('CHINA SOUTHERN', a[1] + 0.03, tv(0.048), 0.048, { col: '#14284b', f: OPTIMA, w: 600 }); } },
+    MU: { name: 'China Eastern', zh: '中国东方航空', engine: W, winglet: '#f2f3f5', tail: 'mu',
+      over: P => { const a = P.title('中國東方航空', 0.11, tv(0.048), 0.048, { col: '#e3171f', w: 500, cjk: 1, sp: 0.15 }); P.title('CHINA EASTERN', a[1] + 0.035, tv(0.046), 0.046, { col: '#2a2774', w: 800 }); } },
+    MF: { name: 'Xiamen Air', zh: '厦门航空', belly: '#1f7fcc', engine: W, winglet: '#1f86d0', tail: 'mf',
+      under: P => {   // blue lower fuselage rising into the tail, a light-blue line under the windows, darker belly with a white sweep
+        const top = u => 0.3 - 0.06 * Math.min(1, u / 0.8) - 0.22 * Math.max(0, (u - 0.8) / 0.2) ** 1.4 + 0.12 * Math.max(0, (0.06 - u) / 0.06);
+        P.ribbon(top, () => 0.5, -0.01, 1.01, '#1f7fcc');
+        P.ribbon(u => Math.min(0.236, top(u) - 0.022), u => Math.min(0.243, top(u) - 0.015), 0.01, 1.01, '#62b8ea');
+        const dk = u => 0.4 - 0.1 * Math.sin(Math.PI * Math.max(0, Math.min(1, (u - 0.3) / 0.55)));
+        P.ribbon(dk, () => 0.5, 0.3, 0.85, '#174f9e'); P.ribbon(u => dk(u) - 0.006, dk, 0.3, 0.85, '#ffffff'); },
+      over: P => { P.logo('mfegret', 0.125, tv(0.05), 0.09, '#1a5fae');
+        const a = P.title('厦门航空', 0.165, tv(0.046), 0.046, { col: '#1a5fae', w: 600, cjk: 1, sp: 0.15 });
+        P.title([{ t: 'XIAMEN', w: 800 }, { t: 'AIR', w: 400 }], a[1] + 0.015, tv(0.044), 0.044, { col: '#1a5fae' }); } },
+    HU: { name: 'Hainan Airlines', zh: '海南航空', engine: W, winglet: '#c8102e', tail: 'hu',
+      under: P => {   // red and gold ribbon from the tail, sweeping down under the windows to a point below the forward cabin
+        const s = u => Math.max(0, Math.min(1, (u - 0.17) / 0.83));
+        const rt = u => 0.45 - 0.25 * s(u) ** 0.6 - 0.2 * s(u) ** 4, rb = u => 0.45 - 0.17 * s(u) ** 0.5, gb = u => rb(u) + 0.004 + 0.03 * s(u) ** 0.5;
+        P.ribbon(rb, gb, 0.17, 1, '#e0a526'); P.ribbon(rt, rb, 0.17, 1, '#c8102e'); },
+      over: P => { const a = P.title([{ logo: 'hna', col: '#c8102e' }], 0.13, tv(0.05), 0.055); const b = P.title('海南航空', a[1] + 0.008, tv(0.048), 0.048, { col: '#c8102e', w: 600, cjk: 1, sp: 0.15 });
+        P.title('Hainan Airlines', b[1] + 0.025, tv(0.046), 0.046, { col: '#c8102e', w: 700 }); } },
+    '3U': { name: 'Sichuan Airlines', zh: '四川航空', engine: W, winglet: '#c8102e', tail: '3u', text: ['四川航空', 'SICHUAN AIRLINES'], textColor: '#b5121b' },
+    ZH: { name: 'Shenzhen Airlines', zh: '深圳航空', engine: W, winglet: '#c8102e', tail: 'zh', text: ['深圳航空', 'SHENZHEN AIRLINES'], textColor: '#b5121b' },
+    FM: { name: 'Shanghai Airlines', zh: '上海航空', engine: W, winglet: '#c8102e', tail: 'fm', text: ['上海航空', 'SHANGHAI AIRLINES'], textColor: '#b5121b' },
+    KL: { name: 'KLM', zh: '荷兰皇家航空', body: '#dfe2e6', belly: '#dfe2e6', engine: '#dfe2e6', lip: '#c9d0d8', winglet: '#00a1de', tail: 'klm',
+      under: P => { P.band(0, 0.262, '#00a1de'); P.band(0.262, 0.268, '#13286b', 0.004, 0.99); },
+      over: P => { P.title([{ t: 'KLM', w: 900, above: { logo: 'klm', s: 0.9, dy: 1.15 } }, { gap: 0.25 }, { t: 'Royal Dutch Airlines', s: 0.42, w: 500, dy: 0.06 }], 0.09, tv(0.04) + 0.006, 0.04, { col: '#fff' }); } },
+    AF: { name: 'Air France', zh: '法国航空', engine: W, winglet: '#002157', tail: 'af',
+      over: P => { P.title([{ t: 'AIRFRANCE', w: 900 }, { gap: 0.06 }, { slash: '#e2001a' }], 0.11, tv(0.058), 0.058, { col: '#002157' }); } },
+    LH: { name: 'Lufthansa', zh: '汉莎航空', engine: '#0a1d4f', lip: '#c9ced6', winglet: '#0a1d4f', tail: 'lh',
+      under: P => { P.poly([[0.84, 0], [1.01, 0], [1.01, 0.13], [0.93, 0.07]], '#0a1d4f'); },   // the navy tail wraps onto the fuselage at the fin root
+      over: P => { P.title('Lufthansa', 0.11, tv(0.078), 0.078, { col: '#0a1d4f', w: 800 }); } },
+    AY: { name: 'Finnair', zh: '芬兰航空', engine: W, winglet: '#0b86c8', tail: 'ay',
+      over: P => { P.title([{ t: 'FINNAIR', i: 1, w: 900, sp: 0.06 }], 0.09, tv(0.066), 0.066, { col: '#0b86c8' }); } },
+    BA: { name: 'British Airways', zh: '英国航空', belly: '#1b2b5a', engine: '#d9dee5', winglet: '#1b2b5a', tail: 'ba',
+      under: P => { P.below(0.258, '#1b2b5a'); P.band(0.248, 0.254, '#c8102e', 0.03, 0.96); },
+      over: P => { P.title('BRITISH AIRWAYS', 0.12, tv(0.044), 0.044, { col: '#1b2b5a', w: 700 }); } },
+    CX: { name: 'Cathay Pacific', zh: '国泰航空', engine: '#d9dee5', winglet: '#005d63', tail: 'cx',
+      under: P => { P.band(0.226, 0.236, '#8fa8a5', 0.02, 0.9); },
+      over: P => { const a = P.title('CATHAY PACIFIC', 0.12, tv(0.044), 0.044, { col: '#005d63', w: 700 }); P.title('國泰航空', a[1] + 0.03, tv(0.046), 0.046, { col: '#005d63', cjk: 1, w: 500 }); } },
+    SQ: { name: 'Singapore Airlines', zh: '新加坡航空', engine: '#d9dee5', winglet: '#0b2a6f', tail: 'sq',
+      under: P => { P.band(0.226, 0.231, '#f0ab00', 0.02, 0.92); P.band(0.234, 0.244, '#0b2a6f', 0.02, 0.92); },
+      over: P => { P.title('SINGAPORE AIRLINES', 0.12, tv(0.042), 0.042, { col: '#0b2a6f', w: 600 }); } },
+    EK: { name: 'Emirates', zh: '阿联酋航空', engine: '#d9dee5', winglet: '#d0021b', tail: 'ek',
+      over: P => { P.title('Emirates', 0.28, tv(0.07), 0.07, { col: '#9a7b2f', f: SERIF, w: 700 }); } },
+    TK: { name: 'Turkish Airlines', zh: '土耳其航空', engine: '#e9ecef', winglet: '#c8102e', tail: 'tk',
+      over: P => { const a = P.title('TURKISH AIRLINES', 0.12, tv(0.048), 0.048, { col: '#1b4f9c', w: 800 }); P.title([{ flag: 'tr' }], a[1] + 0.02, tv(0.03), 0.03); } },
+    NH: { name: 'ANA', zh: '全日空', belly: '#e4e6e9', engine: '#e4e6e9', winglet: '#1d3c97', tail: 'nh',
+      under: P => {   // Triton blue and Mohican blue bands: under the windows at the front, sweeping up the rear fuselage into the fin
+        const s = u => Math.max(0, Math.min(1, (u - 0.06) / 0.94)), c = u => 0.272 - 0.21 * s(u) ** 1.35, th = u => 0.005 + 0.05 * s(u) ** 1.6;
+        P.below(0.3, '#e4e6e9');
+        P.ribbon(c, u => c(u) + 0.006 + 0.004 * (1 - s(u)), 0.06, 1.01, '#00a0e9');
+        P.ribbon(u => c(u) - th(u), c, 0.06, 1.01, '#1d3c97');
+        P.ribbon(u => Math.max(0, c(u) - th(u) - 0.016 * s(u) ** 2), u => c(u) - th(u), 0.5, 1.01, '#00a0e9'); },
+      over: P => { const a = P.title([{ t: 'ANA', i: 1, w: 900 }, { gap: 0.05 }, { slash: '#1d3c97' }], 0.12, tv(0.052), 0.052, { col: '#1d3c97' });
+        const b = P.title([{ t: 'Inspiration of JAPAN', w: 500 }], a[1] + 0.012, tv(0.024), 0.024, { col: '#1d3c97' }); P.title([{ flag: 'jp' }], b[1] + 0.01, tv(0.024), 0.024); } },
+    TO: { name: 'Transavia', zh: '泛航航空', engine: W, winglet: '#00d26a', tail: 'to',
+      over: P => { P.title([{ t: 'transavia', w: 800, sp: -0.02 }], 0.15, tv(0.1) + 0.004, 0.1, { col: '#00d26a', f: ROUND }); } },
+    HV: { name: 'Transavia', zh: '泛航航空', engine: W, winglet: '#00d26a', tail: 'to', over: P => LIV.TO.over(P) },
+    OS: { name: 'Austrian', zh: '奥地利航空', engine: W, winglet: '#d8001a', tail: 'os',
+      over: P => { const a = P.title([{ logo: 'osarrow', col: '#d8001a', s: 1.25, dy: -0.05 }], 0.1, tv(0.06), 0.06); P.title('Austrian', a[1] + 0.006, tv(0.064), 0.064, { col: '#d8001a', f: SERIF, w: 400 }); } },
+    FR: { name: 'Ryanair', zh: '瑞安航空', belly: '#073590', engine: '#073590', lip: '#c9d0d8', winglet: '#073590', tail: 'fr',
+      under: P => {   // navy belly under a yellow line that dips at the nose and rises towards the tail
+        const vb = u => 0.246 + 0.17 * Math.max(0, (0.13 - u) / 0.13) ** 1.6 - 0.035 * Math.max(0, (u - 0.8) / 0.2) ** 1.3;
+        P.ribbon(vb, () => 0.5, -0.01, 1.01, '#073590'); P.ribbon(u => vb(u) - 0.009, vb, -0.01, 1.01, '#f1c933'); },
+      over: P => { const a = P.title([{ logo: 'harp', col: '#073590', s: 1.35 }], 0.15, tv(0.082), 0.082); P.title([{ t: 'RYANAIR', w: 900, sp: 0.04 }], a[1] + 0.008, tv(0.082), 0.082, { col: '#073590', f: '"Arial Black", ' + FONT }); } },
+    VY: { name: 'Vueling', zh: '伏林航空', engine: '#ffcc00', lip: '#d5d9de', winglet: '#ffcc00', tail: 'vy',
+      under: P => {   // the tail's grey dots spill onto the rear fuselage
+        for (let u = 0.8; u < 1; u += 0.012) for (let v = 0.01; v < 0.2; v += 0.022) { const t = (u - 0.8) / 0.2 - v * 2.2; if (t > 0.05) P.dot(u, v, Math.min(0.009, 0.0095 * t), '#8f8f8f'); } },
+      over: P => { P.title([{ t: 'vueling', col: '#6b6b6b', w: 700 }, { dot: '#ffcc00' }, { t: 'com', col: '#ffcc00', w: 700 }], 0.11, tv(0.05), 0.05, { f: ROUND }); } },
+    QR: { name: 'Qatar Airways', zh: '卡塔尔航空', engine: '#5c0632', winglet: '#5c0632', tail: 'qr',
+      over: P => { P.title('QATAR AIRWAYS', 0.12, tv(0.046), 0.046, { col: '#5c0632', w: 700 }); } },
   };
   const liveryOf = al => {
     const k = String(al?.iata || '').toUpperCase();
     if (LIV[k]) return { key: k, ...LIV[k] };
-    return { key: 'gen:' + (al?.name || ''), name: al?.name || '', text: [String(al?.name || '').toUpperCase()].filter(Boolean), textColor: '#2b3440', engine: '#e9ecf0', tail: 'gen', code: k };
+    return { key: 'gen:' + (al?.name || ''), name: al?.name || '', text: [String(al?.name || '').toUpperCase()].filter(Boolean), textColor: '#2b3440', engine: W, tail: 'gen', code: k };
   };
 
   // ── Canvas helpers ──
@@ -81,86 +148,250 @@
   function tex(canvas) {
     const t = new T.CanvasTexture(canvas); t.flipY = false; t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; t.needsUpdate = true; return t;
   }
-  // Text squeezed so it looks undistorted on a surface whose texels are k times taller than wide
-  function text(ctx, s, x, y, size, color, k, opt = {}) {
-    ctx.save(); ctx.translate(x, y); if (opt.rot) ctx.rotate(Math.PI); ctx.scale(1, 1 / k);
-    ctx.font = `${opt.weight || 700} ${size}px ${opt.serif ? 'Georgia, "Times New Roman", serif' : '"Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif'}`;
-    ctx.fillStyle = color; ctx.textAlign = opt.align || 'left'; ctx.textBaseline = 'middle'; ctx.fillText(s, 0, 0); ctx.restore();
+  function star(x, cx, cy, r, rot = -Math.PI / 2) {
+    x.beginPath(); for (let i = 0; i < 10; i++) { const a = rot + i * Math.PI / 5, rr = i % 2 ? r * 0.4 : r; x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } x.closePath(); x.fill();
+  }
+  // Flags in a w × h box at the origin
+  const FLAG = {
+    cn(x, w, h) { x.fillStyle = '#de2910'; x.fillRect(0, 0, w, h); x.fillStyle = '#ffde00'; star(x, w * 0.17, h * 0.27, h * 0.15);
+      [[0.33, 0.1], [0.4, 0.2], [0.4, 0.35], [0.33, 0.45]].forEach(([a, b]) => star(x, w * a, h * b, h * 0.05)); },
+    jp(x, w, h) { x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.fillStyle = '#bc002d'; x.beginPath(); x.arc(w / 2, h / 2, h * 0.3, 0, Math.PI * 2); x.fill(); },
+    tr(x, w, h) { x.fillStyle = '#e30a17'; x.fillRect(0, 0, w, h); x.fillStyle = '#fff'; x.beginPath(); x.arc(w * 0.38, h / 2, h * 0.25, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#e30a17'; x.beginPath(); x.arc(w * 0.42, h / 2, h * 0.2, 0, Math.PI * 2); x.fill(); x.fillStyle = '#fff'; star(x, w * 0.58, h / 2, h * 0.12, Math.PI); },
+  };
+  // A run of title parts drawn left to right from the origin (vertical centre), in square units; returns its width.
+  // part: 'text' | { t, col, s, w, f, i, sp, dy, above: { logo, s, dy } } | { gap } | { slash } | { flag } | { logo, col, s, dy } | { dot }
+  function runParts(x, parts, size, base, dry) {
+    let cx = 0;
+    for (const p0 of parts) {
+      const p = typeof p0 === 'string' ? { t: p0 } : p0, sz = size * (p.s || 1), col = p.col || base.col;
+      if (p.gap != null) { cx += p.gap * size; continue; }
+      if (p.slash) { const h = sz * 0.74, w = h * 0.62; if (!dry) { x.fillStyle = p.slash; x.beginPath(); x.moveTo(cx + w * 0.6, -h / 2); x.lineTo(cx + w, -h / 2); x.lineTo(cx + w * 0.4, h / 2); x.lineTo(cx, h / 2); x.fill(); } cx += w; continue; }
+      if (p.flag) { const h = sz * 0.72, w = h * 1.5; if (!dry) { x.save(); x.translate(cx, -h / 2); FLAG[p.flag](x, w, h); x.strokeStyle = 'rgba(0,0,0,0.18)'; x.lineWidth = h * 0.05; x.strokeRect(0, 0, w, h); x.restore(); } cx += w; continue; }
+      if (p.logo) { if (!dry) LOGO[p.logo](x, cx + sz / 2, (p.dy || 0) * size, sz, col); cx += sz; continue; }
+      if (p.dot) { const r = size * 0.11; if (!dry) { x.fillStyle = p.dot; x.beginPath(); x.arc(cx + r * 1.7, size * 0.22, r, 0, Math.PI * 2); x.fill(); } cx += r * 3.4; continue; }
+      x.font = `${p.w || base.w || 700} ${sz}px ${p.f || base.f || FONT}`;
+      if ('letterSpacing' in x) x.letterSpacing = `${(p.sp ?? base.sp ?? 0) * sz}px`;
+      const w = x.measureText(p.t).width;
+      if (!dry) {
+        x.save(); x.translate(cx, (p.dy || 0) * size); if (p.i ?? base.i) x.transform(1, 0, -0.2, 1, 0, 0);
+        x.fillStyle = col; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText(p.t, 0, 0); x.restore();
+        if (p.above) LOGO[p.above.logo](x, cx + w / 2, -(p.above.dy || 1) * sz, (p.above.s || 1) * sz, p.above.col || col);
+      }
+      cx += w;
+    }
+    if ('letterSpacing' in x) x.letterSpacing = '0px';
+    return cx;
+  }
+
+  function taper(x, p, w0, wm, w1) {   // a cubic Bézier stroke [p0, c1, c2, p3] whose width goes w0 → wm → w1 (brush-like)
+    const n = 32, A = [], Bk = [], B = (t, i) => (1 - t) ** 3 * p[0][i] + 3 * (1 - t) ** 2 * t * p[1][i] + 3 * (1 - t) * t * t * p[2][i] + t ** 3 * p[3][i];
+    for (let j = 0; j <= n; j++) {
+      const t = j / n, t0 = Math.max(0, t - 0.01), t1 = Math.min(1, t + 0.01), dx = B(t1, 0) - B(t0, 0), dy = B(t1, 1) - B(t0, 1), l = Math.hypot(dx, dy) || 1;
+      const w = (t < 0.5 ? w0 + (wm - w0) * t * 2 : wm + (w1 - wm) * (t - 0.5) * 2) / 2, px = B(t, 0), py = B(t, 1);
+      A.push([px - dy / l * w, py + dx / l * w]); Bk.push([px + dy / l * w, py - dx / l * w]);
+    }
+    x.beginPath(); A.concat(Bk.reverse()).forEach(([a, b], i) => x[i ? 'lineTo' : 'moveTo'](a, b)); x.closePath(); x.fill();
+  }
+
+  // ── Logos, drawn around (cx, cy) with size s, nose to the left ──
+  const LOGO = {
+    klm(x, cx, cy, s, col = '#fff') {   // crown: band, four balls on top, cross in the middle
+      x.save(); x.fillStyle = col; x.translate(cx, cy); x.scale(s, s);
+      x.beginPath(); x.roundRect(-0.42, 0.12, 0.84, 0.13, 0.03); x.fill();
+      [[-0.33, 0.0], [-0.12, -0.06], [0.12, -0.06], [0.33, 0.0]].forEach(([a, b]) => { x.beginPath(); x.arc(a, b, 0.105, 0, Math.PI * 2); x.fill(); });
+      x.beginPath(); x.arc(0, -0.08, 0.06, 0, Math.PI * 2); x.fill(); x.fillRect(-0.035, -0.42, 0.07, 0.3); x.fillRect(-0.12, -0.33, 0.24, 0.07); x.restore();
+    },
+    kapok(x, cx, cy, s, col = '#e5131d') {   // China Southern: red kapok flower with a white outline
+      x.save(); x.translate(cx, cy); x.scale(s, s); x.lineJoin = 'round'; x.lineCap = 'round';
+      const shape = () => {
+        x.beginPath();   // cup with a lotus base
+        x.moveTo(-0.26, -0.04); x.bezierCurveTo(-0.3, 0.2, -0.2, 0.34, -0.12, 0.38); x.quadraticCurveTo(-0.06, 0.47, 0, 0.42); x.quadraticCurveTo(0.06, 0.47, 0.12, 0.38);
+        x.bezierCurveTo(0.2, 0.34, 0.3, 0.2, 0.26, -0.04); x.quadraticCurveTo(0, 0.06, -0.26, -0.04);
+        [-1, 1].forEach(d => {   // scroll petals curling outwards
+          x.moveTo(d * 0.22, -0.02); x.bezierCurveTo(d * 0.46, -0.04, d * 0.5, -0.26, d * 0.36, -0.3); x.bezierCurveTo(d * 0.26, -0.32, d * 0.24, -0.2, d * 0.33, -0.19);
+          x.bezierCurveTo(d * 0.3, -0.1, d * 0.2, -0.08, d * 0.1, -0.02); x.closePath();
+        });
+        [[0, -0.36, 0], [-0.15, -0.3, -0.07], [0.15, -0.3, 0.07]].forEach(([a, b, c0]) => { x.moveTo(c0 + 0.03, 0); x.lineTo(a + 0.025, b + 0.06); x.lineTo(a - 0.025, b + 0.06); x.lineTo(c0 - 0.03, 0); x.closePath(); x.moveTo(a + 0.075, b); x.arc(a, b, 0.075, 0, Math.PI * 2); });
+      };
+      shape(); x.strokeStyle = '#fff'; x.lineWidth = 0.07; x.stroke(); x.fillStyle = col; x.fill();
+      x.strokeStyle = '#fff'; x.lineWidth = 0.022;   // petal lines
+      x.beginPath(); x.moveTo(-0.12, 0.02); x.quadraticCurveTo(-0.13, 0.24, 0, 0.38); x.moveTo(0.12, 0.02); x.quadraticCurveTo(0.13, 0.24, 0, 0.38); x.moveTo(-0.2, 0.3); x.quadraticCurveTo(0, 0.24, 0.2, 0.3); x.stroke();
+      x.restore();
+    },
+    phoenix(x, cx, cy, s, col = '#e8141f') {   // Air China: red phoenix (the stylised "VIP"): head and U at the front, two plumes and a curl sweeping down
+      x.save(); x.translate(cx, cy); x.scale(s, s); x.fillStyle = col; x.strokeStyle = col; x.lineCap = 'round'; x.lineJoin = 'round';
+      taper(x, [[0.48, -0.52], [0.22, -0.46], [-0.02, -0.36], [-0.02, -0.12]], 0, 0.08, 0.12);   // outer plume: flame tip, then down and forward
+      taper(x, [[-0.02, -0.12], [-0.02, 0.18], [-0.1, 0.4], [-0.38, 0.44]], 0.12, 0.11, 0.02);
+      taper(x, [[0.44, -0.3], [0.25, -0.3], [0.1, -0.2], [0.1, -0.02]], 0, 0.07, 0.1);            // inner plume
+      taper(x, [[0.1, -0.02], [0.1, 0.26], [0.0, 0.46], [-0.26, 0.5]], 0.1, 0.09, 0.02);
+      taper(x, [[0.32, 0.05], [0.35, 0.35], [0.15, 0.5], [-0.14, 0.56]], 0.09, 0.09, 0.01);      // curl and its tail
+      x.lineWidth = 0.07; x.beginPath(); x.arc(0.25, 0.05, 0.07, 0, -Math.PI * 1.45, true); x.stroke();
+      x.lineWidth = 0.1; x.beginPath(); x.moveTo(-0.3, -0.13); x.lineTo(-0.3, 0.17); x.quadraticCurveTo(-0.3, 0.33, -0.22, 0.33); x.quadraticCurveTo(-0.14, 0.33, -0.14, 0.17); x.lineTo(-0.14, -0.04); x.stroke();   // the U
+      taper(x, [[-0.28, -0.15], [-0.36, -0.16], [-0.44, -0.15], [-0.53, -0.13]], 0.06, 0.035, 0);  // beak
+      taper(x, [[-0.3, -0.13], [-0.3, -0.22], [-0.24, -0.29], [-0.17, -0.27]], 0.06, 0.035, 0.01); // crest
+      x.restore();
+    },
+    swallow(x, cx, cy, s) {   // China Eastern: red swallow chevron with a blue crescent
+      x.save(); x.translate(cx, cy); x.scale(s, s);
+      x.fillStyle = '#e8261f'; x.beginPath(); x.moveTo(0.46, -0.38); x.lineTo(-0.02, -0.38); x.lineTo(-0.4, 0.02); x.quadraticCurveTo(-0.2, 0.26, 0.04, 0.42);
+      x.lineTo(0.2, 0.42); x.quadraticCurveTo(-0.02, 0.22, -0.14, 0.04); x.lineTo(0.12, -0.2); x.lineTo(0.46, -0.2); x.closePath(); x.fill();
+      x.fillStyle = '#1d2a80'; x.beginPath(); x.moveTo(0.48, -0.02); x.quadraticCurveTo(0.12, 0.05, -0.1, 0.07); x.quadraticCurveTo(0.1, 0.27, 0.48, 0.15); x.closePath(); x.fill();
+      x.restore();
+    },
+    egret(x, cx, cy, s, col = '#fff') {   // egret in flight: raised wings, S-shaped neck reaching forward (to the left)
+      x.save(); x.fillStyle = col; x.strokeStyle = col; x.lineCap = 'round';
+      x.beginPath(); x.ellipse(cx, cy + s * 0.06, s * 0.2, s * 0.08, -0.15, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.moveTo(cx - s * 0.02, cy); x.quadraticCurveTo(cx + s * 0.05, cy - s * 0.42, cx + s * 0.45, cy - s * 0.46); x.quadraticCurveTo(cx + s * 0.14, cy - s * 0.24, cx + s * 0.12, cy + s * 0.02); x.fill();
+      x.beginPath(); x.moveTo(cx - s * 0.08, cy - s * 0.01); x.quadraticCurveTo(cx - s * 0.12, cy - s * 0.34, cx + s * 0.1, cy - s * 0.4); x.quadraticCurveTo(cx - s * 0.02, cy - s * 0.2, cx + s * 0.02, cy + s * 0.01); x.fill();
+      x.lineWidth = s * 0.05; x.beginPath(); x.moveTo(cx - s * 0.16, cy + s * 0.04); x.bezierCurveTo(cx - s * 0.3, cy - s * 0.02, cx - s * 0.22, cy - s * 0.16, cx - s * 0.36, cy - s * 0.16); x.stroke();
+      x.lineWidth = s * 0.025; x.beginPath(); x.moveTo(cx - s * 0.36, cy - s * 0.16); x.lineTo(cx - s * 0.5, cy - s * 0.14); x.stroke();
+      x.beginPath(); x.moveTo(cx + s * 0.16, cy + s * 0.09); x.lineTo(cx + s * 0.46, cy + s * 0.16); x.stroke(); x.restore();
+    },
+    mfegret(x, cx, cy, s, col = '#fff') {   // Xiamen Air: egret with a long beak and one crescent wing swept up and back
+      x.save(); x.translate(cx, cy); x.scale(s, s); x.fillStyle = col;
+      taper(x, [[-0.52, 0.0], [-0.2, -0.07], [0.08, 0.2], [0.46, 0.08]], 0, 0.13, 0.02);   // beak, head and body
+      x.beginPath(); x.moveTo(-0.14, 0.04); x.quadraticCurveTo(-0.02, -0.32, 0.46, -0.36); x.quadraticCurveTo(0.12, -0.16, 0.1, 0.1); x.closePath(); x.fill();
+      x.restore();
+    },
+    crane(x, cx, cy, s, col = '#fff') {   // Lufthansa: crane in flight inside a ring
+      x.save(); x.strokeStyle = col; x.lineWidth = s * 0.05; x.beginPath(); x.arc(cx, cy, s * 0.48, 0, Math.PI * 2); x.stroke(); x.restore();
+      LOGO.egret(x, cx + s * 0.02, cy + s * 0.05, s * 0.74, col);
+    },
+    tkbird(x, cx, cy, s, col = '#fff') {   // Turkish Airlines: wild goose in a ring
+      x.save(); x.translate(cx, cy); x.scale(s, s); x.strokeStyle = col; x.fillStyle = col;
+      x.lineWidth = 0.035; x.beginPath(); x.arc(0, 0, 0.46, 0, Math.PI * 2); x.stroke();
+      x.beginPath(); x.moveTo(-0.02, -0.4); x.bezierCurveTo(0.34, -0.3, 0.38, 0.06, 0.2, 0.2); x.lineTo(-0.44, 0.12); x.lineTo(0.02, 0.08);
+      x.bezierCurveTo(0.2, -0.02, 0.18, -0.24, -0.02, -0.4); x.fill(); x.restore();
+    },
+    harp(x, cx, cy, s, col = '#f1c933') {   // Ryanair: winged harp
+      x.save(); x.translate(cx, cy); x.scale(s, s); x.strokeStyle = col; x.fillStyle = col; x.lineCap = 'round'; x.lineJoin = 'round';
+      x.lineWidth = 0.075; x.beginPath(); x.moveTo(-0.28, -0.3); x.bezierCurveTo(-0.42, -0.06, -0.24, 0.22, 0.24, 0.46); x.stroke();   // body / pillar
+      x.beginPath(); x.arc(-0.27, -0.36, 0.06, 0, Math.PI * 2); x.fill();   // head
+      x.beginPath(); x.moveTo(-0.26, -0.3); x.bezierCurveTo(-0.06, -0.38, 0.18, -0.46, 0.4, -0.44); x.lineTo(0.32, -0.36); x.lineTo(0.38, -0.32); x.lineTo(0.28, -0.26); x.lineTo(0.32, -0.2);
+      x.bezierCurveTo(0.08, -0.22, -0.1, -0.2, -0.24, -0.2); x.closePath(); x.fill();   // wing
+      x.lineWidth = 0.045; [-0.12, 0.0, 0.12, 0.24].forEach((a, i) => { x.beginPath(); x.moveTo(a, -0.22 + i * 0.01); x.lineTo(a - 0.02, 0.14 + i * 0.08); x.stroke(); });
+      x.restore();
+    },
+    hna(x, cx, cy, s, col = '#c8102e') {   // Hainan: stylised roc (concentric arcs over a curl)
+      x.save(); x.translate(cx, cy); x.scale(s, s); x.strokeStyle = col; x.lineCap = 'round';
+      [0.42, 0.32, 0.22].forEach((r, i) => { x.lineWidth = 0.07 - i * 0.012; x.beginPath(); x.arc(0.08, 0.1, r, Math.PI * 1.02, Math.PI * 1.75); x.stroke(); });
+      x.lineWidth = 0.07; x.beginPath(); x.arc(-0.12, 0.22, 0.13, -Math.PI * 0.2, Math.PI * 1.4); x.stroke();
+      x.beginPath(); x.moveTo(0.0, 0.18); x.quadraticCurveTo(0.2, 0.44, 0.44, 0.38); x.stroke(); x.restore();
+    },
+    osarrow(x, cx, cy, s, col = '#d8001a') {   // Austrian: swept arrow with a grey shadow
+      x.save(); x.translate(cx, cy); x.scale(s, s);
+      x.fillStyle = '#9aa1a8'; x.beginPath(); x.moveTo(-0.4, 0.1); x.lineTo(0.42, 0.06); x.lineTo(0.16, 0.42); x.lineTo(0.2, 0.16); x.closePath(); x.fill();
+      x.fillStyle = col; x.beginPath(); x.moveTo(-0.46, -0.28); x.lineTo(0.46, -0.12); x.lineTo(0.12, 0.3); x.lineTo(0.2, -0.06); x.closePath(); x.fill(); x.restore();
+    },
+  };
+
+  // ── Tails: painted inside the real fin outline (finFrame). f.m = the art is for the right-hand side ──
+  // The right-hand side is seen mirrored, so emblems (drawn nose-left) face the nose there too; text is flipped back to read normally.
+  function finFrame(F, w, h, m) {
+    const P = F.poly.map(([u, v]) => [u * w, v * h]);   // root LE, root TE, tip TE, tip LE
+    const at = a => ({ xl: P[3][0] * (1 - a) + P[0][0] * a, xt: P[2][0] * (1 - a) + P[1][0] * a, y: a * h });
+    const mid = at(0.45), chord = mid.xt - mid.xl;
+    return { P, at, m, h, c0: P[1][0] - P[0][0], cx: mid.xl + chord * 0.52, cy: mid.y, s: Math.min(chord * 0.8, h * 0.44) };
+  }
+  function band(x, fr, aL0, aL1, aR0, aR1, col) {   // a band from the leading edge (heights aL) to the trailing edge (heights aR)
+    x.fillStyle = col; x.beginPath(); x.moveTo(fr.at(aL0).xl - 4, aL0 * fr.h); x.lineTo(fr.at(aR0).xt + 4, aR0 * fr.h); x.lineTo(fr.at(aR1).xt + 4, aR1 * fr.h); x.lineTo(fr.at(aL1).xl - 4, aL1 * fr.h); x.fill();
+  }
+  function along(x, f, d0, d1, col, fromTE) {   // a stripe parallel to the leading (or trailing) edge, offsets in root chords
+    const [r, t] = fromTE ? [f.P[1], f.P[2]] : [f.P[0], f.P[3]], sg = fromTE ? -1 : 1, c = f.c0, ext = 0.1 * f.h;
+    const dx = (t[0] - r[0]) / (t[1] - r[1]);   // x change per unit y along the edge
+    const pt = (d, y) => [r[0] + (y - r[1]) * dx + sg * d * c, y];
+    x.fillStyle = col; x.beginPath(); [pt(d0, f.h + ext), pt(d0, -ext), pt(d1, -ext), pt(d1, f.h + ext)].forEach(([a, b], i) => x[i ? 'lineTo' : 'moveTo'](a, b)); x.fill();
+  }
+  const bg = (x, w, h, c) => { x.fillStyle = c; x.fillRect(0, 0, w, h); };
+  function lab(x, f, s, cx, cy, size, col, o = {}) {   // text that reads normally on both sides
+    x.save(); x.translate(cx, cy); let r = o.rot || 0; if (f.m) { x.scale(-1, 1); r = -r; } x.rotate(r); if (o.i) x.transform(1, 0, -0.2, 1, 0, 0);
+    x.font = `${o.w || 800} ${size}px ${o.f || FONT}`; x.fillStyle = col; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(s, 0, 0); x.restore();
+  }
+  const disc = (x, cx, cy, r, col) => { x.fillStyle = col; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); };
+  const TAILS = {
+    ca(x, w, h, f) { bg(x, w, h, '#f4f5f7'); LOGO.phoenix(x, f.cx - f.s * 0.02, f.cy - f.s * 0.06, f.s * 1.08); },
+    cz(x, w, h, f) { bg(x, w, h, '#1793d1'); LOGO.kapok(x, f.cx, f.cy - f.s * 0.04, f.s * 0.95); },
+    mu(x, w, h, f) { bg(x, w, h, '#fbfbfc'); LOGO.swallow(x, f.cx, f.cy, f.s * 1.05); },
+    mf(x, w, h, f) { bg(x, w, h, '#1f86d0'); LOGO.mfegret(x, f.cx, f.cy + f.s * 0.05, f.s * 1.3); },
+    hu(x, w, h, f) { bg(x, w, h, '#c8102e'); LOGO.hna(x, f.cx + f.s * 0.05, f.cy - f.s * 0.05, f.s * 1.1, '#e0a526'); },
+    '3u'(x, w, h, f) { bg(x, w, h, '#c8102e'); x.strokeStyle = '#f5c400'; x.lineWidth = f.s * 0.06; for (let i = 0; i < 4; i++) { x.beginPath(); x.arc(f.cx - f.s * 0.2 + i * f.s * 0.13, f.cy + f.s * 0.35 - i * f.s * 0.12, f.s * 0.45, Math.PI * 1.15, Math.PI * 1.75); x.stroke(); } },
+    zh(x, w, h, f) { bg(x, w, h, '#c8102e'); disc(x, f.cx, f.cy, f.s * 0.4, '#f2b632'); LOGO.egret(x, f.cx, f.cy, f.s * 0.55, '#c8102e'); },
+    fm(x, w, h, f) { bg(x, w, h, '#c8102e'); LOGO.egret(x, f.cx, f.cy, f.s * 0.95, '#ffffff'); },
+    klm(x, w, h, f) { bg(x, w, h, '#e2e5e9'); LOGO.klm(x, f.cx, f.cy - f.s * 0.24, f.s * 0.42, '#00a1de'); lab(x, f, 'KLM', f.cx, f.cy + f.s * 0.1, f.s * 0.4, '#00a1de', { w: 900 }); },
+    af(x, w, h, f) { bg(x, w, h, '#ffffff'); [[0.36, 0.47], [0.52, 0.62], [0.67, 0.76]].forEach(([a, b]) => along(x, f, a, b, '#002157')); along(x, f, 0.81, 0.95, '#e2001a'); },
+    lh(x, w, h, f) { bg(x, w, h, '#0a1d4f'); LOGO.crane(x, f.cx, f.cy + f.s * 0.04, f.s * 0.95, '#ffffff'); },
+    ay(x, w, h, f) { bg(x, w, h, '#0b8bd0'); for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? '#2aa3e2' : '#0a6fb2'; x.fillRect(0, h * (0.42 + i * 0.07), w, h * 0.028); }
+      const dx = f.cx + f.s * 0.12, dy = f.cy - f.s * 0.28; disc(x, dx, dy, f.s * 0.3, '#fff'); lab(x, f, 'F', dx + f.s * 0.05, dy, f.s * 0.34, '#0b8bd0', { w: 900, i: 1 });
+      x.fillStyle = '#0b8bd0'; x.fillRect(dx - f.s * 0.24, dy + f.s * 0.02, f.s * 0.26, f.s * 0.05); },
+    tk(x, w, h, f) { bg(x, w, h, '#c8102e'); LOGO.tkbird(x, f.cx, f.cy + f.s * 0.05, f.s * 1.05); },
+    nh(x, w, h, f) { bg(x, w, h, '#1d3c97'); along(x, f, -0.3, 0.1, '#00a0e9', true);
+      const a = f.at(0.5), rot = Math.atan2(f.P[3][1] - f.P[0][1], f.P[3][0] - f.P[0][0]);
+      lab(x, f, 'ANA', a.xl + (a.xt - a.xl) * 0.4, a.y, f.s * 0.5, '#ffffff', { w: 900, rot }); },
+    to(x, w, h, f) { bg(x, w, h, '#f2f3f5'); const a = f.at(0.66), r = h * 0.42, cx = a.xt - r * 0.55; disc(x, cx, a.y, r, '#00d26a'); lab(x, f, 't', cx, a.y - r * 0.08, r * 1.45, '#ffffff', { w: 800, f: ROUND }); },
+    os(x, w, h, f) { bg(x, w, h, '#d8001a'); x.fillStyle = '#ffffff'; x.fillRect(0, h * 0.34, w, h * 0.32); LOGO.osarrow(x, f.cx, h * 0.5, f.s * 0.62); },
+    fr(x, w, h, f) { bg(x, w, h, '#073590'); LOGO.harp(x, f.cx, f.cy + f.s * 0.04, f.s * 1.05); },
+    vy(x, w, h, f) { bg(x, w, h, '#f6f6f6'); const d = h / 11;   // halftone dots, growing towards the top and the trailing edge
+      for (let y = d / 2; y < h; y += d) for (let i = -2; i < 30; i++) { const xx = i * d + (Math.round(y / d) % 2) * d / 2, a = f.at(y / h), t = (xx - a.xl) / Math.max(1, a.xt - a.xl) * 0.7 + (1 - y / h) * 0.6 - 0.25;
+        if (t > 0.05) disc(x, xx, y, Math.min(0.46, 0.46 * t) * d, '#8f8f8f'); }
+      disc(x, f.cx, f.cy, d * 0.4, '#ffcc00'); },
+    ba(x, w, h, f) { bg(x, w, h, '#ffffff'); band(x, f, 0.18, 0.38, 0.05, 0.25, '#c8102e'); band(x, f, 0.44, 0.66, 0.3, 0.5, '#1b2b5a'); band(x, f, 0.7, 0.78, 0.56, 0.64, '#c8102e'); },
+    cx(x, w, h, f) { bg(x, w, h, '#005d63'); x.strokeStyle = '#fff'; x.lineWidth = f.s * 0.12; x.lineCap = 'round'; x.beginPath(); x.moveTo(f.cx - f.s * 0.4, f.cy + f.s * 0.25); x.quadraticCurveTo(f.cx, f.cy - f.s * 0.55, f.cx + f.s * 0.45, f.cy - f.s * 0.1); x.stroke(); },
+    sq(x, w, h, f) { bg(x, w, h, '#0b2a6f'); LOGO.egret(x, f.cx, f.cy, f.s * 0.9, '#f0ab00'); },
+    ek(x, w, h, f) { bg(x, w, h, '#ffffff'); band(x, f, 0.2, 0.36, 0.1, 0.26, '#00843d'); band(x, f, 0.52, 0.68, 0.42, 0.58, '#111111'); x.fillStyle = '#d0021b'; x.fillRect(0, 0, f.at(0.5).xl + (f.at(0.5).xt - f.at(0.5).xl) * 0.25, h); },
+    qr(x, w, h, f) { bg(x, w, h, '#5c0632'); x.strokeStyle = '#e8e2e5'; x.lineWidth = f.s * 0.05; x.beginPath(); x.moveTo(f.cx - f.s * 0.2, f.cy + f.s * 0.4); x.quadraticCurveTo(f.cx - f.s * 0.1, f.cy - f.s * 0.3, f.cx + f.s * 0.4, f.cy - f.s * 0.45); x.moveTo(f.cx - f.s * 0.05, f.cy + f.s * 0.4); x.quadraticCurveTo(f.cx + f.s * 0.05, f.cy - f.s * 0.2, f.cx + f.s * 0.5, f.cy - f.s * 0.32); x.stroke(); },
+    gen(x, w, h, f, liv) { bg(x, w, h, '#c9d1dc'); if (liv.code) lab(x, f, liv.code, f.cx, f.cy, f.s * 0.5, '#2b3440'); },
+  };
+  function paintTail(liv, mirror, F) {
+    const h = 512, w = Math.min(1024, Math.round(h * F.aspect)), c = cnv(w, h), x = c.getContext('2d');
+    (TAILS[liv.tail] || TAILS.gen)(x, w, h, finFrame(F, w, h, mirror), liv);
+    return c;
   }
 
   // Fuselage texture: u along the length (nose → tail), v around (0 top, .25 side z+, .5 belly, .75 side z−)
   function paintFuselage(liv, L, R) {
     const cw = 2048, ch = 512, c = cnv(cw, ch), x = c.getContext('2d');
-    const k = (2 * Math.PI * R / ch) / (L / cw);   // texel aspect
+    const k = (2 * Math.PI * R / ch) / (L / cw);   // texel aspect: a texel is k times taller (around) than long
+    const U = u => u * cw, V = v => v * ch;
+    const sides = fn => { fn(); x.save(); x.translate(0, ch); x.scale(1, -1); fn(); x.restore(); };   // the z− side mirrors the z+ side about the belly
+    const path = pts => { x.beginPath(); pts.forEach(([u, v], i) => x[i ? 'lineTo' : 'moveTo'](U(u), V(v))); x.closePath(); };
+    const P = {
+      poly: (pts, col) => sides(() => { x.fillStyle = col; path(pts); x.fill(); }),
+      band: (v0, v1, col, u0 = -0.01, u1 = 1.01) => P.poly([[u0, v0], [u1, v0], [u1, v1], [u0, v1]], col),
+      below: (v, col) => { x.fillStyle = col; x.fillRect(0, V(v), cw, V(1 - 2 * v)); },   // everything under v, both sides
+      ribbon: (top, bot, u0, u1, col, n = 80) => { const pts = []; for (let i = 0; i <= n; i++) { const u = u0 + (u1 - u0) * i / n; pts.push([u, top(u)]); } for (let i = n; i >= 0; i--) { const u = u0 + (u1 - u0) * i / n; pts.push([u, bot(u)]); } P.poly(pts, col); },
+      dot: (u, v, r, col) => sides(() => { x.fillStyle = col; x.beginPath(); x.ellipse(U(u), V(v), V(r) * k, V(r), 0, 0, Math.PI * 2); x.fill(); }),
+      logo: (name, u, v, hv, col) => sides(() => { x.save(); x.translate(U(u), V(v)); x.scale(1, 1 / k); LOGO[name](x, 0, 0, V(hv) * k, col); x.restore(); }),
+      // Titles: hv = cap height (v units); both sides read upright, occupying the same stretch [u0, u1] of the fuselage
+      title(parts, u, v, hv, o = {}) {
+        parts = [].concat(parts);
+        const size = V(hv) * k / (o.cjk ? 0.86 : 0.72), base = { col: o.col, f: o.f, w: o.w, i: o.i, sp: o.sp };
+        const w = runParts(x, parts, size, base, true);
+        if (w > 0.4 * cw) return P.title(parts, u, v, hv * 0.4 * cw / w, o);   // keep long names off the tail
+        const x0 = U(u) - (o.anchor === 'end' ? w : o.anchor === 'center' ? w / 2 : 0);
+        x.save(); x.translate(x0, V(v)); x.scale(1, 1 / k); runParts(x, parts, size, base); x.restore();
+        x.save(); x.translate(x0 + w, ch - V(v)); x.rotate(Math.PI); x.scale(1, 1 / k); runParts(x, parts, size, base); x.restore();
+        return [x0 / cw, (x0 + w) / cw];
+      },
+    };
     x.fillStyle = liv.body || W; x.fillRect(0, 0, cw, ch);
-    // belly
-    const bf = liv.bellyFrom || 0.4; x.fillStyle = liv.belly || '#e6e9ee'; x.fillRect(0, bf * ch, cw, (1 - 2 * bf) * ch);
-    // top colour (KLM)
-    if (liv.top) { x.fillStyle = liv.top; x.fillRect(0, 0, cw, liv.topTo * ch); x.fillRect(0, (1 - liv.topTo) * ch, cw, liv.topTo * ch); }
-    // cheatlines, mirrored onto the other side
-    (liv.cheat || []).forEach(([v, w, col]) => { x.fillStyle = col; x.fillRect(0.05 * cw, v * ch, 0.9 * cw, w * ch); x.fillRect(0.05 * cw, (1 - v - w) * ch, 0.9 * cw, w * ch); });
-    // windows (both sides), cockpit and doors
-    const winV = 0.205, winH = 0.026 * ch, winW = Math.max(3, 0.42 / L * cw);
+    if (liv.under) liv.under(P); else P.below(0.4, '#e3e7ec');
+    // windows (both sides), cockpit, doors
+    const winV = 0.205, winH = 0.022 * ch, winW = Math.max(3, 0.42 / L * cw);
     x.fillStyle = '#1d2733';
     for (let u = 0.13; u < 0.82; u += 0.53 / L) {
       x.beginPath(); x.roundRect(u * cw, winV * ch - winH / 2, winW, winH, winW / 2); x.fill();
       x.beginPath(); x.roundRect(u * cw, (1 - winV) * ch - winH / 2, winW, winH, winW / 2); x.fill();
     }
-    x.fillStyle = '#121a24'; [[0.155, 0.845]].forEach(([a, b]) => { x.fillRect(0.022 * cw, a * ch, 0.03 * cw, 0.035 * ch); x.fillRect(0.022 * cw, (b - 0.035) * ch, 0.03 * cw, 0.035 * ch); });
+    x.fillStyle = '#121a24'; x.fillRect(0.022 * cw, 0.155 * ch, 0.03 * cw, 0.035 * ch); x.fillRect(0.022 * cw, (0.845 - 0.035) * ch, 0.03 * cw, 0.035 * ch);
     x.strokeStyle = 'rgba(40,50,62,0.35)'; x.lineWidth = 2;
     [0.1, 0.42, 0.86].forEach(u => [0.19, 0.81].forEach(v => x.strokeRect(u * cw, (v - 0.045) * ch, 0.9 / L * cw, 0.11 * ch)));
-    // lettering above the windows, reading nose → tail on both sides
-    const t = liv.text || [];
-    if (t.length) {
-      const size = Math.min(70, 1.5 / L * cw * 0.95), size2 = size * 0.62, u0 = 0.2 * cw;
-      const v1 = (liv.textOnTop ? 0.135 : 0.14) * ch;
-      text(x, t[0], u0, v1, size, liv.textColor, k, { serif: liv.serif });
-      if (t[1]) text(x, t[1], u0, v1 + size * 0.95 / k + 6, size2, liv.textColor, k, { weight: 600 });
-      // other side: rotated 180°
-      text(x, t[0], u0, ch - v1, size, liv.textColor, k, { serif: liv.serif, rot: true, align: 'right' });
-      if (t[1]) text(x, t[1], u0, ch - v1 - size * 0.95 / k - 6, size2, liv.textColor, k, { weight: 600, rot: true, align: 'right' });
+    if (liv.over) liv.over(P);
+    else if (liv.text?.length) {   // generic: a main title with an optional second line underneath
+      const t = liv.text, col = liv.textColor;
+      if (t.length > 1) { const a = P.title(t[0], 0.12, tv(0.046) - 0.03, 0.046, { col, cjk: /[^\x00-\x7f]/.test(t[0]) }); P.title(t[1], a[0], tv(0.022), 0.022, { col, w: 600 }); }
+      else P.title(t[0], 0.12, tv(0.046), 0.046, { col });
     }
-    return c;
-  }
-
-  // Tail art in fin coordinates: nose to the left, top at y = 0 (the fin occupies the lower-left to upper-right diagonal band)
-  const TAILS = {
-    klm(x, w, h) { bg(x, w, h, '#00a1de'); x.fillStyle = '#fff'; crown(x, w * 0.6, h * 0.36, h * 0.16); x.font = `900 ${h * 0.16}px Arial, sans-serif`; x.textAlign = 'center'; x.fillText('KLM', w * 0.6, h * 0.62); },
-    af(x, w, h) { bg(x, w, h, '#ffffff'); slant(x, w, h, [[0.30, 0.42, '#002157'], [0.48, 0.56, '#e2001a']]); },
-    cz(x, w, h) { bg(x, w, h, '#0b5aa6'); flower(x, w * 0.6, h * 0.42, h * 0.2, '#e60012', 5); },
-    ca(x, w, h) { bg(x, w, h, '#ffffff'); phoenix(x, w * 0.6, h * 0.42, h * 0.2, '#d71920'); },
-    mf(x, w, h) { const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#173f8f'); g.addColorStop(0.55, '#173f8f'); g.addColorStop(0.56, '#6fb7e9'); g.addColorStop(1, '#6fb7e9'); x.fillStyle = g; x.fillRect(0, 0, w, h); bird(x, w * 0.58, h * 0.38, h * 0.22, '#ffffff'); },
-    mu(x, w, h) { bg(x, w, h, '#ffffff'); const cx = w * 0.6, cy = h * 0.42, r = h * 0.18; x.fillStyle = '#d7000f'; x.beginPath(); x.arc(cx, cy, r, Math.PI, 0); x.fill(); x.fillStyle = '#13336b'; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI); x.fill(); bird(x, cx, cy, r * 1.05, '#ffffff'); },
-    hu(x, w, h) { bg(x, w, h, '#c8102e'); x.strokeStyle = '#f2b632'; x.lineWidth = h * 0.03; x.beginPath(); x.arc(w * 0.6, h * 0.42, h * 0.17, 0, Math.PI * 2); x.stroke(); bird(x, w * 0.6, h * 0.42, h * 0.16, '#f2b632'); },
-    '3u'(x, w, h) { bg(x, w, h, '#c8102e'); x.strokeStyle = '#f5c400'; x.lineWidth = h * 0.028; for (let i = 0; i < 4; i++) { x.beginPath(); x.arc(w * (0.45 + i * 0.06), h * (0.62 - i * 0.07), h * 0.2, Math.PI * 1.15, Math.PI * 1.75); x.stroke(); } },
-    zh(x, w, h) { bg(x, w, h, '#c8102e'); x.fillStyle = '#f2b632'; x.beginPath(); x.arc(w * 0.6, h * 0.42, h * 0.15, 0, Math.PI * 2); x.fill(); bird(x, w * 0.6, h * 0.42, h * 0.14, '#c8102e'); },
-    fm(x, w, h) { bg(x, w, h, '#c8102e'); bird(x, w * 0.6, h * 0.42, h * 0.24, '#ffffff'); },
-    lh(x, w, h) { bg(x, w, h, '#05164d'); x.strokeStyle = '#fff'; x.lineWidth = h * 0.022; x.beginPath(); x.arc(w * 0.6, h * 0.42, h * 0.18, 0, Math.PI * 2); x.stroke(); bird(x, w * 0.6, h * 0.42, h * 0.15, '#ffffff'); },
-    ay(x, w, h) { bg(x, w, h, '#ffffff'); x.save(); x.translate(w * 0.6, h * 0.45); x.transform(1, 0, -0.25, 1, 0, 0); x.fillStyle = '#0b1560'; x.font = `900 ${h * 0.42}px Arial, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('F', 0, 0); x.restore(); },
-    ba(x, w, h) { bg(x, w, h, '#ffffff'); wave(x, w, h, 0.3, '#c8102e'); wave(x, w, h, 0.52, '#1b2b5a'); },
-    cx(x, w, h) { bg(x, w, h, '#005d63'); x.strokeStyle = '#fff'; x.lineWidth = h * 0.05; x.lineCap = 'round'; x.beginPath(); x.moveTo(w * 0.42, h * 0.55); x.quadraticCurveTo(w * 0.62, h * 0.18, w * 0.82, h * 0.36); x.stroke(); },
-    sq(x, w, h) { bg(x, w, h, '#0b2a6f'); bird(x, w * 0.6, h * 0.42, h * 0.22, '#f0ab00'); },
-    ek(x, w, h) { bg(x, w, h, '#ffffff'); [['#00843d', 0.3], ['#ffffff', 0.4], ['#111111', 0.5]].forEach(([c, y]) => wave(x, w, h, y, c)); x.fillStyle = '#d0021b'; x.fillRect(0, 0, w * 0.32, h); },
-    tk(x, w, h) { bg(x, w, h, '#c8102e'); x.fillStyle = '#fff'; x.beginPath(); x.arc(w * 0.6, h * 0.42, h * 0.18, 0, Math.PI * 2); x.fill(); bird(x, w * 0.6, h * 0.42, h * 0.15, '#c8102e'); },
-    qr(x, w, h) { bg(x, w, h, '#5c0632'); x.strokeStyle = '#e8e2e5'; x.lineWidth = h * 0.02; x.beginPath(); x.moveTo(w * 0.5, h * 0.62); x.quadraticCurveTo(w * 0.55, h * 0.2, w * 0.78, h * 0.15); x.moveTo(w * 0.56, h * 0.62); x.quadraticCurveTo(w * 0.62, h * 0.25, w * 0.84, h * 0.2); x.stroke(); },
-    nh(x, w, h) { bg(x, w, h, '#ffffff'); x.fillStyle = '#13448f'; x.beginPath(); x.moveTo(w * 0.3, 0); x.lineTo(w, 0); x.lineTo(w, h * 0.62); x.lineTo(w * 0.55, h * 0.62); x.fill(); x.fillStyle = '#00a3e0'; x.fillRect(w * 0.5, h * 0.64, w * 0.5, h * 0.05); x.fillStyle = '#fff'; x.font = `800 ${h * 0.15}px Arial, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('ANA', w * 0.68, h * 0.4); },
-    to(x, w, h) { bg(x, w, h, '#00a651'); x.fillStyle = '#fff'; x.font = `800 ${h * 0.34}px Arial, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('t', w * 0.62, h * 0.42); x.fillStyle = '#0a2a6b'; x.fillRect(w * 0.7, h * 0.2, w * 0.07, h * 0.07); },
-    os(x, w, h) { bg(x, w, h, '#d8001a'); wave(x, w, h, 0.32, '#ffffff'); },
-    fr(x, w, h) { bg(x, w, h, '#073590'); x.strokeStyle = '#f1c933'; x.lineWidth = h * 0.02; x.lineJoin = 'round'; const cx = w * 0.6, cy = h * 0.42, r = h * 0.18; x.beginPath(); x.moveTo(cx - r * 0.7, cy + r); x.lineTo(cx - r * 0.7, cy - r); x.quadraticCurveTo(cx + r * 0.2, cy - r * 0.6, cx + r * 0.8, cy + r); x.closePath(); x.stroke(); for (let i = 1; i < 5; i++) { const xx = cx - r * 0.7 + i * r * 0.3; x.beginPath(); x.moveTo(xx, cy + r); x.lineTo(xx, cy - r * (0.9 - i * 0.22)); x.stroke(); } },
-    vy(x, w, h) { bg(x, w, h, '#ffcc00'); x.strokeStyle = '#4a4a4a'; x.lineWidth = h * 0.05; x.lineJoin = 'round'; x.beginPath(); x.moveTo(w * 0.48, h * 0.25); x.lineTo(w * 0.6, h * 0.58); x.lineTo(w * 0.74, h * 0.2); x.stroke(); },
-    gen(x, w, h, liv) { bg(x, w, h, '#c9d1dc'); if (liv.code) { x.fillStyle = '#2b3440'; x.font = `800 ${h * 0.2}px Arial, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(liv.code, w * 0.6, h * 0.45); } },
-  };
-  function bg(x, w, h, c) { x.fillStyle = c; x.fillRect(0, 0, w, h); }
-  function slant(x, w, h, bands) { bands.forEach(([a, b, col]) => { x.fillStyle = col; x.beginPath(); x.moveTo(w * a, h); x.lineTo(w * (a + 0.55), 0); x.lineTo(w * (b + 0.55), 0); x.lineTo(w * b, h); x.fill(); }); }
-  function wave(x, w, h, y, col) { x.fillStyle = col; x.beginPath(); x.moveTo(0, h * (y + 0.1)); x.bezierCurveTo(w * 0.35, h * (y - 0.08), w * 0.65, h * (y + 0.12), w, h * (y - 0.04)); x.lineTo(w, h * (y + 0.06)); x.bezierCurveTo(w * 0.65, h * (y + 0.22), w * 0.35, h * (y + 0.02), 0, h * (y + 0.2)); x.fill(); }
-  function flower(x, cx, cy, r, col, n) { x.fillStyle = col; for (let i = 0; i < n; i++) { x.save(); x.translate(cx, cy); x.rotate(i * Math.PI * 2 / n); x.beginPath(); x.ellipse(0, -r * 0.55, r * 0.32, r * 0.55, 0, 0, Math.PI * 2); x.fill(); x.restore(); } x.fillStyle = '#ffffff'; x.beginPath(); x.arc(cx, cy, r * 0.16, 0, Math.PI * 2); x.fill(); }
-  function phoenix(x, cx, cy, r, col) { x.strokeStyle = col; x.lineWidth = r * 0.16; x.lineCap = 'round'; x.beginPath(); x.arc(cx, cy, r, Math.PI * 0.15, Math.PI * 1.9); x.stroke(); x.beginPath(); x.moveTo(cx - r * 0.5, cy + r * 0.3); x.bezierCurveTo(cx - r * 0.1, cy - r * 0.9, cx + r * 0.5, cy - r * 0.2, cx + r * 0.2, cy + r * 0.35); x.stroke(); x.beginPath(); x.moveTo(cx - r * 0.1, cy - r * 0.1); x.quadraticCurveTo(cx + r * 0.4, cy - r * 0.6, cx + r * 0.75, cy - r * 0.35); x.stroke(); }
-  function bird(x, cx, cy, r, col) { x.fillStyle = col; x.beginPath(); x.moveTo(cx - r, cy + r * 0.15); x.quadraticCurveTo(cx - r * 0.3, cy - r * 0.55, cx + r * 0.1, cy - r * 0.05); x.quadraticCurveTo(cx + r * 0.45, cy - r * 0.75, cx + r * 1.05, cy - r * 0.6); x.quadraticCurveTo(cx + r * 0.5, cy - r * 0.15, cx + r * 0.2, cy + r * 0.25); x.quadraticCurveTo(cx - r * 0.3, cy - r * 0.05, cx - r, cy + r * 0.15); x.fill(); }
-  function crown(x, cx, cy, r) { x.beginPath(); x.moveTo(cx - r, cy + r * 0.5); x.lineTo(cx - r * 0.85, cy - r * 0.2); x.lineTo(cx - r * 0.45, cy + r * 0.15); x.lineTo(cx, cy - r * 0.45); x.lineTo(cx + r * 0.45, cy + r * 0.15); x.lineTo(cx + r * 0.85, cy - r * 0.2); x.lineTo(cx + r, cy + r * 0.5); x.closePath(); x.fill(); [-0.85, -0.42, 0, 0.42, 0.85].forEach((d, i) => { x.beginPath(); x.arc(cx + d * r, cy - r * (i === 2 ? 0.62 : 0.38), r * 0.1, 0, Math.PI * 2); x.fill(); }); }
-  function paintTail(liv, mirror) {
-    const w = 512, h = 512, c = cnv(w, h), x = c.getContext('2d');
-    if (mirror) { x.translate(w, 0); x.scale(-1, 1); }   // the other side sees the art mirrored, so draw it mirrored to read nose-first
-    (TAILS[liv.tail] || TAILS.gen)(x, w, h, liv);
     return c;
   }
 
@@ -219,28 +450,29 @@
     const high = o.wing === 'high', yw = high ? R * 0.82 : -R * 0.5, zr = R * 0.75, b = S / 2 - zr;
     const cr = (o.mount === 'prop' ? 0.082 : 0.19) * S * (L > 60 ? 0.85 : 1), ct = cr * (o.mount === 'prop' ? 0.55 : 0.27);
     const xr = -L / 2 + L * (o.mount === 'rear' ? 0.43 : o.mount === 'prop' ? 0.42 : 0.37), le = Math.tan((sweep + 4) * Math.PI / 180), dih = high ? -0.02 : Math.tan(5.5 * Math.PI / 180);
-    const wingMat = mat('#c5ccd6');
+    const wingMat = mat('#c5ccd6'), wlMat = mat(liv.winglet || '#c5ccd6');
     const wingAt = f => ({ x: xr + le * b * f, y: yw + dih * b * f, c: cr + (ct - cr) * f });
     [1, -1].forEach(sd => {
       const st = [0, 0.33, 1].map(f => { const w = wingAt(f); return hSec(w.x, w.y, sd * (zr + b * f), w.c, f ? 0.1 : 0.13); });
       grp.add(new T.Mesh(loft(st), [wingMat, wingMat]));
       // winglets
       const tip = wingAt(1), tz = sd * (zr + b);
-      const up = (h, cant, ch, back = 0) => { const s0 = hSec(tip.x, tip.y, tz, ch, 0.08), s1 = hSec(tip.x + h * 0.9 + back, tip.y + h, tz + sd * cant, ch * 0.45, 0.08); grp.add(new T.Mesh(loft([s0, s1]), [mat(liv.top || '#c5ccd6'), mat(liv.top || '#c5ccd6')])); };
+      const up = (h, cant, ch, back = 0) => { const s0 = hSec(tip.x, tip.y, tz, ch, 0.08), s1 = hSec(tip.x + h * 0.9 + back, tip.y + h, tz + sd * cant, ch * 0.45, 0.08); grp.add(new T.Mesh(loft([s0, s1]), [wlMat, wlMat])); };
       if (o.tip === 'sharklet') up(S * 0.07, S * 0.012, ct * 0.9);
       else if (o.tip === 'blended') up(S * 0.07, S * 0.02, ct * 0.85);
       else if (o.tip === 'max') { up(S * 0.07, S * 0.015, ct * 0.85); const s0 = hSec(tip.x, tip.y, tz, ct * 0.6, 0.08), s1 = hSec(tip.x + S * 0.03, tip.y - S * 0.035, tz, ct * 0.3, 0.08); grp.add(new T.Mesh(loft([s0, s1]), [wingMat, wingMat])); }
       else if (o.tip === 'small') up(S * 0.045, S * 0.008, ct * 0.8);
-      else if (o.tip === 'fence') { const s0 = hSec(tip.x - ct * 0.1, tip.y - S * 0.012, tz, ct * 0.75, 0.06), s1 = hSec(tip.x + ct * 0.15, tip.y + S * 0.025, tz, ct * 0.45, 0.06); grp.add(new T.Mesh(loft([s0, s1]), [wingMat, wingMat])); }
+      else if (o.tip === 'fence') { const s0 = hSec(tip.x - ct * 0.1, tip.y - S * 0.012, tz, ct * 0.75, 0.06), s1 = hSec(tip.x + ct * 0.15, tip.y + S * 0.025, tz, ct * 0.45, 0.06); grp.add(new T.Mesh(loft([s0, s1]), [wlMat, wlMat])); }
     });
     // belly fairing
     if (!high) { const fair = new T.Mesh(new T.SphereGeometry(1, 24, 12), mat(liv.belly || '#e6e9ee')); fair.scale.set(cr * 0.75, R * 0.42, R * 0.82); fair.position.set(xr + cr * 0.5, -R * 0.68, 0); grp.add(fair); }
 
     // Engines
-    const engMat = mat(liv.engine || '#e9ecf0'), darkMat = mat('#1a2028', { roughness: 0.6 }), metal = mat('#9aa3ad', { metalness: 0.6, roughness: 0.3 });
+    const engMat = mat(liv.engine || '#e9ecf0'), lipMat = mat(liv.lip || '#b8c1cb', { metalness: 0.55, roughness: 0.3 }), darkMat = mat('#1a2028', { roughness: 0.6 }), metal = mat('#9aa3ad', { metalness: 0.6, roughness: 0.3 });
     const nacelle = (ed, len) => {
       const pts = [[0, ed * 0.42], [0.04, ed * 0.5], [0.12, ed * 0.5], [0.55, ed * 0.47], [0.85, ed * 0.36], [1, ed * 0.28]].map(([a, r]) => new T.Vector2(r, a * len));
       const g = new T.Group(), shell = new T.Mesh(new T.LatheGeometry(pts, 40), engMat); g.add(shell);
+      const lip = new T.Mesh(new T.TorusGeometry(ed * 0.46, ed * 0.045, 8, 40), lipMat); lip.rotation.x = Math.PI / 2; lip.position.y = len * 0.015; g.add(lip);
       const fan = new T.Mesh(new T.CircleGeometry(ed * 0.43, 32), darkMat); fan.position.y = 0.06 * len; fan.rotation.x = Math.PI / 2; g.add(fan);
       const spin = new T.Mesh(new T.ConeGeometry(ed * 0.13, ed * 0.3, 20), metal); spin.position.y = 0.04 * len; spin.rotation.x = Math.PI; g.add(spin);
       const noz = new T.Mesh(new T.CylinderGeometry(ed * 0.2, ed * 0.27, len * 0.18, 24), metal); noz.position.y = len * 1.05; g.add(noz);
@@ -276,7 +508,10 @@
     const xMin = xf, xMax = xf + finH * fsw + ctf, yMin = yb, yMax = yb + finH;
     const finUV = v => [(v.x - xMin) / (xMax - xMin), 1 - (v.y - yMin) / (yMax - yMin)];
     const fin = loft([vSec(xf, yb, 0, crf, 0.11), vSec(xf + finH * 0.5 * fsw, yb + finH * 0.5, 0, (crf + ctf) / 2, 0.1), vSec(xf + finH * fsw, yb + finH, 0, ctf, 0.09)], finUV);
-    grp.add(new T.Mesh(fin, [new T.MeshStandardMaterial({ map: tex(paintTail(liv, false)), roughness: 0.35, metalness: 0.1, side: T.DoubleSide }), new T.MeshStandardMaterial({ map: tex(paintTail(liv, true)), roughness: 0.35, metalness: 0.1, side: T.DoubleSide })]));
+    // fin outline in texture coordinates (0..1, top = 0), so tail art is placed inside the real fin shape
+    const bw = xMax - xMin, finShape = { aspect: bw / finH, poly: [[0, 1], [crf / bw, 1], [(finH * fsw + ctf) / bw, 0], [finH * fsw / bw, 0]] };
+    const tailMat = mir => new T.MeshStandardMaterial({ map: tex(paintTail(liv, mir, finShape)), roughness: 0.35, metalness: 0.1, side: T.DoubleSide });
+    grp.add(new T.Mesh(fin, [tailMat(false), tailMat(true)]));
     const hs = S * (tFin ? 0.32 : 0.36) / 2, crh = L * 0.085, cth = crh * 0.38, hsw = Math.tan((sweep + 7) * Math.PI / 180);
     const yh = tFin ? yMax - finH * 0.02 : prof(0.9).yc, xh = tFin ? xf + finH * fsw - crh * 0.25 : L / 2 - L * 0.135;
     const stabMat = mat(tFin ? '#d9dee5' : '#c5ccd6');
@@ -290,61 +525,69 @@
     return wrap;
   }
 
-  // ── Scene: lights, holographic ground ring ──
-  function makeScene() {
-    const sc = new T.Scene();
-    sc.add(new T.HemisphereLight('#e6f0ff', '#1a2840', 1.15));
-    const sun = new T.DirectionalLight('#ffffff', 1.9); sun.position.set(-2, 3, 2.5); sc.add(sun);
-    const rim = new T.DirectionalLight('#4de1ff', 0.9); rim.position.set(2, 1, -3); sc.add(rim);
-    const ring = new T.Group();
-    const lineMat = new T.MeshBasicMaterial({ color: '#4de1ff', transparent: true, opacity: 0.35, side: T.DoubleSide, depthWrite: false });
-    [1.05, 1.25].forEach((r, i) => { const m = new T.Mesh(new T.RingGeometry(r - 0.006, r, 96), lineMat.clone()); m.material.opacity = i ? 0.18 : 0.35; ring.add(m); });
+  // ── Scene: lights and a holographic ring, coloured for the light or dark theme ──
+  let THEME = 'dark';
+  function makeScene(theme) {
+    const sc = new T.Scene(), light = theme === 'light', accent = light ? '#0a7ea6' : '#4de1ff';
+    sc.add(new T.HemisphereLight(light ? '#ffffff' : '#e6f0ff', light ? '#9fb0c4' : '#1a2840', light ? 1.35 : 1.15));
+    const sun = new T.DirectionalLight('#ffffff', light ? 1.6 : 1.9); sun.position.set(-2, 3, 2.5); sc.add(sun);
+    const rim = new T.DirectionalLight(accent, light ? 0.35 : 0.9); rim.position.set(2, 1, -3); sc.add(rim);
+    const ring = new T.Group(), lineMat = new T.MeshBasicMaterial({ color: accent, transparent: true, opacity: light ? 0.45 : 0.35, side: T.DoubleSide, depthWrite: false });
+    [1.05, 1.25].forEach((r, i) => { const m = new T.Mesh(new T.RingGeometry(r - 0.006, r, 96), lineMat.clone()); m.material.opacity = i ? lineMat.opacity / 2 : lineMat.opacity; ring.add(m); });
     for (let i = 0; i < 24; i++) { const t = new T.Mesh(new T.PlaneGeometry(0.004, i % 6 ? 0.04 : 0.09), lineMat); const a = i / 24 * Math.PI * 2; t.position.set(Math.cos(a) * 1.25, Math.sin(a) * 1.25, 0); t.rotation.z = a + Math.PI / 2; ring.add(t); }
-    const glow = new T.Mesh(new T.CircleGeometry(1.05, 64), new T.MeshBasicMaterial({ color: '#4de1ff', transparent: true, opacity: 0.05, depthWrite: false })); ring.add(glow);
-    ring.rotation.x = -Math.PI / 2; ring.position.y = -0.32; sc.add(ring); sc.userData.ring = ring;
+    ring.add(new T.Mesh(new T.CircleGeometry(1.05, 64), new T.MeshBasicMaterial({ color: accent, transparent: true, opacity: light ? 0.07 : 0.05, depthWrite: false })));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = -0.32; sc.add(ring);
     return sc;
   }
   function frameCamera(cam, zoom = 1) { cam.position.set(-1.25 / zoom, 0.62 / zoom, 2.6 / zoom); cam.lookAt(0, -0.1, 0); }
-
-  // ── Shared renderer for the hangar cards ──
-  const RW = 640, RH = 400;   // render size; cards are 16:10
-  let R0 = null, SCENE = null, CAM = null, LOOP = 0, IO = null;
-  const MODELS = new Map(), CARDS = new Map();
-  const getModel = (code, airline) => { const k = code + '|' + liveryOf(airline).key; if (!MODELS.has(k)) MODELS.set(k, buildAircraft(code, airline)); return MODELS.get(k); };
+  function dispose(obj) { obj.traverse(o => { o.geometry?.dispose(); [].concat(o.material || []).forEach(m => { m.map?.dispose(); m.dispose(); }); }); }
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ── Hangar cards: one shared renderer, a still picture per card, rotation only while hovered ──
+  // Models exist only while they are drawn (a card snapshot) or hovered, so memory stays low.
+  const RW = 560, RH = 350, YAW0 = -0.15;
+  let R0 = null, SCENE = null, CAM = null, IO = null, HOVER = null;
+  const CARDS = new Map(), QUEUE = [];
   function ensureShared() {
     if (R0) return;
-    const c = cnv(RW, RH);
-    R0 = new T.WebGLRenderer({ canvas: c, antialias: true, alpha: true, preserveDrawingBuffer: true });
+    R0 = new T.WebGLRenderer({ canvas: cnv(RW, RH), antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'low-power' });
     R0.setPixelRatio(1); R0.setSize(RW, RH, false); R0.outputColorSpace = T.SRGBColorSpace; R0.toneMapping = T.ACESFilmicToneMapping; R0.toneMappingExposure = 1.05;
-    SCENE = makeScene(); CAM = new T.PerspectiveCamera(30, RW / RH, 0.1, 50); frameCamera(CAM, 1.08);
-    IO = new IntersectionObserver(es => es.forEach(e => { const c0 = CARDS.get(e.target); if (c0) c0.visible = e.isIntersecting; }), { rootMargin: '100px' });
+    SCENE = makeScene(THEME); CAM = new T.PerspectiveCamera(30, RW / RH, 0.1, 50); frameCamera(CAM, 1.08);
+    IO = new IntersectionObserver(es => es.forEach(e => { const st = CARDS.get(e.target); if (!st) return; st.visible = e.isIntersecting; if (st.visible && !st.done) enqueue(e.target); }), { rootMargin: '600px' });
   }
-  function drawCard(cv, st, now) {
-    const m = st.model; SCENE.add(m);
-    m.rotation.y = st.yaw + (st.dragging || reduced() ? 0 : now * 0.00025); m.rotation.x = st.pitch;
-    m.traverse(o => { if (o.userData.spin) o.userData.spin.rotation.x = now * 0.02; });
-    R0.render(SCENE, CAM); SCENE.remove(m);
+  function draw(cv, model, yaw, pitch) {
+    SCENE.add(model); model.rotation.set(pitch, yaw, 0); R0.render(SCENE, CAM); SCENE.remove(model);
     const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height); ctx.drawImage(R0.domElement, 0, 0, cv.width, cv.height);
   }
-  function loop(now) {
-    LOOP = requestAnimationFrame(loop);
-    if (loop.last && now - loop.last < 33) return; loop.last = now;
-    for (const [cv, st] of CARDS) { if (!cv.isConnected) { CARDS.delete(cv); IO.unobserve(cv); continue; } if (st.visible || !st.drawn) { drawCard(cv, st, now); st.drawn = true; } }
-    if (!CARDS.size) { cancelAnimationFrame(LOOP); LOOP = 0; }
+  function enqueue(cv) { if (!QUEUE.includes(cv)) QUEUE.push(cv); if (QUEUE.length === 1) setTimeout(work, 0); }
+  function work() {   // one snapshot per task, so a long hangar never blocks the page
+    const cv = QUEUE.shift(); if (!cv) return;
+    const st = CARDS.get(cv);
+    if (st && cv.isConnected && !st.done && HOVER?.cv !== cv) { const m = buildAircraft(st.type, st.airline); draw(cv, m, st.yaw, st.pitch); dispose(m); st.done = true; }
+    if (QUEUE.length) setTimeout(work, 16);
   }
-  function attachDrag(el, st, onChange) {
+  function startHover(cv) {
+    const st = CARDS.get(cv); if (!st || reduced()) return;
+    stopHover();
+    HOVER = { cv, st, model: buildAircraft(st.type, st.airline), last: performance.now(), raf: 0 };
+    const tick = now => {
+      if (!HOVER || HOVER.cv !== cv) return;
+      if (!st.dragging) st.yaw += (now - HOVER.last) * 0.0009;
+      HOVER.last = now; draw(cv, HOVER.model, st.yaw, st.pitch); HOVER.raf = requestAnimationFrame(tick);
+    };
+    HOVER.raf = requestAnimationFrame(tick);
+  }
+  function stopHover() { if (!HOVER) return; cancelAnimationFrame(HOVER.raf); dispose(HOVER.model); HOVER = null; }
+  function wireCard(cv, st) {
+    cv.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') startHover(cv); });
+    cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && HOVER?.cv === cv) { stopHover(); } });
     let p0 = null;
-    el.addEventListener('pointerdown', e => {
-      if (!reduced()) st.yaw += performance.now() * 0.00025;   // freeze the auto-rotation at the angle shown
-      p0 = { x: e.clientX, y: e.clientY, yaw: st.yaw, pitch: st.pitch, moved: false }; st.dragging = true; el.setPointerCapture(e.pointerId); });
-    el.addEventListener('pointermove', e => { if (!p0) return; const dx = e.clientX - p0.x, dy = e.clientY - p0.y; if (Math.abs(dx) + Math.abs(dy) > 4) p0.moved = true;
-      st.yaw = p0.yaw + dx * 0.01; st.pitch = Math.max(-0.6, Math.min(0.6, p0.pitch + dy * 0.006)); onChange?.(); });
-    const up = e => { if (!p0) return; const moved = p0.moved; p0 = null; st.dragging = false; st.yaw -= reduced() ? 0 : performance.now() * 0.00025; if (moved) e.preventDefault(); el.dataset.dragged = moved ? '1' : ''; };
-    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    cv.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; p0 = { x: e.clientX, y: e.clientY, yaw: st.yaw, pitch: st.pitch, moved: false }; st.dragging = true; cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointermove', e => { if (!p0) return; const dx = e.clientX - p0.x, dy = e.clientY - p0.y; if (Math.abs(dx) + Math.abs(dy) > 4) p0.moved = true; st.yaw = p0.yaw + dx * 0.01; st.pitch = Math.max(-0.5, Math.min(0.5, p0.pitch + dy * 0.006)); });
+    const up = () => { if (!p0) return; cv.dataset.dragged = p0.moved ? '1' : ''; p0 = null; st.dragging = false; };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   }
 
-  function dispose(obj) { obj.traverse(o => { o.geometry?.dispose(); [].concat(o.material || []).forEach(m => { m.map?.dispose(); m.dispose(); }); }); }
   let LOADING = null;
   const Fleet3D = {
     load() {
@@ -356,39 +599,51 @@
     },
     has: code => !!DIMS[String(code || '').toUpperCase()],
     liveryName: (iata, lang) => { const l = LIV[String(iata || '').toUpperCase()]; return l ? (lang === 'zh' ? l.zh : l.name) : ''; },
-    // Register a hangar card canvas (16:10)
+    // Register a hangar card canvas (16:10); it is drawn once when it scrolls into view
     card(cv, { type, airline }) {
       ensureShared();
-      const dpr = Math.min(2, window.devicePixelRatio || 1), r = cv.getBoundingClientRect();
-      cv.width = Math.round((r.width || 320) * dpr); cv.height = Math.round(cv.width * RH / RW);
-      const st = { model: getModel(type, airline), yaw: -0.15, pitch: 0, visible: true, drawn: false, type };
-      CARDS.set(cv, st); IO.observe(cv); attachDrag(cv, st);
-      if (!LOOP) LOOP = requestAnimationFrame(loop);
+      const dpr = Math.min(1.5, window.devicePixelRatio || 1), r = cv.getBoundingClientRect();
+      cv.width = Math.round((r.width || 280) * dpr); cv.height = Math.round(cv.width * RH / RW);
+      const st = { type, airline, yaw: YAW0, pitch: 0, visible: false, done: false };
+      CARDS.set(cv, st); wireCard(cv, st); IO.observe(cv);
     },
-    setAirline(cv, airline) { const st = CARDS.get(cv); if (st) { st.model = getModel(st.type, airline); st.drawn = false; } },
-    // Full-size viewer with its own renderer: drag to rotate, wheel / pinch to zoom
-    viewer(host, { type, airline, yaw = -0.15 }) {
+    setAirline(cv, airline) { const st = CARDS.get(cv); if (!st) return; st.airline = airline; st.done = false; if (HOVER?.cv === cv) { stopHover(); startHover(cv); } else enqueue(cv); },
+    setTheme(theme) {
+      const t = theme === 'light' ? 'light' : 'dark';
+      if (t === THEME) return;
+      THEME = t;
+      if (!R0) return;
+      dispose(SCENE); SCENE = makeScene(THEME);
+      for (const [cv, st] of CARDS) { if (!cv.isConnected) { CARDS.delete(cv); IO.unobserve(cv); continue; } st.done = false; if (st.visible) enqueue(cv); }
+    },
+    // Full-size viewer with its own renderer: slow rotation, drag to turn, wheel / pinch to zoom
+    viewer(host, { type, airline, yaw = YAW0, zoom = 1 }) {
       const cv = cnv(10, 10); cv.className = 'v3d-canvas'; host.appendChild(cv);
       const rnd = new T.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
-      rnd.outputColorSpace = T.SRGBColorSpace; rnd.toneMapping = T.ACESFilmicToneMapping; rnd.toneMappingExposure = 1.05; rnd.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-      const scene = makeScene(), cam = new T.PerspectiveCamera(30, 1, 0.1, 50);
-      const st = { yaw, pitch: 0, zoom: 1, dragging: false };
+      rnd.outputColorSpace = T.SRGBColorSpace; rnd.toneMapping = T.ACESFilmicToneMapping; rnd.toneMappingExposure = 1.05; rnd.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
+      let scene = makeScene(THEME); const cam = new T.PerspectiveCamera(30, 1, 0.1, 50);
+      const st = { yaw, pitch: 0, zoom, dragging: false };
       let model = buildAircraft(type, airline); scene.add(model);
       const size = () => { const w = host.clientWidth, h = host.clientHeight; rnd.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); };
       size(); const ro = new ResizeObserver(size); ro.observe(host);
-      attachDrag(cv, st);
+      let p0 = null;
+      cv.addEventListener('pointerdown', e => { p0 = { x: e.clientX, y: e.clientY, yaw: st.yaw, pitch: st.pitch }; st.dragging = true; cv.setPointerCapture(e.pointerId); });
+      cv.addEventListener('pointermove', e => { if (!p0) return; st.yaw = p0.yaw + (e.clientX - p0.x) * 0.01; st.pitch = Math.max(-0.6, Math.min(0.6, p0.pitch + (e.clientY - p0.y) * 0.006)); });
+      const up = () => { p0 = null; st.dragging = false; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
       cv.addEventListener('wheel', e => { e.preventDefault(); st.zoom = Math.max(0.6, Math.min(3, st.zoom * (e.deltaY > 0 ? 0.92 : 1.08))); }, { passive: false });
       let pinch = null;
       cv.addEventListener('touchstart', e => { if (e.touches.length === 2) pinch = { d: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY), z: st.zoom }; }, { passive: true });
       cv.addEventListener('touchmove', e => { if (pinch && e.touches.length === 2) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); st.zoom = Math.max(0.6, Math.min(3, pinch.z * d / pinch.d)); } }, { passive: true });
       cv.addEventListener('touchend', () => { pinch = null; });
-      let raf = 0;
-      const tick = now => { raf = requestAnimationFrame(tick); model.rotation.y = st.yaw + (st.dragging || reduced() ? 0 : now * 0.00025); model.rotation.x = st.pitch;
-        model.traverse(o => { if (o.userData.spin) o.userData.spin.rotation.x = now * 0.02; }); frameCamera(cam, st.zoom * Math.min(1, Math.max(0.58, cam.aspect / 1.3))); rnd.render(scene, cam); };   // pull back on narrow (portrait) screens
+      let raf = 0, last = performance.now();
+      const tick = now => { raf = requestAnimationFrame(tick); if (!st.dragging && !reduced()) st.yaw += (now - last) * 0.00025; last = now;
+        model.rotation.set(st.pitch, st.yaw, 0); model.traverse(o => { if (o.userData.spin) o.userData.spin.rotation.x = now * 0.02; });
+        frameCamera(cam, st.zoom * Math.min(1, Math.max(0.58, cam.aspect / 1.3))); rnd.render(scene, cam); };
       raf = requestAnimationFrame(tick);
       return {
         setAirline(al) { scene.remove(model); dispose(model); model = buildAircraft(type, al); scene.add(model); },
-        destroy() { cancelAnimationFrame(raf); ro.disconnect(); dispose(model); rnd.dispose(); rnd.forceContextLoss?.(); cv.remove(); },
+        setTheme(t) { scene.remove(model); dispose(scene); scene = makeScene(t === 'light' ? 'light' : 'dark'); scene.add(model); },
+        destroy() { cancelAnimationFrame(raf); ro.disconnect(); dispose(model); dispose(scene); rnd.dispose(); rnd.forceContextLoss?.(); cv.remove(); },
       };
     },
   };
