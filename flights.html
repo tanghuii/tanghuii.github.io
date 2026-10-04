@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Pinyon+Script&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="">
 <script src="aviation.js"></script>
+<script src="fleet3d.js"></script>
 <style>
   /* Flight log: a private page (same travel password and encrypted file as travel.html), always in a dark "cockpit HUD" look. */
   :root {
@@ -125,13 +126,31 @@
   .ac { overflow: hidden; display: flex; flex-direction: column; }
   .ac-pic { position: relative; aspect-ratio: 16 / 10; background: radial-gradient(circle at 50% 45%, rgba(var(--cyan-rgb), 0.10), transparent 65%), linear-gradient(rgba(98, 196, 255, 0.07) 1px, transparent 1px) 0 0 / 12px 12px, linear-gradient(90deg, rgba(98, 196, 255, 0.07) 1px, transparent 1px) 0 0 / 12px 12px, #081426; color: var(--cyan); display: grid; place-items: center; border-bottom: 1px solid var(--line); }
   .ac-pic .ac-sil { width: 62%; height: 86%; filter: drop-shadow(0 0 6px rgba(var(--cyan-rgb), 0.45)); }
-  .ac-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.6s; }
-  .ac-pic img.on { opacity: 1; }
-  .ac-pic::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, transparent 55%, rgba(5, 11, 22, 0.75)), repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px); }
+  .ac-pic .ac-3d { position: absolute; inset: 0; width: 100%; height: 100%; display: none; cursor: grab; touch-action: pan-y; }
+  .ac-pic .ac-3d:active { cursor: grabbing; }
+  .fleet.is3d .ac-pic .ac-3d { display: block; }
+  .fleet.is3d .ac-pic .ac-sil { visibility: hidden; }
+  .ac-pic::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 3px); }
+  .ac-open { position: absolute; z-index: 2; right: 0.5rem; top: 0.45rem; width: 30px; height: 30px; border-radius: 3px; border: 1px solid var(--line-2); background: rgba(5, 11, 22, 0.7); color: var(--cyan); cursor: pointer; display: none; place-items: center; }
+  .fleet.is3d .ac-open { display: grid; }
+  .ac-open svg { width: 15px; height: 15px; }
+  .ac-livs { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
+  .liv { border: 1px solid var(--line-2); background: rgba(3, 9, 18, 0.5); color: var(--muted); border-radius: 3px; padding: 0.1rem 0.5rem; font-size: 0.78rem; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .liv:hover { color: var(--ink); border-color: var(--cyan); }
+  .liv.on { border-color: var(--cyan); color: var(--cyan); background: rgba(var(--cyan-rgb), 0.12); }
+  .liv i { font-style: normal; font-family: var(--f-mono); opacity: 0.7; margin-left: 0.3em; }
+  /* 3D viewer */
+  .v3d { position: fixed; inset: 0; z-index: 2000; background: rgba(2, 6, 14, 0.82); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: grid; place-items: center; padding: 1rem; }
+  .v3d-box { width: min(1100px, 100%); height: min(720px, calc(100vh - 2rem)); display: flex; flex-direction: column; background: rgba(8, 18, 33, 0.96); }
+  .v3d-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 0.9rem 1.1rem 0.4rem; }
+  .v3d-head h3 { font-family: var(--f-hud); font-size: 1.5rem; font-weight: 600; letter-spacing: 0.03em; }
+  .v3d-stage { position: relative; flex: 1; min-height: 0; background: radial-gradient(circle at 50% 55%, rgba(var(--cyan-rgb), 0.08), transparent 60%), linear-gradient(rgba(98, 196, 255, 0.05) 1px, transparent 1px) 0 0 / 24px 24px, linear-gradient(90deg, rgba(98, 196, 255, 0.05) 1px, transparent 1px) 0 0 / 24px 24px; }
+  .v3d-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  .v3d-foot { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap; padding: 0.6rem 1.1rem 0.9rem; font-size: 0.85rem; color: var(--muted); }
+  .v3d-foot .ac-livs { margin: 0; }
   .ac-code { position: absolute; z-index: 1; left: 0.6rem; top: 0.5rem; font-family: var(--f-mono); font-size: 0.75rem; color: var(--cyan); background: rgba(5, 11, 22, 0.75); border: 1px solid var(--line-2); padding: 0.05rem 0.4rem; border-radius: 2px; }
   .ac-n { position: absolute; z-index: 1; right: 0.6rem; bottom: 0.35rem; font-family: var(--f-mono); font-weight: 600; font-size: 1.5rem; color: #fff; text-shadow: 0 0 12px rgba(var(--cyan-rgb), 0.7); }
   .ac-n small { font-size: 0.55em; color: var(--muted); }
-  .ac-credit { position: absolute; z-index: 1; left: 0.6rem; bottom: 0.45rem; font-size: 0.68rem; color: var(--muted); text-decoration: none; }
   .ac-body { padding: 0.7rem 0.9rem 0.85rem; display: flex; flex-direction: column; gap: 0.15rem; }
   .ac-name { font-family: var(--f-hud); font-weight: 600; font-size: 1.08rem; }
   .ac-meta { font-size: 0.84rem; color: var(--muted); }
@@ -296,7 +315,7 @@
       <aside class="side" id="ranks"></aside>
     </div>
 
-    <p class="credits"><span data-en="Model photos: lead images of the English Wikipedia articles (Wikimedia Commons, see each photo's link for author and licence). Airports: OurAirports. Map: OpenStreetMap, 高德地图." data-zh="机型照片：英文维基百科条目首图（Wikimedia Commons，作者与许可见各照片链接）。机场数据：OurAirports。地图：OpenStreetMap、高德地图。">Model photos: lead images of the English Wikipedia articles (Wikimedia Commons, see each photo's link for author and licence). Airports: OurAirports. Map: OpenStreetMap, 高德地图.</span></p>
+    <p class="credits"><span data-en="3D models: generated from each type's dimensions, in simplified airline liveries (not official artwork). Airports: OurAirports. Map: OpenStreetMap, 高德地图." data-zh="三维模型：按各机型的真实尺寸生成，航空公司涂装为简化示意（非官方图案）。机场数据：OurAirports。地图：OpenStreetMap、高德地图。">3D models: generated from each type's dimensions, in simplified airline liveries (not official artwork). Airports: OurAirports. Map: OpenStreetMap, 高德地图.</span></p>
   </div>
 </div>
 
@@ -500,27 +519,61 @@ function renderRecords(list) {
   $('#records').innerHTML = cards.map(([k, v, s]) => `<div class="hud rec"><div class="k">${esc(k)}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
 }
 
+// Hangar: one card per aircraft type, a 3D model in the livery of the airline flown most on it (chips switch liveries)
+let FLEET_KEY = '';
+const OPEN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
+function fleetTypes(list) {
+  return tally(list, acKey, (k, f) => acName(f)).map(t => {
+    const fl = list.filter(f => acKey(f) === t.key), als = tally(fl, f => f.airline?.iata || f.airline?.name || '', (k, f) => A.airlineName(f.airline, LANG) || k).filter(a => a.key);
+    return { ...t, code: t.key.startsWith('x:') ? '' : t.key, als: als.map(a => ({ al: a.f.airline, n: a.n, label: (LANG === 'zh' ? A.airlineName(a.f.airline, 'zh') : window.Fleet3D?.liveryName(a.f.airline?.iata, 'en')) || a.label })) };
+  });
+}
+function livChips(t, cur) {
+  return t.als.slice(0, 5).map((a, i) => `<button type="button" class="liv${i === cur ? ' on' : ''}" data-liv="${i}" title="${esc(a.label)}">${esc(a.label)}<i>${a.n}</i></button>`).join('');
+}
 function renderFleet(list) {
-  const types = tally(list, acKey, (k, f) => acName(f)), max = types[0]?.n || 1;
+  const key = [YEAR, PURPOSE, LANG, list.length].join('|');
+  if (key === FLEET_KEY && $('#fleet').children.length) return;
+  FLEET_KEY = key;
+  const types = fleetTypes(list), max = types[0]?.n || 1;
   if (!types.length) { $('#fleet').innerHTML = `<div class="hud empty">${esc(tr('none'))}</div>`; return; }
-  $('#fleet').innerHTML = types.map(t => {
-    const code = t.key.startsWith('x:') ? '' : t.key, ty = A.type(code);
-    const als = [...new Set(list.filter(f => acKey(f) === t.key).map(f => A.airlineName(f.airline, LANG)).filter(Boolean))];
-    return `<div class="hud ac" data-code="${esc(code)}"><div class="ac-pic">${A.silhouette(ty?.body || 'narrow')}${code ? `<span class="ac-code">${esc(code)}</span>` : ''}<span class="ac-n">${t.n}<small>×</small></span></div>
+  $('#fleet').innerHTML = types.map((t, ti) => {
+    const ty = A.type(t.code);
+    return `<div class="hud ac" data-t="${ti}"><div class="ac-pic">${A.silhouette(ty?.body || 'narrow')}<canvas class="ac-3d" aria-label="${esc(LANG === 'zh' ? '三维模型：' : '3D model: ')}${esc(t.label)}"></canvas>${t.code ? `<span class="ac-code">${esc(t.code)}</span>` : ''}<button type="button" class="ac-open" aria-label="${esc(LANG === 'zh' ? '打开三维查看器' : 'Open the 3D viewer')}">${OPEN_ICON}</button><span class="ac-n">${t.n}<small>×</small></span></div>
       <div class="ac-body"><div class="ac-name">${esc(t.label || tr('unknownType'))}</div><div class="ac-meta">${ty ? esc(A.mfrName(ty.mfr, LANG)) + ' · ' : ''}${nf(t.km)} km</div>
-      ${als.length ? `<div class="ac-meta al">${esc(als.slice(0, 3).join(' · '))}${als.length > 3 ? ' …' : ''}</div>` : ''}<div class="bar"><span style="width:${Math.round(t.n / max * 100)}%"></span></div></div></div>`;
+      ${t.als.length ? `<div class="ac-livs">${livChips(t, 0)}</div>` : ''}<div class="bar"><span style="width:${Math.round(t.n / max * 100)}%"></span></div></div></div>`;
   }).join('');
-  $('#fleet').querySelectorAll('.ac[data-code]').forEach(card => {
-    const code = card.dataset.code; if (!code) return;
-    A.photo(code).then(ph => {
-      if (!ph) return;
-      const pic = card.querySelector('.ac-pic'), img = new Image();
-      img.alt = A.typeName(code, LANG); img.loading = 'lazy'; img.referrerPolicy = 'no-referrer';
-      img.onload = () => { img.classList.add('on'); pic.querySelector('.ac-sil')?.setAttribute('hidden', ''); };
-      img.src = ph.src; pic.prepend(img);
-      pic.insertAdjacentHTML('beforeend', `<a class="ac-credit" href="${esc(ph.page)}" target="_blank" rel="noopener">Wikipedia ↗</a>`);
+  window.Fleet3D?.load().then(ok => {
+    if (!ok) return;
+    $('#fleet').classList.add('is3d');
+    $('#fleet').querySelectorAll('.ac').forEach(card => {
+      const t = types[+card.dataset.t], cv = card.querySelector('.ac-3d');
+      Fleet3D.card(cv, { type: t.code, airline: t.als[0]?.al });
+      card.querySelectorAll('[data-liv]').forEach(b => b.onclick = () => {
+        card.querySelectorAll('[data-liv]').forEach(x => x.classList.toggle('on', x === b));
+        Fleet3D.setAirline(cv, t.als[+b.dataset.liv].al);
+      });
+      const open = () => openViewer(t, +(card.querySelector('.liv.on')?.dataset.liv || 0));
+      card.querySelector('.ac-open').onclick = open;
+      cv.addEventListener('click', () => { if (cv.dataset.dragged !== '1') open(); });
     });
   });
+}
+function openViewer(t, cur) {
+  const ty = A.type(t.code), box = document.createElement('div');
+  box.className = 'v3d'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', t.label);
+  box.innerHTML = `<div class="v3d-box hud"><div class="v3d-head"><div><p class="kicker">${esc(t.code || tr('unknownType'))}</p><h3>${esc(t.label)}</h3><div class="ac-meta">${ty ? esc(A.mfrName(ty.mfr, LANG)) + ' · ' : ''}${t.n} ${LANG === 'zh' ? '次' : (t.n === 1 ? 'flight' : 'flights')} · ${nf(t.km)} km</div></div>
+    <button type="button" class="icon-btn v3d-x" aria-label="${LANG === 'zh' ? '关闭' : 'Close'}">✕</button></div>
+    <div class="v3d-stage"></div>
+    <div class="v3d-foot"><div class="ac-livs">${livChips(t, cur)}</div><span>${LANG === 'zh' ? '拖动旋转 · 滚轮或双指缩放' : 'Drag to rotate · scroll or pinch to zoom'}</span></div></div>`;
+  document.body.appendChild(box); document.body.style.overflow = 'hidden';
+  const v = Fleet3D.viewer(box.querySelector('.v3d-stage'), { type: t.code, airline: t.als[cur]?.al });
+  box.querySelectorAll('[data-liv]').forEach(b => b.onclick = () => { box.querySelectorAll('[data-liv]').forEach(x => x.classList.toggle('on', x === b)); v.setAirline(t.als[+b.dataset.liv].al); });
+  const close = () => { v.destroy(); box.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', esc0); };
+  const esc0 = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', esc0);
+  box.querySelector('.v3d-x').onclick = close; box.addEventListener('click', e => { if (e.target === box) close(); });
+  box.querySelector('.v3d-x').focus();
 }
 
 const RANK_OPEN = new Set();

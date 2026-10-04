@@ -1,8 +1,7 @@
 /* aviation.js: shared helpers for the flight log (flights.html) and its editor in the Site Manager.
  *
- * - Aircraft types: ICAO type designator → name, manufacturer, body class, and the English Wikipedia
- *   article whose lead image is used as the model photo (loaded in the visitor's browser; when
- *   Wikipedia is unreachable a blueprint silhouette is drawn instead).
+ * - Aircraft types: ICAO type designator → name, manufacturer, body class (the 3D models in
+ *   fleet3d.js are built from each type's dimensions; a blueprint silhouette is the fallback).
  * - Chinese names for common airlines and manufacturers.
  * - Great-circle distance, estimated flight time and great-circle paths for the map.
  *
@@ -11,55 +10,55 @@
 (function () {
   'use strict';
 
-  // ── Aircraft types: [ICAO code, name, manufacturer, body, Wikipedia article] ──
+  // ── Aircraft types: [ICAO code, name, manufacturer, body] ──
   // body: narrow | wide | quad (four engines) | regional | turboprop
   const TYPES = [
-    ['A318', 'Airbus A318', 'Airbus', 'narrow', 'Airbus A318'],
-    ['A319', 'Airbus A319', 'Airbus', 'narrow', 'Airbus A319'],
-    ['A320', 'Airbus A320', 'Airbus', 'narrow', 'Airbus A320 family'],
-    ['A20N', 'Airbus A320neo', 'Airbus', 'narrow', 'Airbus A320neo family'],
-    ['A321', 'Airbus A321', 'Airbus', 'narrow', 'Airbus A321'],
-    ['A21N', 'Airbus A321neo', 'Airbus', 'narrow', 'Airbus A321neo'],
-    ['BCS1', 'Airbus A220-100', 'Airbus', 'narrow', 'Airbus A220'],
-    ['BCS3', 'Airbus A220-300', 'Airbus', 'narrow', 'Airbus A220'],
-    ['A332', 'Airbus A330-200', 'Airbus', 'wide', 'Airbus A330'],
-    ['A333', 'Airbus A330-300', 'Airbus', 'wide', 'Airbus A330'],
-    ['A339', 'Airbus A330-900neo', 'Airbus', 'wide', 'Airbus A330neo'],
-    ['A343', 'Airbus A340-300', 'Airbus', 'quad', 'Airbus A340'],
-    ['A346', 'Airbus A340-600', 'Airbus', 'quad', 'Airbus A340'],
-    ['A359', 'Airbus A350-900', 'Airbus', 'wide', 'Airbus A350'],
-    ['A35K', 'Airbus A350-1000', 'Airbus', 'wide', 'Airbus A350'],
-    ['A388', 'Airbus A380-800', 'Airbus', 'quad', 'Airbus A380'],
-    ['B733', 'Boeing 737-300', 'Boeing', 'narrow', 'Boeing 737 Classic'],
-    ['B737', 'Boeing 737-700', 'Boeing', 'narrow', 'Boeing 737 Next Generation'],
-    ['B738', 'Boeing 737-800', 'Boeing', 'narrow', 'Boeing 737 Next Generation'],
-    ['B739', 'Boeing 737-900', 'Boeing', 'narrow', 'Boeing 737 Next Generation'],
-    ['B38M', 'Boeing 737 MAX 8', 'Boeing', 'narrow', 'Boeing 737 MAX'],
-    ['B39M', 'Boeing 737 MAX 9', 'Boeing', 'narrow', 'Boeing 737 MAX'],
-    ['B744', 'Boeing 747-400', 'Boeing', 'quad', 'Boeing 747-400'],
-    ['B748', 'Boeing 747-8', 'Boeing', 'quad', 'Boeing 747-8'],
-    ['B752', 'Boeing 757-200', 'Boeing', 'narrow', 'Boeing 757'],
-    ['B763', 'Boeing 767-300', 'Boeing', 'wide', 'Boeing 767'],
-    ['B772', 'Boeing 777-200', 'Boeing', 'wide', 'Boeing 777'],
-    ['B77L', 'Boeing 777-200LR', 'Boeing', 'wide', 'Boeing 777'],
-    ['B77W', 'Boeing 777-300ER', 'Boeing', 'wide', 'Boeing 777'],
-    ['B779', 'Boeing 777-9', 'Boeing', 'wide', 'Boeing 777X'],
-    ['B788', 'Boeing 787-8', 'Boeing', 'wide', 'Boeing 787 Dreamliner'],
-    ['B789', 'Boeing 787-9', 'Boeing', 'wide', 'Boeing 787 Dreamliner'],
-    ['B78X', 'Boeing 787-10', 'Boeing', 'wide', 'Boeing 787 Dreamliner'],
-    ['C919', 'COMAC C919', 'COMAC', 'narrow', 'Comac C919'],
-    ['AJ27', 'COMAC ARJ21 (C909)', 'COMAC', 'regional', 'Comac ARJ21'],
-    ['E170', 'Embraer 170', 'Embraer', 'regional', 'Embraer E-Jet family'],
-    ['E175', 'Embraer 175', 'Embraer', 'regional', 'Embraer E-Jet family'],
-    ['E190', 'Embraer 190', 'Embraer', 'regional', 'Embraer E-Jet family'],
-    ['E195', 'Embraer 195', 'Embraer', 'regional', 'Embraer E-Jet family'],
-    ['E290', 'Embraer 190-E2', 'Embraer', 'regional', 'Embraer E-Jet E2 family'],
-    ['E295', 'Embraer 195-E2', 'Embraer', 'regional', 'Embraer E-Jet E2 family'],
-    ['CRJ9', 'Bombardier CRJ900', 'Bombardier', 'regional', 'Bombardier CRJ700 series'],
-    ['DH8D', 'De Havilland Dash 8-400', 'De Havilland Canada', 'turboprop', 'De Havilland Canada Dash 8'],
-    ['AT76', 'ATR 72-600', 'ATR', 'turboprop', 'ATR 72'],
-    ['F100', 'Fokker 100', 'Fokker', 'regional', 'Fokker 100'],
-  ].map(([code, name, mfr, body, wiki]) => ({ code, name, mfr, body, wiki }));
+    ['A318', 'Airbus A318', 'Airbus', 'narrow'],
+    ['A319', 'Airbus A319', 'Airbus', 'narrow'],
+    ['A320', 'Airbus A320', 'Airbus', 'narrow'],
+    ['A20N', 'Airbus A320neo', 'Airbus', 'narrow'],
+    ['A321', 'Airbus A321', 'Airbus', 'narrow'],
+    ['A21N', 'Airbus A321neo', 'Airbus', 'narrow'],
+    ['BCS1', 'Airbus A220-100', 'Airbus', 'narrow'],
+    ['BCS3', 'Airbus A220-300', 'Airbus', 'narrow'],
+    ['A332', 'Airbus A330-200', 'Airbus', 'wide'],
+    ['A333', 'Airbus A330-300', 'Airbus', 'wide'],
+    ['A339', 'Airbus A330-900neo', 'Airbus', 'wide'],
+    ['A343', 'Airbus A340-300', 'Airbus', 'quad'],
+    ['A346', 'Airbus A340-600', 'Airbus', 'quad'],
+    ['A359', 'Airbus A350-900', 'Airbus', 'wide'],
+    ['A35K', 'Airbus A350-1000', 'Airbus', 'wide'],
+    ['A388', 'Airbus A380-800', 'Airbus', 'quad'],
+    ['B733', 'Boeing 737-300', 'Boeing', 'narrow'],
+    ['B737', 'Boeing 737-700', 'Boeing', 'narrow'],
+    ['B738', 'Boeing 737-800', 'Boeing', 'narrow'],
+    ['B739', 'Boeing 737-900', 'Boeing', 'narrow'],
+    ['B38M', 'Boeing 737 MAX 8', 'Boeing', 'narrow'],
+    ['B39M', 'Boeing 737 MAX 9', 'Boeing', 'narrow'],
+    ['B744', 'Boeing 747-400', 'Boeing', 'quad'],
+    ['B748', 'Boeing 747-8', 'Boeing', 'quad'],
+    ['B752', 'Boeing 757-200', 'Boeing', 'narrow'],
+    ['B763', 'Boeing 767-300', 'Boeing', 'wide'],
+    ['B772', 'Boeing 777-200', 'Boeing', 'wide'],
+    ['B77L', 'Boeing 777-200LR', 'Boeing', 'wide'],
+    ['B77W', 'Boeing 777-300ER', 'Boeing', 'wide'],
+    ['B779', 'Boeing 777-9', 'Boeing', 'wide'],
+    ['B788', 'Boeing 787-8', 'Boeing', 'wide'],
+    ['B789', 'Boeing 787-9', 'Boeing', 'wide'],
+    ['B78X', 'Boeing 787-10', 'Boeing', 'wide'],
+    ['C919', 'COMAC C919', 'COMAC', 'narrow'],
+    ['AJ27', 'COMAC ARJ21 (C909)', 'COMAC', 'regional'],
+    ['E170', 'Embraer 170', 'Embraer', 'regional'],
+    ['E175', 'Embraer 175', 'Embraer', 'regional'],
+    ['E190', 'Embraer 190', 'Embraer', 'regional'],
+    ['E195', 'Embraer 195', 'Embraer', 'regional'],
+    ['E290', 'Embraer 190-E2', 'Embraer', 'regional'],
+    ['E295', 'Embraer 195-E2', 'Embraer', 'regional'],
+    ['CRJ9', 'Bombardier CRJ900', 'Bombardier', 'regional'],
+    ['DH8D', 'De Havilland Dash 8-400', 'De Havilland Canada', 'turboprop'],
+    ['AT76', 'ATR 72-600', 'ATR', 'turboprop'],
+    ['F100', 'Fokker 100', 'Fokker', 'regional'],
+  ].map(([code, name, mfr, body]) => ({ code, name, mfr, body }));
   const BY_CODE = new Map(TYPES.map(t => [t.code, t]));
 
   const MFR_ZH = { Airbus: '空客', Boeing: '波音', COMAC: '中国商飞', Embraer: '巴航工业', Bombardier: '庞巴迪', 'De Havilland Canada': '德哈维兰', ATR: 'ATR', Fokker: '福克' };
@@ -123,7 +122,7 @@
     try { DN[lang] ||= new Intl.DisplayNames([lang === 'zh' ? 'zh-Hans' : 'en'], { type: 'region' }); return DN[lang].of(cc) || cc; } catch (e) { return cc; }
   }
 
-  // ── Blueprint silhouettes (top view, nose up) for when no photo is available ──
+  // ── Blueprint silhouettes (top view, nose up) for when WebGL is not available ──
   function silhouette(body) {
     const wide = body === 'wide' || body === 'quad', prop = body === 'turboprop', reg = body === 'regional';
     const fw = wide ? 6 : 4.2, x0 = 50 - fw, x1 = 50 + fw;
@@ -144,30 +143,5 @@
       <path d="${wing}"/><path d="${tail}"/><path d="${fus}"/><g>${engines}</g></svg>`;
   }
 
-  // ── Model photo: the lead image of the type's English Wikipedia article ──
-  // Resolves to { src, page } or null (offline, blocked, no image). Cached per browser for a week.
-  const PHOTO_CACHE = 'av_photo_v1', WEEK = 7 * 864e5;
-  function photoCache() { try { return JSON.parse(localStorage.getItem(PHOTO_CACHE) || '{}'); } catch (e) { return {}; } }
-  const PENDING = new Map();
-  function photo(code) {
-    const t = type(code); if (!t) return Promise.resolve(null);
-    const c = photoCache()[t.wiki];
-    if (c && Date.now() - c.at < WEEK) return Promise.resolve(c.src ? { src: c.src, page: c.page } : null);
-    if (PENDING.has(t.wiki)) return PENDING.get(t.wiki);
-    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 6000);
-    const p = fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(t.wiki.replace(/ /g, '_')), { signal: ctl.signal })
-      .then(r => r.ok ? r.json() : null)
-      .then(j => {
-        const src = j?.thumbnail?.source || '';
-        const page = j?.content_urls?.desktop?.page || 'https://en.wikipedia.org/wiki/' + encodeURIComponent(t.wiki.replace(/ /g, '_'));
-        try { const all = photoCache(); all[t.wiki] = { src, page, at: Date.now() }; localStorage.setItem(PHOTO_CACHE, JSON.stringify(all)); } catch (e) {}
-        return src ? { src, page } : null;
-      })
-      .catch(() => null)
-      .finally(() => clearTimeout(timer));
-    PENDING.set(t.wiki, p);
-    return p;
-  }
-
-  window.Aviation = { TYPES, type, typeName, mfrName, airlineName, AIRLINE_ZH, countryName, statCC, distKm, estMinutes, greatCircle, silhouette, photo };
+  window.Aviation = { TYPES, type, typeName, mfrName, airlineName, AIRLINE_ZH, countryName, statCC, distKm, estMinutes, greatCircle, silhouette };
 })();
