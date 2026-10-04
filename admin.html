@@ -2870,7 +2870,7 @@ function viewFootprints(v) {
 
   // Editor
   const T = FP.data;
-  const fold = (id, title, sub, body, cls = '') => `<details class="card fold ${cls}" data-fold="${id}" ${FP_FOLDS.has(id) ? 'open' : ''}><summary>${title}<span class="hint">${sub}</span></summary>${body}</details>`;
+  const foldCard = (id, title, sub, body, cls = '') => `<details class="card fold ${cls}" data-fold="${id}" ${FP_FOLDS.has(id) ? 'open' : ''}><summary>${title}<span class="hint">${sub}</span></summary>${body}</details>`;
   const nAcad = T.places.filter(p => p.academic).length, nPhotos = T.places.reduce((n, p) => n + p.photos.length, 0);
   v.innerHTML = `<h2>Footprints</h2><div class="tv-head tv-top"><span class="pill ok">${T.places.length} place${T.places.length === 1 ? '' : 's'}</span><span class="pill acad">${nAcad} academic</span><span class="hint">${nPhotos} photo${nPhotos === 1 ? '' : 's'} · text changes are saved with <b>Publish changes</b>; photos upload immediately.</span></div>
   <div class="card"><h3>Add a place</h3>
@@ -2884,18 +2884,18 @@ function viewFootprints(v) {
     <span class="sort-seg" id="tv-sort" role="group" aria-label="Sort"><button type="button" data-psort="name" class="${PLACE_SORT === 'name' ? 'on' : ''}">A–Z</button><button type="button" data-psort="date" class="${PLACE_SORT === 'date' ? 'on' : ''}">Newest first</button></span>
     <button class="btn sm" type="button" id="tv-open-all">Expand all</button><button class="btn sm" type="button" id="tv-close-all">Collapse all</button></div>
   <div id="tv-places"></div>
-  <div class="tv-folds">${fold('pages', 'Page titles &amp; introductions', 'travel.html and academic.html', `<p class="hint" style="margin-bottom:0.8rem">One list of places for two pages. <a href="travel.html" target="_blank">travel.html</a> shows everything and opens only with the <b>travel password</b> (share it with family and friends; it gives no access to this manager). Entries ticked as <b>academic visit</b> are also published, in clear, on the public <a href="academic.html" target="_blank">academic.html</a>.</p>
+  <div class="tv-folds">${foldCard('pages', 'Page titles &amp; introductions', 'travel.html and academic.html', `<p class="hint" style="margin-bottom:0.8rem">One list of places for two pages. <a href="travel.html" target="_blank">travel.html</a> shows everything and opens only with the <b>travel password</b> (share it with family and friends; it gives no access to this manager). Entries ticked as <b>academic visit</b> are also published, in clear, on the public <a href="academic.html" target="_blank">academic.html</a>.</p>
     <div class="row two">
       <div><h3 style="font-size:1.1rem">Travel page (private)</h3>${biField('Title (use *asterisks* for the italic blue word)', T, 'title')}${biField('Introduction', T, 'intro', 'textarea')}</div>
       <div><h3 style="font-size:1.1rem">Academic page (public)</h3>${biField('Title', T, 'pub_title')}${biField('Introduction', T, 'pub_intro', 'textarea')}</div></div>
     <div class="toolbar"><a class="btn sm" href="travel.html" target="_blank">Open travel.html ↗</a><a class="btn sm" href="academic.html" target="_blank">Open academic.html ↗</a></div>`)}
-  ${fold('check', 'Check all tags', '5A, national parks, World Heritage', `<div class="toolbar" style="margin:0"><button class="btn sm primary" id="tv-check">✓ Check all tags</button>
+  ${foldCard('check', 'Check all tags', '5A, national parks, World Heritage', `<div class="toolbar" style="margin:0"><button class="btn sm primary" id="tv-check">✓ Check all tags</button>
     <span class="hint" style="margin:0">Re-checks every saved sight: 5A against the official list (358, May 2025), national parks against the official rule, and World Heritage / 5A-area grouping. Tags you set by hand are checked too.</span></div>
     <div id="tv-check-out"></div>`, 'tag-check')}
-  ${fold('map', 'Map services', 'Amap key for Chinese landmark search', `    <p class="hint" style="margin-bottom:0.8rem">Landmark search uses Wikidata and the built-in UNESCO list. Wikidata is blocked in mainland China, so for Chinese places add a free <b>Amap (高德) Web-service key</b>: open <a href="https://console.amap.com/dev/key/app" target="_blank">console.amap.com</a> → 应用管理 → 创建新应用 → 添加 Key → 服务平台 <b>Web服务</b>. The key is stored inside your encrypted sign-in.</p>
+  ${foldCard('map', 'Map services', 'Amap key for Chinese landmark search', `    <p class="hint" style="margin-bottom:0.8rem">Landmark search uses Wikidata and the built-in UNESCO list. Wikidata is blocked in mainland China, so for Chinese places add a free <b>Amap (高德) Web-service key</b>: open <a href="https://console.amap.com/dev/key/app" target="_blank">console.amap.com</a> → 应用管理 → 创建新应用 → 添加 Key → 服务平台 <b>Web服务</b>. The key is stored inside your encrypted sign-in.</p>
     <div class="row" style="grid-template-columns:1fr auto;align-items:end"><div class="field" style="margin:0"><label for="tv-amap">Amap Web-service key</label><input id="tv-amap" type="password" class="mono" value="${esc(amapKey())}" autocomplete="off" placeholder="32 hex characters"></div><button class="btn sm" id="tv-amap-save">Save</button></div>
     <p class="hint" id="tv-amap-msg" style="margin-top:0.4rem"></p>`)}
-  ${fold('pw', 'Travel password', 'change the password for travel.html', `    <p class="hint" style="margin-bottom:0.8rem">Share this password with the people who may see travel.html. Changing it only re-encrypts the list; the photos stay as they are.</p>
+  ${foldCard('pw', 'Travel password', 'change the password for travel.html', `    <p class="hint" style="margin-bottom:0.8rem">Share this password with the people who may see travel.html. Changing it only re-encrypts the list; the photos stay as they are.</p>
     <form id="f-tv-chpw" autocomplete="off"><div class="row two">
       <div class="field"><label for="tv-npw">New travel password</label><input id="tv-npw" type="password" minlength="${TRAVEL_MIN_PW}" required autocomplete="new-password"></div>
       <div class="field"><label for="tv-npw2">Repeat</label><input id="tv-npw2" type="password" required autocomplete="new-password"></div></div>
