@@ -611,7 +611,7 @@
 <div class="gate" id="gate">
   <div class="gate-card">
     <div class="gate-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
-    <h1 data-en="Travel map" data-zh="旅行足迹">Travel map</h1>
+    <h1 data-en="Life in Passage" data-zh="山河逆旅">Life in Passage</h1>
     <p class="lead" data-en="A private page. Enter the password to see the places and photos." data-zh="这是一个私密页面，请输入密码查看地点和照片。">A private page. Enter the password to see the places and photos.</p>
     <form id="f-gate" autocomplete="on">
       <input type="text" name="username" value="travel" autocomplete="username" hidden>
@@ -952,7 +952,7 @@ function renderHeader() {
   const places = DATA.places || [];
   const nCountries = new Set(places.map(p => normCC(p.cc) || t(p.country))).size;
   const nPhotos = places.reduce((n, p) => n + (p.photos || []).length, 0);
-  const title = t(DATA.title) || (PRIVATE ? (LANG === 'zh' ? '我的旅行足迹' : 'Places I have been') : (LANG === 'zh' ? '学术足迹' : 'Academic footprint'));
+  const title = (PRIVATE && (!DATA.title || /旅行足迹|Places I have/.test(t(DATA.title))) ? (LANG === 'zh' ? '山河逆旅' : 'Life in Passage') : t(DATA.title)) || (PRIVATE ? (LANG === 'zh' ? '山河逆旅' : 'Life in Passage') : (LANG === 'zh' ? '学术足迹' : 'Academic footprint'));
   $('#title').innerHTML = esc(title).replace(/\*([^*]+)\*/g, '<em>$1</em>');
   $('#intro').textContent = t(DATA.intro) || '';
   $('#intro').hidden = !t(DATA.intro);
@@ -1739,7 +1739,7 @@ function applyLang(lang) {
   document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
   document.querySelectorAll('[data-en][data-zh]').forEach(el => { el.textContent = el.getAttribute('data-' + lang); });
   document.querySelectorAll('[data-tip-en]').forEach(el => { el.title = el.getAttribute('data-tip-' + lang); });
-  document.title = PRIVATE ? (lang === 'zh' ? '旅行足迹 | 唐辉' : 'Travel | Hui Tang') : (lang === 'zh' ? '学术足迹 | 唐辉' : 'Academic footprint | Hui Tang');
+  document.title = PRIVATE ? (lang === 'zh' ? '山河逆旅 | 唐辉' : 'Life in Passage | Hui Tang') : (lang === 'zh' ? '学术足迹 | 唐辉' : 'Academic footprint | Hui Tang');
   if (DATA && !$('#app').hidden) { renderHeader(); renderList(); renderMap(); }
 }
 $('#lang-toggle').addEventListener('click', e => { const b = e.target.closest('.lang-btn'); if (b && b.dataset.lang !== LANG) applyLang(b.dataset.lang); });
