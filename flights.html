@@ -133,6 +133,9 @@
   .leaflet-tooltip.fl-tip::before { display: none; }
   .fl-tip b { font-family: var(--f-mono); color: var(--cyan); }
   .fl-flow { stroke-dasharray: 3 9; animation: flow 1.6s linear infinite; }
+  .fl-plane { background: none; border: 0; pointer-events: none; }
+  .fl-plane img, .fl-plane-svg { display: block; width: 68px; height: 68px; filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.35)); }
+  .fl-plane-svg { color: var(--cyan); padding: 18px; box-sizing: border-box; }
   @keyframes flow { to { stroke-dashoffset: -24; } }
   .map-foot { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap; padding: 0.55rem 0.4rem 0.1rem; font-size: 0.84rem; color: var(--muted); }
   .legend { display: inline-flex; align-items: center; gap: 0.45rem; margin-right: 1rem; }
@@ -514,8 +517,8 @@ function initMap() {
   LAYER = L.layerGroup().addTo(MAP);
 }
 const mapColors = () => document.documentElement.dataset.theme === 'light'
-  ? { route: '#0a7ea6', acad: '#c77700', flow: '#ffffff', dot: '#0a7ea6', dotFill: '#ffffff' }
-  : { route: '#4de1ff', acad: '#ffb547', flow: '#ffffff', dot: '#4de1ff', dotFill: '#04111f' };
+  ? { route: '#0a7ea6', acad: '#c77700', flow: '#ffffff', dot: '#0a7ea6', dotFill: '#ffffff', trail: '#e8590c' }
+  : { route: '#4de1ff', acad: '#ffb547', flow: '#ffffff', dot: '#4de1ff', dotFill: '#04111f', trail: '#ffd166' };
 function renderMap(list) {
   initMap(); LAYER.clearLayers();
   const C = mapColors(), routes = new Map(), aps = new Map();
@@ -532,7 +535,7 @@ function renderMap(list) {
     const tip = `<b>${esc(r.a.iata)} ⇄ ${esc(r.b.iata)}</b><br>${esc(city(r.a))} – ${esc(city(r.b))}<br>${nf(A.distKm(r.a, r.b))} km · ${r.n} ${LANG === 'zh' ? '次' : (r.n === 1 ? 'flight' : 'flights')}`;
     // the wide, faint glow line doubles as the hover / click target
     L.polyline(path, { color: col, weight: w + 9, opacity: on ? 0.14 : 0.04 }).addTo(LAYER).bindTooltip(tip, { className: 'fl-tip', sticky: true })
-      .on('click', () => { SEL = SEL?.kind === 'route' && SEL.key === r.k ? null : { kind: 'route', key: r.k, label: `${r.a.iata} ⇄ ${r.b.iata}` }; renderAll(); });
+      .on('click', () => { SEL = SEL?.kind === 'route' && SEL.key === r.k ? null : { kind: 'route', key: r.k, label: `${r.a.iata} ⇄ ${r.b.iata}` }; renderAll(); if (SEL) flyRoute(list.filter(f => routeKey(f) === r.k).sort((x, y) => String(y.date).localeCompare(String(x.date)))[0]); });
     L.polyline(path, { color: col, weight: w, opacity: on ? 0.7 : 0.14, interactive: false }).addTo(LAYER);
     if (on && animate) L.polyline(path, { color: C.flow, weight: Math.max(1.2, w - 1), opacity: 0.85, className: 'fl-flow', interactive: false }).addTo(LAYER);
     pts.push([r.a.lat, r.a.lon], [r.b.lat, r.b.lon]);
@@ -545,8 +548,35 @@ function renderMap(list) {
       .on('click', () => { SEL = SEL?.kind === 'airport' && SEL.key === ap.iata ? null : { kind: 'airport', key: ap.iata, label: ap.iata }; renderAll(); });
   });
   if (FIRST_FIT && pts.length) { MAP.fitBounds(L.latLngBounds(pts).pad(0.12), { maxZoom: 6 }); FIRST_FIT = false; }
-  $('#map-sel').innerHTML = SEL ? `<button type="button" class="sel-chip" id="sel-clear">${esc(SEL.label)} ✕ ${esc(tr('clear'))}</button>` : `<span>${esc(LANG === 'zh' ? '点击航线或机场，可筛选下方的飞行日志。' : 'Click a route or an airport to filter the log.')}</span>`;
+  $('#map-sel').innerHTML = SEL ? `<button type="button" class="sel-chip" id="sel-clear">${esc(SEL.label)} ✕ ${esc(tr('clear'))}</button>` : `<span>${esc(LANG === 'zh' ? '点击航线：飞机沿航线飞行并筛选日志；点击机场可筛选该机场。' : 'Click a route to fly it and filter the log; click an airport to filter by airport.')}</span>`;
   const c = $('#sel-clear'); if (c) c.onclick = () => { SEL = null; renderAll(); };
+  if (FLY && !(SEL?.kind === 'route' && SEL.key === FLY.key)) stopFly();
+}
+
+// Route flight: when a route is picked, a model of that flight (type and livery) flies along it from origin to destination
+let FLY = null;
+function stopFly() { if (!FLY) return; cancelAnimationFrame(FLY.raf); FLY.layer.remove(); FLY = null; }
+async function flyRoute(f) {
+  stopFly(); if (!f || !MAP) return;
+  const me = FLY = { key: routeKey(f), raf: 0, layer: L.layerGroup().addTo(MAP) };
+  let src = null;
+  if (window.Fleet3D && f.ac) { try { if (await Fleet3D.load()) src = Fleet3D.sprite({ type: f.ac, airline: f.airline }); } catch (e) { src = null; } }
+  if (FLY !== me) return;
+  const path = A.greatCircle(f.from, f.to, 160), n = path.length - 1, C = mapColors();
+  const icon = L.divIcon({ className: 'fl-plane', iconSize: [68, 68], iconAnchor: [34, 34], html: src ? `<img src="${src}" alt="">` : `<span class="fl-plane-svg">${PLANE_I}</span>` });
+  const trail = L.polyline([path[0]], { color: C.trail, weight: 3, opacity: 0.95, interactive: false }).addTo(me.layer);
+  const m = L.marker(path[0], { icon, interactive: false, keyboard: false, zIndexOffset: 1000 }).addTo(me.layer);
+  const place = s => {
+    const x = s * n, i = Math.min(n - 1, Math.floor(x)), fr = x - i, a = path[i], b = path[i + 1];
+    const ll = L.latLng(a[0] + (b[0] - a[0]) * fr, a[1] + (b[1] - a[1]) * fr); m.setLatLng(ll);
+    const pa = MAP.latLngToLayerPoint(a), pb = MAP.latLngToLayerPoint(b), el = m.getElement()?.firstElementChild;
+    if (el) el.style.transform = `rotate(${Math.atan2(pb.y - pa.y, pb.x - pa.x) * 180 / Math.PI + 90}deg)`;   // the picture's nose points up
+    trail.setLatLngs(path.slice(0, i + 1).concat([ll]));
+  };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { place(1); return; }
+  let t0 = 0; const dur = Math.min(7000, 2600 + A.distKm(f.from, f.to) * 0.45), ease = t => t < 0.5 ? 2 * t * t : 1 - (2 - 2 * t) ** 2 / 2;
+  const tick = now => { if (FLY !== me) return; t0 ||= now; const s = Math.min(1, (now - t0) / dur); place(ease(s)); if (s < 1) me.raf = requestAnimationFrame(tick); };
+  me.raf = requestAnimationFrame(tick);
 }
 
 // Flag wall: countries visited (footprints) and flown to (airports); Hong Kong, Macau and Taiwan count as China
@@ -676,7 +706,7 @@ function renderLog(list) {
     }
     const acad = f.purpose === 'academic', cls = { economy: ['Economy', '经济舱'], premium: ['Premium economy', '超级经济舱'], business: ['Business', '公务舱'], first: ['First', '头等舱'] }[f.cls];
     const extra = [f.reg, f.seat ? (LANG === 'zh' ? '座位 ' : 'Seat ') + f.seat : '', cls ? cls[LANG === 'zh' ? 1 : 0] : ''].filter(Boolean).join(' · ');
-    html += `<tr class="fl${SEL && selMatch(f) ? ' sel' : ''}" data-route="${esc(routeKey(f))}">
+    html += `<tr class="fl${SEL && selMatch(f) ? ' sel' : ''}" data-route="${esc(routeKey(f))}" data-i="${FLIGHTS.indexOf(f)}">
       <td class="mono" style="white-space:nowrap">${esc(fmtDate(f.date))}</td>
       <td class="mono" style="white-space:nowrap;color:#fff">${esc(f.no || '—')}${acad ? `<span class="tag">${LANG === 'zh' ? '学术' : 'ACAD'}</span>` : ''}</td>
       <td><span class="route${acad ? ' acad' : ''}"><b>${esc(f.from.iata)}</b><span class="arrow">→</span><b>${esc(f.to.iata)}</b></span><span class="s">${esc(city(f.from))} – ${esc(city(f.to))}</span></td>
@@ -690,7 +720,7 @@ function renderLog(list) {
     const k = tr0.dataset.route, [a, b] = k.split('-');
     SEL = SEL?.kind === 'route' && SEL.key === k ? null : { kind: 'route', key: k, label: `${a} ⇄ ${b}` };
     renderAll();
-    if (SEL) { const f = FLIGHTS.find(x => routeKey(x) === k); MAP.fitBounds(L.latLngBounds(A.greatCircle(f.from, f.to)).pad(0.25), { maxZoom: 6 }); $('#map').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    if (SEL) { const f = FLIGHTS[+tr0.dataset.i] || FLIGHTS.find(x => routeKey(x) === k); MAP.fitBounds(L.latLngBounds(A.greatCircle(f.from, f.to)).pad(0.25), { maxZoom: 6 }); $('#map').scrollIntoView({ behavior: 'smooth', block: 'center' }); flyRoute(f); }
   });
 }
 
