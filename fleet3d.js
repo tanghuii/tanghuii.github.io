@@ -63,6 +63,11 @@
     SQ: { name: 'Singapore Airlines', zh: '新加坡航空', cheat: [[0.325, 0.006, '#f0ab00'], [0.334, 0.01, '#0b2a6f']], text: ['SINGAPORE AIRLINES'], textColor: '#0b2a6f', engine: '#e9ecf0', tail: 'sq' },
     EK: { name: 'Emirates', zh: '阿联酋航空', text: ['Emirates'], textColor: '#9a7b2f', serif: true, engine: '#e9ecf0', tail: 'ek' },
     TK: { name: 'Turkish Airlines', zh: '土耳其航空', text: ['TURKISH AIRLINES'], textColor: '#1b2b5a', engine: '#e9ecf0', tail: 'tk' },
+    NH: { name: 'ANA', zh: '全日空', cheat: [[0.322, 0.01, '#13448f'], [0.336, 0.006, '#00a3e0']], text: ['ANA'], textColor: '#13448f', engine: '#e9ecf0', tail: 'nh' },
+    TO: { name: 'Transavia', zh: '泛航航空', text: ['transavia'], textColor: '#00a651', engine: '#e9ecf0', tail: 'to' },
+    OS: { name: 'Austrian', zh: '奥地利航空', text: ['Austrian'], textColor: '#d8001a', engine: '#e9ecf0', tail: 'os' },
+    FR: { name: 'Ryanair', zh: '瑞安航空', belly: '#073590', bellyFrom: 0.34, cheat: [[0.335, 0.006, '#f1c933']], text: ['RYANAIR'], textColor: '#073590', engine: '#e9ecf0', tail: 'fr' },
+    VY: { name: 'Vueling', zh: '伏林航空', text: ['vueling'], textColor: '#4a4a4a', engine: '#e9ecf0', tail: 'vy' },
     QR: { name: 'Qatar Airways', zh: '卡塔尔航空', text: ['QATAR AIRWAYS'], textColor: '#5c0632', engine: '#5c0632', tail: 'qr' },
   };
   const liveryOf = al => {
@@ -138,6 +143,11 @@
     ek(x, w, h) { bg(x, w, h, '#ffffff'); [['#00843d', 0.3], ['#ffffff', 0.4], ['#111111', 0.5]].forEach(([c, y]) => wave(x, w, h, y, c)); x.fillStyle = '#d0021b'; x.fillRect(0, 0, w * 0.32, h); },
     tk(x, w, h) { bg(x, w, h, '#c8102e'); x.fillStyle = '#fff'; x.beginPath(); x.arc(w * 0.6, h * 0.42, h * 0.18, 0, Math.PI * 2); x.fill(); bird(x, w * 0.6, h * 0.42, h * 0.15, '#c8102e'); },
     qr(x, w, h) { bg(x, w, h, '#5c0632'); x.strokeStyle = '#e8e2e5'; x.lineWidth = h * 0.02; x.beginPath(); x.moveTo(w * 0.5, h * 0.62); x.quadraticCurveTo(w * 0.55, h * 0.2, w * 0.78, h * 0.15); x.moveTo(w * 0.56, h * 0.62); x.quadraticCurveTo(w * 0.62, h * 0.25, w * 0.84, h * 0.2); x.stroke(); },
+    nh(x, w, h) { bg(x, w, h, '#ffffff'); x.fillStyle = '#13448f'; x.beginPath(); x.moveTo(w * 0.3, 0); x.lineTo(w, 0); x.lineTo(w, h * 0.62); x.lineTo(w * 0.55, h * 0.62); x.fill(); x.fillStyle = '#00a3e0'; x.fillRect(w * 0.5, h * 0.64, w * 0.5, h * 0.05); x.fillStyle = '#fff'; x.font = `800 ${h * 0.15}px Arial, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('ANA', w * 0.68, h * 0.4); },
+    to(x, w, h) { bg(x, w, h, '#00a651'); x.fillStyle = '#fff'; x.font = `800 ${h * 0.34}px Arial, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('t', w * 0.62, h * 0.42); x.fillStyle = '#0a2a6b'; x.fillRect(w * 0.7, h * 0.2, w * 0.07, h * 0.07); },
+    os(x, w, h) { bg(x, w, h, '#d8001a'); wave(x, w, h, 0.32, '#ffffff'); },
+    fr(x, w, h) { bg(x, w, h, '#073590'); x.strokeStyle = '#f1c933'; x.lineWidth = h * 0.02; x.lineJoin = 'round'; const cx = w * 0.6, cy = h * 0.42, r = h * 0.18; x.beginPath(); x.moveTo(cx - r * 0.7, cy + r); x.lineTo(cx - r * 0.7, cy - r); x.quadraticCurveTo(cx + r * 0.2, cy - r * 0.6, cx + r * 0.8, cy + r); x.closePath(); x.stroke(); for (let i = 1; i < 5; i++) { const xx = cx - r * 0.7 + i * r * 0.3; x.beginPath(); x.moveTo(xx, cy + r); x.lineTo(xx, cy - r * (0.9 - i * 0.22)); x.stroke(); } },
+    vy(x, w, h) { bg(x, w, h, '#ffcc00'); x.strokeStyle = '#4a4a4a'; x.lineWidth = h * 0.05; x.lineJoin = 'round'; x.beginPath(); x.moveTo(w * 0.48, h * 0.25); x.lineTo(w * 0.6, h * 0.58); x.lineTo(w * 0.74, h * 0.2); x.stroke(); },
     gen(x, w, h, liv) { bg(x, w, h, '#c9d1dc'); if (liv.code) { x.fillStyle = '#2b3440'; x.font = `800 ${h * 0.2}px Arial, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(liv.code, w * 0.6, h * 0.45); } },
   };
   function bg(x, w, h, c) { x.fillStyle = c; x.fillRect(0, 0, w, h); }
