@@ -659,7 +659,7 @@ const L10N = {
   flight: ['Flight', '航班'], typesShort: ['Aircraft', '机型'], place: ['Place', '地点'], first2: ['First', '首次'], last: ['Latest', '最近'], hours: ['Hours', '小时'], newTab: ['Open in a new tab', '在新标签页打开'], destinations: ['Destinations', '目的地'],
 };
 const tr = k => (L10N[k] || [k, k])[LANG === 'zh' ? 1 : 0];
-const nf = (n, d = 0) => Number(n).toLocaleString(LANG === 'zh' ? 'zh-CN' : 'en', { maximumFractionDigits: d, minimumFractionDigits: d });
+const nf = (n, d = 0) => Number(n).toLocaleString(LANG === 'zh' ? 'zh-CN' : 'en', { maximumFractionDigits: d, minimumFractionDigits: d, useGrouping: false });   // 117992, not 117,992
 const fmtH = min => { const h = Math.floor(min / 60), m = Math.round(min % 60); return LANG === 'zh' ? `${h} 小时 ${m} 分` : `${h}h ${String(m).padStart(2, '0')}m`; };
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fmtDate = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ''); if (!m) return d || ''; return LANG === 'zh' ? `${+m[2]}月${+m[3]}日` : `${+m[3]} ${MONTHS[+m[2] - 1]}`; };
@@ -1202,7 +1202,7 @@ function renderRanks(list) {
 let LOG_ALL = false;
 const fmtFare = f => {
   if (!(f.fare > 0)) return '';
-  try { return new Intl.NumberFormat(LANG === 'zh' ? 'zh-CN' : 'en', { style: 'currency', currency: f.cur || 'EUR', currencyDisplay: 'narrowSymbol', maximumFractionDigits: f.fare % 1 ? 2 : 0 }).format(f.fare); }
+  try { return new Intl.NumberFormat(LANG === 'zh' ? 'zh-CN' : 'en', { style: 'currency', currency: f.cur || 'EUR', currencyDisplay: 'narrowSymbol', maximumFractionDigits: f.fare % 1 ? 2 : 0, useGrouping: false }).format(f.fare); }
   catch (e) { return `${nf(f.fare, f.fare % 1 ? 2 : 0)} ${f.cur || ''}`.trim(); }
 };
 const fmtArr = a => { const m = /^(\d{1,2}:\d{2})\s*(\+\d)?$/.exec(a || ''); return m ? esc(m[1]) + (m[2] ? `<sup>${esc(m[2])}</sup>` : '') : esc(a || '—'); };
