@@ -399,6 +399,16 @@
   .detail-head h2 { font-family: var(--f-hud); font-weight: 700; font-size: clamp(1.7rem, 3.4vw, 2.6rem); line-height: 1.1; letter-spacing: 0.02em; background: var(--title-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .detail-head .sub { color: var(--muted); margin-top: 0.3rem; }
   .detail-head .emblem { width: 56px; height: 42px; margin-left: 10px; }
+  /* header badges: airline tails and / or flags with their flight counts, filling the space beside the title */
+  .dh-badges { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem; }
+  .dh-strip { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.85rem 0.6rem; }
+  .dh-b { position: relative; display: block; width: 46px; height: 44px; text-decoration: none; transition: transform 0.2s; }
+  .dh-b:hover { transform: translateY(-3px); }
+  .dh-b .tail-img { width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25)); }
+  .dh-b .tl-fb { display: block; width: 100%; height: 100%; clip-path: polygon(0 100%, 62% 100%, 100% 0, 74% 0); background: var(--line-2); }
+  .dh-b.flag img { position: absolute; left: 0; top: 7px; width: 46px; height: 31px; object-fit: cover; border-radius: 3px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(0, 0, 0, 0.1); }
+  .dh-b i { position: absolute; z-index: 1; right: -7px; bottom: -5px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; display: grid; place-items: center; font-style: normal; font-family: var(--f-mono); font-size: 0.72rem; font-weight: 600; color: var(--on-cyan); background: var(--cyan); box-shadow: 0 0 0 2px var(--bg); }
+  @media (max-width: 720px) { .dh-badges { align-items: flex-start; flex-basis: 100%; } .dh-strip { justify-content: flex-start; } }
   .detail-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-items: start; }
   @media (min-width: 1100px) { .detail-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); } .detail-grid .span { grid-column: 1 / -1; } }
   .detail .stats { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); margin-bottom: 1.2rem; }
@@ -1269,6 +1279,23 @@ function closeDetail() {
   const el = $('#detail'); if (!el) return;
   if (DMAP) { DMAP.remove(); DMAP = null; } if (FL_VIEWER) { FL_VIEWER.destroy(); FL_VIEWER = null; } el.remove(); document.body.style.overflow = '';
 }
+// Badge strips in a detail page's header: airline tail logos and / or country flags, each with its number of flights.
+// Country, airport, place and route pages show airlines; an airline page shows countries; an aircraft type shows both.
+function headBadges(d, list) {
+  const want = { cc: ['al'], ap: ['al'], pl: ['al'], rt: ['al'], al: ['cc'], ac: ['cc', 'al'] }[d.kind] || [];
+  const zh = LANG === 'zh', times = n => `${n} ${zh ? '次' : (n === 1 ? 'flight' : 'flights')}`, tails = [];
+  const strip = k => {
+    if (k === 'al') {
+      const rs = tally(list, alKey, (key, f) => A.airlineName(f.airline, LANG) || key); if (!rs.length) return '';
+      rs.forEach(r => tails.push([r.key, r.f.airline]));
+      return `<div class="dh-strip">${rs.map(r => `<a class="dl dh-b" href="#al=${esc(encodeURIComponent(r.key))}" title="${esc(r.label)} · ${esc(times(r.n))}"><span class="tl-fb" data-tail="${esc(r.key)}"></span><i>${r.n}</i></a>`).join('')}</div>`;
+    }
+    const rs = tally(list, f => [...new Set([A.statCC(f.from.cc), A.statCC(f.to.cc)])], key => A.countryName(key, LANG)).filter(r => /^[A-Z]{2}$/.test(r.key)); if (!rs.length) return '';
+    return `<div class="dh-strip">${rs.map(r => `<a class="dl dh-b flag" href="#cc=${esc(r.key)}" title="${esc(r.label)} · ${esc(times(r.n))}"><img src="https://flagcdn.com/w80/${r.key.toLowerCase()}.png" alt="" loading="lazy"><i>${r.n}</i></a>`).join('')}</div>`;
+  };
+  const html = want.map(strip).join('');
+  return { html: html ? `<div class="dh-badges">${html}</div>` : '', tails };
+}
 function renderDetail() {
   const d = detailOf(location.hash); closeDetail(); if (!d || !FLIGHTS.length) return;
   if (d.kind === 'fl') return renderFlight(d.key);
@@ -1315,13 +1342,14 @@ function renderDetail() {
       return `<a class="hud dl" href="#${kindOf}=${esc(encodeURIComponent(r.key))}">${lead}<span class="nm">${esc(name)}${small ? `<small>${esc(small)}</small>` : ''}</span><span class="c">${r.n} ${zh ? '次' : '×'} · ${nf(r.km)} km</span></a>`; }).join('')}</div>`;
   }
   const rows = [...list].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const badges = headBadges(d, list);
   const pageHtml = d.kind !== 'page' ? '' : d.key === 'records' ? `<div class="records">${recordsHtml(list)}</div>` : d.key === 'hangar' ? `<div class="fleet" id="dfleet"></div>` : d.key === 'explore' ? `<div class="xbar"><select class="chip fsel" id="x-al" aria-label="${esc(zh ? '涂装' : 'Livery')}"></select><span class="kicker" id="x-sum"></span></div><div class="fleet" id="xfleet"></div>`
     : `<div class="hud log"><table><thead><tr><th>${esc(zh ? '日期' : 'Date')}</th><th>${esc(zh ? '航班' : 'Flight')}</th><th>${esc(zh ? '航线' : 'Route')}</th><th class="col-x">${esc(zh ? '航空公司' : 'Airline')}</th><th>${esc(zh ? '机型' : 'Aircraft')}</th><th class="num">${esc(zh ? '距离' : 'Distance')}</th><th class="num col-x">${esc(zh ? '时长' : 'Time')}</th></tr></thead><tbody>${rows.length ? rowsHtml(rows, false) : `<tr><td colspan="7" class="empty">${esc(tr('none'))}</td></tr>`}</tbody></table></div>`;
   el.innerHTML = `<div class="detail-top"><button type="button" class="icon-btn" id="detail-back" aria-label="${esc(tr('back'))}" title="${esc(tr('back'))}">←</button>
       <div class="crumb"><span class="kicker">${esc(d.kind === 'list' ? tr('details') : tr(DETAIL_KINDS[d.kind]))}</span><b>${esc(title)}</b></div>
       <div class="lang-toggle detail-lang" role="group" aria-label="Language"><button type="button" class="lang-btn${LANG === 'en' ? ' active' : ''}" data-lang="en">EN</button><button type="button" class="lang-btn${LANG === 'zh' ? ' active' : ''}" data-lang="zh">中</button></div>
       <a class="icon-btn" href="${esc(location.hash)}" target="_blank" rel="noopener" title="${esc(tr('newTab'))}" aria-label="${esc(tr('newTab'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M21 3l-9 9M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></a></div>
-    <div class="detail-head"><div class="${d.kind === 'al' ? 'al-head' : ''}">${emblem}<div><h2>${esc(title)}</h2><p class="sub">${esc(sub)}${esc(scopeNote)}</p></div></div></div>
+    <div class="detail-head"><div class="${d.kind === 'al' ? 'al-head' : ''}">${emblem}<div><h2>${esc(title)}</h2><p class="sub">${esc(sub)}${esc(scopeNote)}</p></div></div>${badges.html}</div>
     ${d.kind === 'pl' ? `<div class="fl-acts" style="margin:-0.4rem 0 1.2rem"><a class="chip" href="travel.html#pl=${esc(encodeURIComponent(d.key))}">${zh ? '在足迹地图中查看' : 'Open on the travel map'} ›</a></div>` : ''}
     ${d.kind === 'al' && A.airlineInfo(d.key) ? (info => `<div class="hud al-profile"><div class="row"><b>${zh ? '成立' : 'Founded'}</b>${esc(info.founded)}</div><div class="row"><b>${zh ? '基地' : 'Base'}</b>${esc(info.base)}</div><div class="row"><b>${zh ? '联盟' : 'Alliance'}</b>${esc(info.alliance)}</div><p>${esc(zh ? info.zh : info.en)}</p></div>`)(A.airlineInfo(d.key)) : ''}
     ${stats}
@@ -1344,6 +1372,7 @@ function renderDetail() {
   }
   el.scrollTop = 0;
   if (d.kind === 'al' && f0) paintTails([[d.key, f0.airline]]);
+  if (badges.tails.length) paintTails(badges.tails);
   if (d.kind === 'list' && d.key === 'airlines') paintTails(tally(list, alKey, k => k).map(r => [r.key, r.f.airline]));
   if (d.kind === 'page' && d.key === 'hangar') mountFleet($('#dfleet'), list);
   if (d.kind === 'page' && d.key === 'explore') mountExplore($('#xfleet'), list);
