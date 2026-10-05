@@ -431,9 +431,8 @@
       x.lineWidth = 0.07; x.beginPath(); x.arc(-0.12, 0.22, 0.13, -Math.PI * 0.2, Math.PI * 1.4); x.stroke();
       x.beginPath(); x.moveTo(0.0, 0.18); x.quadraticCurveTo(0.2, 0.44, 0.44, 0.38); x.stroke(); x.restore();
     },
-    osarrow(x, cx, cy, s, col = '#d8001a') {   // Austrian: swept arrow with a grey shadow
+    osarrow(x, cx, cy, s, col = '#d8001a') {   // Austrian: a single red swept arrow
       x.save(); x.translate(cx, cy); x.scale(s, s);
-      x.fillStyle = '#9aa1a8'; x.beginPath(); x.moveTo(-0.4, 0.1); x.lineTo(0.42, 0.06); x.lineTo(0.16, 0.42); x.lineTo(0.2, 0.16); x.closePath(); x.fill();
       x.fillStyle = col; x.beginPath(); x.moveTo(-0.46, -0.28); x.lineTo(0.46, -0.12); x.lineTo(0.12, 0.3); x.lineTo(0.2, -0.06); x.closePath(); x.fill(); x.restore();
     },
   };
