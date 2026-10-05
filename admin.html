@@ -177,6 +177,20 @@
   .tv-results { display: grid; gap: 0.3rem; margin-top: 0.6rem; }
   .tv-res { display: flex; justify-content: space-between; gap: 0.8rem; align-items: center; text-align: left; padding: 0.5rem 0.8rem; border: 1px solid var(--subtle); border-radius: 6px; background: var(--card); cursor: pointer; }
   .tv-res:hover { border-color: var(--accent); background: var(--highlight); }
+  .fl-links { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin-bottom: 0.4rem; }
+  .fl-link { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0.55rem; border: 1px solid var(--subtle); border-radius: 100px; background: var(--card); font-size: 0.85rem; color: var(--ink); }
+  .fl-link.on { border-color: var(--accent); background: var(--highlight); }
+  .fl-link button { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0 0.1rem; font-size: 0.8rem; }
+  .fl-link button:hover { color: var(--err); }
+  button.fl-link.sug, label.fl-link.sug { cursor: pointer; border-style: dashed; font: inherit; font-size: 0.85rem; }
+  button.fl-link.sug:hover { border-color: var(--accent); border-style: solid; }
+  .fl-link .plus { color: var(--accent); font-weight: 600; }
+  label.fl-link { display: inline-flex; margin: 0; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink); }
+  label.fl-link input { width: auto; margin: 0; }
+  .fl-pick { width: auto; max-width: 100%; padding: 0.25rem 0.5rem; }
+  .fl-match { display: grid; gap: 0.6rem; margin-bottom: 0.4rem; }
+  .fl-mrow > b { margin-right: 0.3rem; }
+  .fl-pl { color: var(--accent); white-space: nowrap; }
   .tv-res .m { color: var(--muted); font-size: 15px; white-space: nowrap; }
   .tv-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
   .tv-top { margin: -0.2rem 0 0.9rem; }
@@ -2915,6 +2929,7 @@ function mergeDuplicates(flights) {   // keeps the first of each group, filling 
   flDupGroups(flights).forEach(([keep, ...rest]) => rest.forEach(d => {
     FL_FIELDS.forEach(k => { if (flEmpty(keep[k]) && !flEmpty(d[k])) keep[k] = d[k]; });
     if (d.purpose === 'academic') keep.purpose = 'academic';
+    (FP.data?.places || []).forEach(p => { if ((p.flights || []).includes(d.id)) { linkFlight(p, d.id, false); linkFlight(p, keep.id, true); } });
     flights.splice(flights.indexOf(d), 1); removed++;
   }));
   return removed;
@@ -2947,6 +2962,36 @@ const alRecord = a => ({ iata: a.iata, icao: a.icao || '', name: a.name, zh: Avi
 const parseDur = s => { const m = /^\s*(\d{1,2})\s*[:h]\s*(\d{1,2})/.exec(String(s || '')); return m ? (+m[1]) * 60 + (+m[2]) : (/^\s*\d+\s*$/.test(s || '') ? +s : null); };
 const fmtDur = m => m ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}` : '';
 const flRoute = f => `${f.from?.iata || '???'} → ${f.to?.iata || '???'}`;
+// ── Places ↔ flights. A place keeps the ids of the flights that took you there or away (p.flights); travel.html shows them
+// as chips that open the flight on flights.html. A flight belongs to the city of each of its airports: the nearest place
+// within 80 km of the airport (PEK and PKX → Beijing, KIX → Osaka, XNN → Xining). No date check: flying to a city means
+// going to that city. New flights are linked this way when added; suggestions cover the rest.
+const AIRPORT_CITY_KM = 80;
+function airportPlace(ap, places) {
+  let best = null, bd = AIRPORT_CITY_KM;
+  if (ap && typeof ap.lat === 'number') for (const p of places) { if (typeof p.lat !== 'number' || typeof p.lon !== 'number') continue; const d = haversine(ap.lat, ap.lon, p.lat, p.lon); if (d < bd) { bd = d; best = p; } }
+  return best;
+}
+// place id → [{ f, inb, km }] for flights not linked yet (inb: landed there; otherwise took off from there)
+function flightSuggestionMap(T) {
+  const out = new Map(), places = T.places || [], memo = new Map(), placeOf = ap => { const k = ap?.iata || JSON.stringify([ap?.lat, ap?.lon]); if (!memo.has(k)) memo.set(k, airportPlace(ap, places)); return memo.get(k); };
+  for (const f of T.flights || []) {
+    if (!f.from || !f.to) continue;
+    [[f.to, true], [f.from, false]].forEach(([ap, inb]) => { const p = placeOf(ap); if (!p || (p.flights || []).includes(f.id) || (out.get(p.id) || []).some(x => x.f === f)) return;
+      out.set(p.id, (out.get(p.id) || []).concat({ f, inb, km: Math.round(haversine(ap.lat, ap.lon, p.lat, p.lon)) })); });
+  }
+  out.forEach(l => l.sort((a, b) => String(a.f.date).localeCompare(String(b.f.date))));
+  return out;
+}
+const flightSuggestions = (p, T) => flightSuggestionMap(T).get(p.id) || [];
+function autoLinkFlight(f, places) { [f.from, f.to].forEach(ap => { const p = airportPlace(ap, places || []); if (p) linkFlight(p, f.id, true); }); }
+function linkFlight(p, id, on) {
+  const cur = p.flights || [];
+  if (on && !cur.includes(id)) p.flights = cur.concat(id);
+  if (!on) { p.flights = cur.filter(x => x !== id); if (!p.flights.length) delete p.flights; }
+}
+function unlinkFlightEverywhere(id) { (FP.data?.places || []).forEach(p => { if ((p.flights || []).includes(id)) linkFlight(p, id, false); }); }
+const flPlaceNames = id => (FP.data?.places || []).filter(p => (p.flights || []).includes(id)).map(p => p.city.en || p.city.zh || '?');
 
 // The flight form: once at the top to add a flight (prefix 'fl-'), and in place of a list row while that flight is edited (prefix 'fe-')
 // ── Auto-fill from the flight number and date ──
@@ -3099,7 +3144,7 @@ function wireFlightForm(P, F, T, editId, onDone) {
     const dup = T.flights.find(f => f.id !== rec.id && flKey(f) === flKey(rec));
     if (dup) return msg(`Already logged: ${dup.date} ${dup.no || ''} ${flRoute(dup)} (same flight number, date and route). Edit that one instead.`);
     if (editId) { const i = T.flights.findIndex(f => f.id === editId); if (i >= 0) T.flights[i] = rec; toast('Flight updated. Publish to save.'); FL_EDIT = null; FL_EDIT_FORM = null; }
-    else { T.flights.push(rec); toast(`Added ${flRoute(rec)}. Publish to save.`); FL_FORM = Object.assign(flBlank(), { date: F.date, purpose: F.purpose }); }
+    else { T.flights.push(rec); autoLinkFlight(rec, T.places); const pl = flPlaceNames(rec.id); toast(`Added ${flRoute(rec)}${pl.length ? ` (linked to ${pl.join(', ')})` : ''}. Publish to save.`); FL_FORM = Object.assign(flBlank(), { date: F.date, purpose: F.purpose }); }
     markDirty(); onDone();
   };
   if (g('cancel')) g('cancel').onclick = () => { FL_EDIT = null; FL_EDIT_FORM = null; onDone(); };
@@ -3166,13 +3211,13 @@ function viewFlights(v) {
       if (FL_EDIT === f.id) { html += `<div class="fl-inline">${flFormHtml(FL_EDIT_FORM, 'fe-', true)}</div>`; return; }
       html += `<div class="fl-item"><span class="mono fl-d">${esc(f.date.slice(5))}</span><span class="mono fl-n">${esc(f.no || '—')}</span>
         <span class="fl-r"><b class="mono">${esc(f.from?.iata)}</b> → <b class="mono">${esc(f.to?.iata)}</b> <span class="hint" style="display:inline">${esc(Aviation.airportName(f.from, 'en'))} – ${esc(Aviation.airportName(f.to, 'en'))}</span></span>
-        <span class="fl-m">${esc(f.airline?.name || '')}${f.ac || f.acText ? ' · ' + esc(Aviation.typeName(f.ac, 'en', f.acText)) : ''} · ${km.toLocaleString('en')} km${f.dep || f.arr ? ` · <span class="mono">${esc(f.dep || '—')}→${esc(f.arr || '—')}</span>` : ''}${f.fare ? ` · ${esc(f.fare.toLocaleString('en'))} ${esc(f.cur || '')}` : ''}${f.age ? ` · ${esc(f.age)} yrs` : ''}${f.purpose === 'academic' ? ' <span class="pill acad">academic</span>' : ''}</span>
+        <span class="fl-m">${esc(f.airline?.name || '')}${f.ac || f.acText ? ' · ' + esc(Aviation.typeName(f.ac, 'en', f.acText)) : ''} · ${km.toLocaleString('en')} km${f.dep || f.arr ? ` · <span class="mono">${esc(f.dep || '—')}→${esc(f.arr || '—')}</span>` : ''}${f.fare ? ` · ${esc(f.fare.toLocaleString('en'))} ${esc(f.cur || '')}` : ''}${f.age ? ` · ${esc(f.age)} yrs` : ''}${f.purpose === 'academic' ? ' <span class="pill acad">academic</span>' : ''}${(n => n.length ? ` <span class="fl-pl" title="Linked places (edit in Footprints)">📍 ${esc(n.join(' · '))}</span>` : '')(flPlaceNames(f.id))}</span>
         <span class="fl-t"><button class="btn sm" data-fl-edit="${i}">Edit</button><button class="btn sm danger" data-fl-del="${i}" title="Delete" aria-label="Delete">✕</button></span></div>`;
     });
     $('#fl-list').innerHTML = html + '</div>';
     // Edit opens the form in place of the row (one at a time); Save or Cancel closes it and the list redraws where it is
     $('#fl-list').querySelectorAll('[data-fl-edit]').forEach(b => b.onclick = () => { const f = T.flights[+b.dataset.flEdit]; FL_EDIT = f.id; FL_EDIT_FORM = JSON.parse(JSON.stringify({ ...flBlank(), ...f, cur: f.cur || flBlank().cur })); renderList(); $('#fe-no')?.focus(); });
-    $('#fl-list').querySelectorAll('[data-fl-del]').forEach(b => b.onclick = () => { const f = T.flights[+b.dataset.flDel]; if (!confirm(`Delete ${f.date} ${f.no || ''} ${flRoute(f)}?`)) return; T.flights.splice(+b.dataset.flDel, 1); if (FL_EDIT === f.id) { FL_EDIT = null; FL_EDIT_FORM = null; } markDirty(); render(); });
+    $('#fl-list').querySelectorAll('[data-fl-del]').forEach(b => b.onclick = () => { const f = T.flights[+b.dataset.flDel]; if (!confirm(`Delete ${f.date} ${f.no || ''} ${flRoute(f)}?`)) return; T.flights.splice(+b.dataset.flDel, 1); unlinkFlightEverywhere(f.id); if (FL_EDIT === f.id) { FL_EDIT = null; FL_EDIT_FORM = null; } markDirty(); render(); });
     if (FL_EDIT && FL_EDIT_FORM) wireFlightForm('fe-', FL_EDIT_FORM, T, FL_EDIT, () => { const y = scrollY; render(); scrollTo(0, y); });
   };
   renderList();
@@ -3240,7 +3285,7 @@ function importFlightsCsv(text, flights) {
       from: apRecord(a), to: apRecord(b), ac: ty ? ty.code : '', acText: ty ? '' : acS, reg: g('reg').toUpperCase(), seat: g('seat').toUpperCase(),
       cls: /first|^3$/.test(clsS) ? 'first' : /business|^2$/.test(clsS) ? 'business' : /premium|\+|^4$/.test(clsS) ? 'premium' : /econ|^1$/.test(clsS) ? 'economy' : '',
       purpose: /academ|conference|business|work|^2$/.test(purS) ? 'academic' : 'personal', dur: parseDur(g('dur')), note: g('note'), ...extra });
-    byKey.set(flKey(flights[flights.length - 1]), flights[flights.length - 1]); added++;
+    byKey.set(flKey(flights[flights.length - 1]), flights[flights.length - 1]); autoLinkFlight(flights[flights.length - 1], FP.data?.places); added++;
   });
   return { added: added + updated, msg: `Imported ${added} flight${added === 1 ? '' : 's'}${updated ? `, updated ${updated} already in the list` : ''}${skipped ? `, ${skipped} already in the list unchanged` : ''}${bad.length ? `; rows ${bad.slice(0, 8).join(', ')}${bad.length > 8 ? '…' : ''} skipped (date or airport not recognised)` : ''}.` };
 }
@@ -3316,6 +3361,7 @@ function viewFootprints(v, introOverride) {
       <div><h3 style="font-size:1.1rem">Travel page (private)</h3>${biField('Title (use *asterisks* for the italic blue word)', T, 'title')}${biField('Introduction', T, 'intro', 'textarea')}</div>
       <div><h3 style="font-size:1.1rem">Academic page (public)</h3>${biField('Title', T, 'pub_title')}${biField('Introduction', T, 'pub_intro', 'textarea')}</div></div>
     <div class="toolbar"><a class="btn sm" href="travel.html" target="_blank">Open travel.html ↗</a><a class="btn sm" href="academic.html" target="_blank">Open academic.html ↗</a></div>`)}
+  ${(T.flights || []).length ? foldCard('flmatch', 'Link flights to places', `${T.places.filter(p => (p.flights || []).length).length} places linked · ${[...flightSuggestionMap(T).values()].reduce((n, l) => n + l.length, 0)} suggestions`, `<p class="hint" style="margin-bottom:0.6rem">Each place can list the flights that took you there or away; travel.html shows them on the place and they open the flight on flights.html, which links back. A flight belongs to the city of each of its airports: the nearest place within ${AIRPORT_CITY_KM} km (PEK and PKX → Beijing, KIX → Osaka). New flights are linked this way when you add them; below are the flights not linked yet. Untick any that are wrong, then link. One-off links can also be added in each place's <b>Flights</b> field.</p><div id="tv-flmatch"></div>`) : ''}
   ${foldCard('check', 'Check all tags', '5A, national parks, World Heritage', `<div class="toolbar" style="margin:0"><button class="btn sm primary" id="tv-check">✓ Check all tags</button>
     <span class="hint" style="margin:0">Re-checks every saved sight: 5A against the official list (358, May 2025), national parks against the official rule, and World Heritage / 5A-area grouping. Tags you set by hand are checked too.</span></div>
     <div id="tv-check-out"></div>`, 'tag-check')}
@@ -3377,6 +3423,7 @@ function viewFootprints(v, introOverride) {
       <div class="field"><label>Sights &amp; landmarks (${p.sights.length})</label><div id="tv-sg-${i}"></div>
         <div class="toolbar" style="margin-top:0.5rem"><button class="btn sm" data-sg-find="${i}">Find landmarks nearby</button><input type="text" data-sg-q="${i}" placeholder="or search by name, e.g. 外滩" style="width:auto;flex:1;min-width:160px;padding:0.25rem 0.5rem"><button class="btn sm" data-sg-name="${i}">Find</button><button class="btn sm" data-sg-add="${i}">Add manually</button><button class="btn sm" data-sg-tr="${i}" title="Fill in or redo the English names of Chinese sights">Translate names</button><span class="hint" id="tv-sg-msg-${i}"></span></div>
         <div id="tv-sg-res-${i}"></div></div>
+      ${T.flights?.length ? `<div class="field"><label id="tv-fl-n-${i}">Flights (${(p.flights || []).length})</label><div id="tv-fl-${i}"></div></div>` : ''}
       <div class="field"><label>Photos (${p.photos.length})</label><div class="thumbs" id="tv-ph-${i}"></div>
         ${p.academic ? `<p class="hint">${p.photos.filter(isPublicPhoto).length} public (academic page) · ${p.photos.filter(x => !isPublicPhoto(x)).length} private (travel page only, encrypted). Use the 🌐 / 🔒 button on a photo to switch.</p>` : ''}
         ${!p.academic && p.photos.some(isPublicPhoto) ? `<p class="hint">${p.photos.filter(isPublicPhoto).length} photo(s) are stored unencrypted (uploaded while this entry was academic). Use 🔒 to make them private.</p>` : ''}
@@ -3414,7 +3461,7 @@ function viewFootprints(v, introOverride) {
     box.querySelectorAll('[data-acad], select[data-kind], select[data-talk]').forEach(el => el.addEventListener('change', () => setTimeout(renderPlaces, 0)));
     box.querySelectorAll('[data-addvisit]').forEach(a => a.onclick = e => { e.preventDefault(); const inp = box.querySelector(`[data-when="${a.dataset.addvisit}"]`); if (!inp) return; inp.value = inp.value.trim() ? inp.value.trim().replace(/;?\s*$/, '; ') : ''; inp.dispatchEvent(new Event('input')); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); });
     box.querySelectorAll('input[maxlength="2"]').forEach(inp => inp.addEventListener('change', () => { inp.value = inp.value.toUpperCase(); inp.dispatchEvent(new Event('input')); }));
-    T.places.forEach((p, i) => { if (!box.querySelector(`.item[data-i="${i}"]`)) return; renderThumbs(p, i); wireUpload(p, i); renderSights(p, i); wireSights(p, i); });
+    T.places.forEach((p, i) => { if (!box.querySelector(`.item[data-i="${i}"]`)) return; renderThumbs(p, i); wireUpload(p, i); renderSights(p, i); wireSights(p, i); renderPlaceFlights(p, i); });
     const slot = $('#tv-drafts'), tmp = $('#tv-draft-tmp');
     if (slot) { slot.innerHTML = ''; slot.hidden = !tmp;
       if (tmp) { slot.append(...tmp.children); tmp.remove();
@@ -3459,6 +3506,22 @@ function viewFootprints(v, introOverride) {
     for (const g of todo) { if (force) delete trCache()[g.name.zh]; const { en, via } = await translateName(g.name.zh, g.lat, g.lon); if (en && (force || needsEn(g.name))) { g.name.en = en; n++; } }
     if (n) markDirty(); renderSights(p, i);
     if (msg) msg.textContent = n ? `${n} English name${n === 1 ? '' : 's'} filled in (Wikidata, MyMemory or pinyin). Edit any of them below.` : 'No English name could be found; type one in.';
+  };
+  // Flights linked to a place: linked ones (✕ to unlink), suggestions (click to link), and a picker for any other flight
+  const renderPlaceFlights = (p, i) => {
+    const box = $('#tv-fl-' + i); if (!box) return;
+    const byId = new Map(T.flights.map(f => [f.id, f])), sug = flightSuggestions(p, T);
+    const linked = (p.flights || []).map(id => byId.get(id)).filter(Boolean).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    const dir = f => typeof p.lat !== 'number' ? '' : haversine(p.lat, p.lon, f.to.lat, f.to.lon) <= haversine(p.lat, p.lon, f.from.lat, f.from.lon) ? '↘' : '↗';
+    const rest = T.flights.filter(f => !(p.flights || []).includes(f.id)).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    box.innerHTML = `<div class="fl-links">${linked.length ? linked.map(f => `<span class="fl-link on" title="${esc(Aviation.airportName(f.from, 'en'))} → ${esc(Aviation.airportName(f.to, 'en'))}">${dir(f)} <span class="mono">${esc(f.date)}</span> <b class="mono">${esc(f.no || '—')}</b> ${esc(flRoute(f))}<button type="button" data-fl-unlink="${esc(f.id)}" title="Unlink" aria-label="Unlink">✕</button></span>`).join('') : '<span class="hint" style="margin:0">No flights linked yet.</span>'}</div>
+      ${sug.length ? `<div class="fl-links"><span class="hint" style="margin:0">Suggested:</span>${sug.map(x => `<button type="button" class="fl-link sug" data-fl-link="${esc(x.f.id)}" title="${x.inb ? 'Lands' : 'Takes off'} here (airport ${x.km} km from the centre) · click to link">${x.inb ? '↘' : '↗'} <span class="mono">${esc(x.f.date)}</span> <b class="mono">${esc(x.f.no || '—')}</b> ${esc(flRoute(x.f))} <span class="plus">+ link</span></button>`).join('')}${sug.length > 1 ? `<button type="button" class="btn sm" data-fl-linkall>Link all ${sug.length}</button>` : ''}</div>` : ''}
+      ${rest.length ? `<select data-fl-pick class="fl-pick"><option value="">+ Link another flight…</option>${rest.map(f => `<option value="${esc(f.id)}">${esc(f.date)} · ${esc(f.no || '—')} · ${esc(flRoute(f))} · ${esc(f.to?.city || '')}</option>`).join('')}</select>` : ''}`;
+    const done = () => { markDirty(); const n = $('#tv-fl-n-' + i); if (n) n.textContent = `Flights (${(p.flights || []).length})`; renderPlaceFlights(p, i); };
+    box.querySelectorAll('[data-fl-unlink]').forEach(b => b.onclick = () => { linkFlight(p, b.dataset.flUnlink, false); done(); });
+    box.querySelectorAll('[data-fl-link]').forEach(b => b.onclick = () => { linkFlight(p, b.dataset.flLink, true); done(); });
+    const all = box.querySelector('[data-fl-linkall]'); if (all) all.onclick = () => { sug.forEach(x => linkFlight(p, x.f.id, true)); done(); };
+    const pick = box.querySelector('[data-fl-pick]'); if (pick) pick.onchange = () => { if (pick.value) { linkFlight(p, pick.value, true); done(); } };
   };
   const renderSights = (p, i) => {
     renderUploadSight(p, i);
@@ -3637,6 +3700,19 @@ function viewFootprints(v, introOverride) {
   document.querySelectorAll('[data-psort]').forEach(b => b.onclick = () => { PLACE_SORT = b.dataset.psort; try { localStorage.setItem('sm_place_sort', PLACE_SORT); } catch (e) {}
     document.querySelectorAll('[data-psort]').forEach(x => x.classList.toggle('on', x.dataset.psort === PLACE_SORT)); renderPlaces(); });
   $('#tv-open-all').onclick = () => { COUNTRIES_TOUCHED = true; T.places.forEach(x => { OPEN_COUNTRIES.add(groupCC(x)); if (groupCC(x) === 'CN') OPEN_PROVS.add(provOfPlace(x)?.zh || '—'); }); renderPlaces(); };
+  const renderFlMatch = () => {
+    const box = $('#tv-flmatch'); if (!box) return;
+    const sm = flightSuggestionMap(T), rows = T.places.map((p, i) => ({ p, i, sug: sm.get(p.id) || [] })).filter(r => r.sug.length).sort((a, b) => String(a.sug[0].f.date).localeCompare(String(b.sug[0].f.date)));
+    const linkedIds = new Set(T.places.flatMap(p => p.flights || [])), loose = T.flights.filter(f => !linkedIds.has(f.id)).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    box.innerHTML = (rows.length ? `<div class="fl-match">${rows.map(r => `<div class="fl-mrow"><b>${esc(r.p.city.en || r.p.city.zh)}</b> <span class="hint" style="display:inline">${esc(r.p.when)}</span><div class="fl-links">${r.sug.map(x => `<label class="fl-link sug"><input type="checkbox" checked data-m="${r.i}" value="${esc(x.f.id)}"> ${x.inb ? '↘' : '↗'} <span class="mono">${esc(x.f.date)}</span> <b class="mono">${esc(x.f.no || '—')}</b> ${esc(flRoute(x.f))} <span class="hint" style="display:inline;margin:0">${x.km} km</span></label>`).join('')}</div></div>`).join('')}</div>
+      <div class="toolbar"><button class="btn sm primary" type="button" id="tv-flmatch-go">Link ticked flights</button><span class="hint" style="margin:0" id="tv-flmatch-msg"></span></div>` : '<p class="hint">No new suggestions: every matching flight is already linked.</p>')
+      + (loose.length ? `<p class="hint" style="margin-top:0.8rem">Flights not linked to any place (${loose.length}): ${loose.map(f => `<span class="mono">${esc(f.date)} ${esc(f.no || '—')} ${esc(flRoute(f))}</span>`).join(' · ')}</p>` : '');
+    const go = $('#tv-flmatch-go'); if (go) go.onclick = () => {
+      let n = 0; box.querySelectorAll('input[data-m]:checked').forEach(c => { const p = T.places[+c.dataset.m]; if (p && !(p.flights || []).includes(c.value)) { linkFlight(p, c.value, true); n++; } });
+      if (!n) return; markDirty(); toast(`Linked ${n} flight${n === 1 ? '' : 's'} to places. Publish to save.`); render();
+    };
+  };
+  renderFlMatch();
   $('#tv-close-all').onclick = () => { COUNTRIES_TOUCHED = true; OPEN_COUNTRIES.clear(); OPEN_PROVS.clear(); OPEN_PLACES.clear(); renderPlaces(); };
 
   // One-click tag check

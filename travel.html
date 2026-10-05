@@ -386,6 +386,9 @@
   .sights { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
   .sights-label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ok); margin-right: 0.2rem; }
   .sights-label svg { width: 15px; height: 15px; }
+  .city-name .fl-plane-link { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 100px; color: var(--accent-light); background: var(--highlight); text-decoration: none; transition: background 0.2s, color 0.2s, transform 0.2s; }
+  .city-name .fl-plane-link svg { width: 15px; height: 15px; transform: rotate(45deg); }
+  .city-name .fl-plane-link:hover, .city-name .fl-plane-link:focus-visible { color: var(--on-accent); background: var(--accent); transform: translateY(-1px); }
   body.zh .sights-label { letter-spacing: 0.12em; }
   .sight { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0.25rem 0.4rem; max-width: 100%; padding: 0.25rem 0.7rem 0.25rem 0.55rem; border: 1px solid var(--subtle); border-radius: 16px; background: var(--card-bg); font-size: 0.88rem; line-height: 1.35; color: var(--ink); text-decoration: none; transition: border-color 0.2s, background 0.2s, transform 0.2s; }
   .sight .sg-name { min-width: 0; }
@@ -1019,12 +1022,26 @@ function provinceGroups(c) {
   if (other.places.length) arr.push(other);
   return arr;
 }
+// Flights linked to a place (Site Manager → Footprints → Flights): one plane icon next to the dates. It opens the flight on
+// flights.html, or with several flights the place's own view there (#pl=<id>: map, stats and the flight list).
+const PLANE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
+function placeFlights(p) {
+  if (!PRIVATE || !(p.flights || []).length) return [];
+  const ids = new Set((DATA.flights || []).map(f => f.id));
+  return p.flights.filter(id => ids.has(id));
+}
+function flightLink(p) {
+  const fs = placeFlights(p); if (!fs.length) return '';
+  const href = fs.length === 1 ? `flights.html#fl=${encodeURIComponent(fs[0])}` : `flights.html#pl=${encodeURIComponent(p.id)}`;
+  const tip = LANG === 'zh' ? `${fs.length} 个航班 · 在云间岁月中查看` : `${fs.length} flight${fs.length === 1 ? '' : 's'} · open in My Air Times`;
+  return `<a class="fl-plane-link" href="${esc(href)}" title="${esc(tip)}" aria-label="${esc(tip)}">${PLANE_SVG}</a>`;
+}
 function cityCard(p) {
   const photosLabel = n => LANG === 'zh' ? `${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`;
       const ph = p.photos || [];
       const strip = ph.length ? `<div class="strip" data-pid="${esc(p.id)}">${ph.slice(0, 6).map((x, i) => `<div class="ph" data-i="${i}" data-thumb="${esc(x.thumb)}"><img alt="${esc(t(x.caption))}">${i === 5 && ph.length > 6 ? `<div class="more">+${ph.length - 6}</div>` : ''}</div>`).join('')}</div>` : '';
       return `<div class="city${p.highlight ? ' hl' : ''}" data-pid="${esc(p.id)}">
-        <div><div class="city-name">${cityIcon(p)}<span class="city-title">${esc(t(p.city))}</span>${p.highlight ? `<svg class="hl-star" viewBox="0 0 24 24" fill="currentColor" aria-label="${LANG === 'zh' ? '精选' : 'Highlight'}"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>` : ''}${whenHtml(p.when)}${p.academic ? `<span class="role">${esc(kindLabel(p.kind || 'conference'))}</span>` : ''}${PRIVATE && p.trip ? `<span class="role trip trip-${esc(p.trip)}">${esc(tripLabel(p.trip))}</span>` : ''}</div>
+        <div><div class="city-name">${cityIcon(p)}<span class="city-title">${esc(t(p.city))}</span>${p.highlight ? `<svg class="hl-star" viewBox="0 0 24 24" fill="currentColor" aria-label="${LANG === 'zh' ? '精选' : 'Highlight'}"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>` : ''}${whenHtml(p.when)}${p.academic ? `<span class="role">${esc(kindLabel(p.kind || 'conference'))}</span>` : ''}${PRIVATE && p.trip ? `<span class="role trip trip-${esc(p.trip)}">${esc(tripLabel(p.trip))}</span>` : ''}${flightLink(p)}</div>
           ${p.academic && t(p.event) ? `<div class="city-event">${esc(t(p.event))}</div>` : ''}${p.academic && (p.talk || p.talk_type) ? `<div class="city-talk">${p.talk_type ? `<span class="talk-type">${esc(talkLabel(p.talk_type))}</span>` : ''}${p.talk ? `“${esc(p.talk)}”` : ''}</div>` : ''}${t(p.note) ? `<div class="city-note">${esc(t(p.note))}</div>` : ''}${PRIVATE && t(p.pnote) ? `<div class="city-note">${esc(t(p.pnote))}</div>` : ''}</div>
         <div class="city-actions"><button class="small-btn ghost" data-map="${esc(p.id)}"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${LANG === 'zh' ? '地图' : 'Map'}</button>
           ${ph.length ? `<button class="small-btn" data-gallery="${esc(p.id)}">${photosLabel(ph.length)}</button>` : ''}</div>
@@ -1774,8 +1791,14 @@ $('#lang-toggle').addEventListener('click', e => { const b = e.target.closest('.
 
 function showApp() {
   $('#gate').hidden = true; $('#app').hidden = false; $('#btn-lock').hidden = !PRIVATE; $('#btn-flights').hidden = !PRIVATE;
-  renderHeader(); renderList(); renderMap();
+  renderHeader(); renderList();
+  const ready = renderMap(), id = hashPlace();
+  if (id) { jumpToCity(id); Promise.resolve(ready).then(() => { if (isWide()) focusPlace(id); }).catch(() => {}); }
 }
+// Deep link #pl=<place id> (from a flight on flights.html): open the place's card and, on wide screens, fly the map to it
+function hashPlace() { const m = /^#pl=(.+)$/.exec(location.hash || ''); if (!m || !DATA) return null; const id = decodeURIComponent(m[1]); return placeById(id) ? id : null; }
+function goToHashPlace() { const id = hashPlace(); if (!id) return; jumpToCity(id); if (MAP && isWide()) focusPlace(id); }
+addEventListener('hashchange', () => { if (!$('#app').hidden) goToHashPlace(); });
 if (LANG !== 'en') applyLang(LANG);   // open in the language remembered from the rest of the site
 (async () => {
   if (!PRIVATE) {
