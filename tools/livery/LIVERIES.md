@@ -97,8 +97,8 @@ Fins are quad-warped from a clear tail photo, with the background flattened and 
 | CN | 大新华航空 Grand China | B | B | photo, layout `GCA`; fuselage rebuilt geometrically, photo fin |
 | TV | 西藏航空 Tibet | A | A | `TBA` A320 sheet |
 | JD | 首都航空 Capital | B | B | photo, painted titles and windows |
-| KY | 昆明航空 Kunming | B | B | photo, layout `KUN` |
-| GJ | 长龙航空 Loong Air | B | B | photo, layout `LOONG`; dragon from the tail photo |
+| KY | 昆明航空 Kunming | C | B | fuselage drawn by `ky_kunming.py` (red rear with gold ribbons along its slanted front edge); fin from the photo; black italic titles, painted windows |
+| GJ | 长龙航空 Loong Air | C | B | fuselage rebuilt by `gj_loong.py` (sky blue, white upper body, red swoosh; cloud-dragon art kept from the photo bake, saved as `src/GJ.photo.jpg`); dragon fin from the photo |
 | GT | 桂林航空 Air Guilin | C | C | tail photo + official logo; titles and mark cut from the official artwork |
 | G5 | 华夏航空 China Express | C | C | official logo artwork: dove on the fin and titles; deep-blue fin with light-blue cap |
 | KL | KLM | A | D | `KLM` sheet fuselage; fin painted (`paintTail`), crown and KLM sized to the chord |
