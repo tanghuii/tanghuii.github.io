@@ -6,6 +6,7 @@
 <script src="site-fonts.js"></script>
 <script src="site-theme.js"></script>
 <script src="site-lang.js"></script>
+<script src="site-nav.js"></script>
 <script src="admin-zh.js"></script>
 <script src="city-icons.js"></script>
 <script src="aviation.js"></script>
@@ -929,7 +930,7 @@ function showLogin(opts = {}) {
     const frame = inner => `<div class="login"><div class="login-card">
       <div class="login-brand"><span class="login-name">Hui Tang</span><span class="login-sub">Site Manager · ${esc(REPO.owner)}.github.io</span></div>
       ${inner}</div>
-      <p class="login-foot"><a href="index.html">← Back to website</a><span class="lang-toggle"><button type="button" class="lang-btn${LANG === 'en' ? ' active' : ''}" data-lang="en">EN</button><button type="button" class="lang-btn${LANG === 'zh' ? ' active' : ''}" data-lang="zh">中</button></span></p></div>`;
+      <p class="login-foot"><a href="index.html" data-back>← Back to website</a><span class="lang-toggle"><button type="button" class="lang-btn${LANG === 'en' ? ' active' : ''}" data-lang="en">EN</button><button type="button" class="lang-btn${LANG === 'zh' ? ' active' : ''}" data-lang="zh">中</button></span></p></div>`;
     root.innerHTML = frame('<p class="hint" style="text-align:center;padding:1.5rem 0">Checking sign-in…</p>');
 
     const file = await fetchAuthFile();
@@ -1057,7 +1058,7 @@ async function ensureSignedIn() {
           <h2>Can't reach GitHub</h2><p class="hint" style="margin:0.4rem 0 1rem">${esc(e.message)}</p>
           <button class="btn primary block" id="lg-retry" type="button">Try again</button>
           <p class="hint" style="text-align:center;margin-top:0.8rem"><a href="#" id="lg-fresh">Sign in again instead</a></p></div>
-          <p class="login-foot"><a href="index.html">← Back to website</a></p></div>`;
+          <p class="login-foot"><a href="index.html" data-back>← Back to website</a></p></div>`;
         $('#lg-retry').onclick = () => { root.innerHTML = ''; ensureSignedIn().then(resolve); };
         $('#lg-fresh').onclick = ev => { ev.preventDefault(); root.innerHTML = ''; clearSession(); showLogin().then(resolve); };
       });
