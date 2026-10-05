@@ -176,8 +176,14 @@
   .chip.on { background: var(--cyan); border-color: var(--cyan); color: var(--on-cyan); font-weight: 600; }
   .chip.amber.on { background: var(--amber); border-color: var(--amber); }
   /* segmented box: one frame per filter, one row; the picked option fills with the accent (scrolls sideways if it ever overflows) */
-  .seg.box { flex-wrap: nowrap; gap: 0; align-self: stretch; max-width: 100%; overflow-x: auto; scrollbar-width: none; border: 1px solid var(--line-2); border-radius: 4px; background: var(--field); }
-  .seg.box::-webkit-scrollbar { display: none; }
+  .seg.box { flex-wrap: nowrap; gap: 0; align-self: stretch; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; border: 1px solid var(--line-2); border-radius: 4px; background: var(--field); }
+  .seg.box::-webkit-scrollbar { height: 3px; }
+  .seg.box::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 2px; }
+  .seg.box::-webkit-scrollbar-track { background: transparent; }
+  /* a row wider than its column scrolls sideways (wheel, swipe or the thin bar); a fading edge says there is more */
+  .seg.box.more-r { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent); }
+  .seg.box.more-l { -webkit-mask-image: linear-gradient(270deg, #000 calc(100% - 34px), transparent); mask-image: linear-gradient(270deg, #000 calc(100% - 34px), transparent); }
+  .seg.box.more-l.more-r { -webkit-mask-image: linear-gradient(90deg, transparent, #000 34px, #000 calc(100% - 34px), transparent); mask-image: linear-gradient(90deg, transparent, #000 34px, #000 calc(100% - 34px), transparent); }
   .seg.box .chip { flex: 1 0 auto; border: 0; border-radius: 0; background: transparent; padding: 0.34rem 0.5rem; white-space: nowrap; text-align: center; }
   .seg.box .chip + .chip { border-left: 1px solid var(--line); }
   .seg.box .chip:hover { background: rgba(var(--cyan-rgb), 0.08); }
@@ -832,6 +838,7 @@ function renderFilters() {
   if (YEAR !== 'all' && !years.includes(YEAR)) YEAR = 'all';
   $('#f-year').innerHTML = [['all', tr('all')], ...years.map(y => [y, y])].map(([v, l]) => `<button type="button" class="chip${YEAR === v ? ' on' : ''}" data-year="${esc(v)}">${esc(l)}</button>`).join('');
   $('#f-purpose').innerHTML = [['all', tr('all')], ['personal', tr('personal')], ['academic', tr('academic')]].map(([v, l]) => `<button type="button" class="chip${v === 'academic' ? ' amber' : ''}${PURPOSE === v ? ' on' : ''}" data-purpose="${v}">${esc(l)}</button>`).join('');
+  fitSegs();
   $('#f-year').querySelectorAll('[data-year]').forEach(b => b.onclick = () => { YEAR = b.dataset.year; SEL = null; FIRST_FIT = true; renderAll(); });
   $('#f-purpose').querySelectorAll('[data-purpose]').forEach(b => b.onclick = () => { PURPOSE = b.dataset.purpose; SEL = null; FIRST_FIT = true; renderAll(); });
 }
@@ -1066,6 +1073,7 @@ function renderFlags(list) {
   $('#flags-n').innerHTML = `<b>${all.length}</b>${LANG === 'zh' ? '个国家和地区' : (all.length === 1 ? 'country' : 'countries')}`;
   const sorts = [['n', LANG === 'zh' ? '按起降次数' : 'Most flown'], ['az', LANG === 'zh' ? '按名称' : 'A–Z']];
   $('#f-flags').innerHTML = sorts.map(([k, l]) => `<button type="button" class="chip${FLAG_SORT === k ? ' on' : ''}" data-fs="${k}" aria-pressed="${FLAG_SORT === k}">${esc(l)}</button>`).join('');
+  fitSegs();
   $('#f-flags').querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { FLAG_SORT = b.dataset.fs; renderFlags(scoped()); });
   $('#flags').innerHTML = all.map(c => {
     const name = A.countryName(c, LANG), lc = c.toLowerCase(), k = cnt.get(c);
@@ -1148,9 +1156,10 @@ function renderFleetFilters(list) {
   if (FLEET_F.mfr !== 'all' && !mfrs.includes(FLEET_F.mfr)) FLEET_F.mfr = 'all';
   if (FLEET_F.al !== 'all' && !als.some(a => a.key === FLEET_F.al)) FLEET_F.al = 'all';
   const chip = (k, v, l) => `<button type="button" class="chip${FLEET_F[k] === v ? ' on' : ''}" data-fk="${k}" data-fv="${esc(v)}">${esc(l)}</button>`;
-  $('#fleet-filters').innerHTML = `<div class="seg box">${chip('body', 'all', tr('all'))}${bodies.map(b => chip('body', b, BODY_L[b]?.[zh ? 1 : 0] || b)).join('')}</div>
-    <div class="seg box">${mfrs.length > 1 ? chip('mfr', 'all', zh ? '所有制造商' : 'All makers') + mfrs.map(m => chip('mfr', m, A.mfrName(m, LANG))).join('') : ''}</div>
+  $('#fleet-filters').innerHTML = `<div class="seg box" data-seg="body">${chip('body', 'all', tr('all'))}${bodies.map(b => chip('body', b, BODY_L[b]?.[zh ? 1 : 0] || b)).join('')}</div>
+    <div class="seg box" data-seg="mfr">${mfrs.length > 1 ? chip('mfr', 'all', zh ? '所有制造商' : 'All makers') + mfrs.map(m => chip('mfr', m, A.mfrName(m, LANG))).join('') : ''}</div>
     <select class="chip fsel" id="fleet-al" aria-label="${esc(tr('airlines'))}"><option value="all">${esc(zh ? '所有航空公司' : 'All airlines')}</option>${als.map(a => `<option value="${esc(a.key)}"${FLEET_F.al === a.key ? ' selected' : ''}>${esc(a.label)} (${a.n})</option>`).join('')}</select>`;
+  fitSegs();
   $('#fleet-filters').querySelectorAll('[data-fk]').forEach(b => b.onclick = () => { FLEET_F[b.dataset.fk] = b.dataset.fv; renderFleet(scoped()); });
   $('#fleet-al').onchange = e => { FLEET_F.al = e.target.value; renderFleet(scoped()); };
 }
@@ -1845,6 +1854,29 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'ArrowRight') playTo(PLAY.i + 1); else if (e.key === 'ArrowLeft' && PLAY.i > 0) playTo(PLAY.i - 1);
   else if (e.key === 'Escape') stopPlay();
 });
+// ── Segmented rows that outgrow their column scroll sideways: the mouse wheel scrolls them too, the scroll position
+// survives re-renders (a click redraws the row), the picked option is kept in view, and fading edges show there is more.
+const SEG_X = new Map();   // row key → scrollLeft
+const segKey = b => b.id || (b.dataset.seg ? 'seg-' + b.dataset.seg : '');
+function segEdges(b) { b.classList.toggle('more-l', b.scrollLeft > 2); b.classList.toggle('more-r', b.scrollLeft + b.clientWidth < b.scrollWidth - 2); }
+function fitSegs() {
+  document.querySelectorAll('.seg.box').forEach(b => {
+    const k = segKey(b); if (k && SEG_X.has(k)) b.scrollLeft = SEG_X.get(k);
+    const on = b.querySelector('.on');
+    if (on && b.scrollWidth > b.clientWidth) {
+      const l = on.offsetLeft - b.offsetLeft - b.clientLeft, r = l + on.offsetWidth;
+      if (l < b.scrollLeft + 20) b.scrollLeft = Math.max(0, l - 30); else if (r > b.scrollLeft + b.clientWidth - 20) b.scrollLeft = r - b.clientWidth + 30;
+    }
+    if (k) SEG_X.set(k, b.scrollLeft); segEdges(b);
+  });
+}
+document.addEventListener('scroll', e => { const b = e.target; if (b instanceof Element && b.matches('.seg.box')) { const k = segKey(b); if (k) SEG_X.set(k, b.scrollLeft); segEdges(b); } }, true);
+document.addEventListener('wheel', e => {
+  const b = e.target.closest?.('.seg.box'); if (!b || b.scrollWidth <= b.clientWidth + 1 || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+  const max = b.scrollWidth - b.clientWidth; if ((e.deltaY < 0 && b.scrollLeft <= 0) || (e.deltaY > 0 && b.scrollLeft >= max - 1)) return;   // at the end: let the page scroll on
+  e.preventDefault(); b.scrollLeft += e.deltaY;
+}, { passive: false });
+addEventListener('resize', () => requestAnimationFrame(fitSegs));
 function showApp() { $('#gate').hidden = true; $('#app').hidden = false; $('#btn-lock').hidden = false; $('#btn-search').hidden = false; renderAll(); if (detailOf(location.hash)) renderDetail(); }
 if (LANG !== 'en') applyLang(LANG);   // open in the language remembered from the rest of the site
 (async () => { if (await tryStoredKey()) showApp(); else $('#pw').focus(); })();
