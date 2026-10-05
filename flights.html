@@ -747,7 +747,11 @@ const fmtH = min => { const h = Math.floor(min / 60), m = Math.round(min % 60); 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fmtDate = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ''); if (!m) return d || ''; return LANG === 'zh' ? `${+m[2]}月${+m[3]}日` : `${+m[3]} ${MONTHS[+m[2] - 1]}`; };
 const fmtDateY = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ''); if (!m) return d || ''; return LANG === 'zh' ? `${m[1]}年${+m[2]}月${+m[3]}日` : `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}`; };
-const city = ap => (LANG === 'zh' ? (ap.city_zh || ap.city) : ap.city) || ap.name || ap.iata;
+// The city an airport serves. The airport list gives its municipality, sometimes with the district in brackets
+// ("Guilin (Lingui)") or a neighbouring city altogether ("Haidong" for Xining Caojiabao): drop the brackets, fix the odd ones.
+const CITY_FIX = { XNN: ['Xining', '西宁'], LYS: ['Lyon', '里昂'], MPL: ['Montpellier', '蒙彼利埃'] };
+const city = ap => { const fx = CITY_FIX[String(ap.iata || '').toUpperCase()]; if (fx) return fx[LANG === 'zh' ? 1 : 0];
+  return String((LANG === 'zh' ? (ap.city_zh || ap.city) : ap.city) || ap.name || ap.iata).replace(/\s*\([^)]*\)\s*$/, ''); };
 const apName = ap => A.airportName(ap, LANG) || city(ap);   // the usual name: Beijing Capital, 北京首都
 const acName = f => f.ac ? A.typeName(f.ac, LANG, f.acText) : (f.acText || '');
 const acKey = f => f.ac || (f.acText ? 'x:' + f.acText.trim().toLowerCase() : '');
@@ -1817,7 +1821,7 @@ function renderPlayer() {
       <button type="button" class="pl-x" data-act="stop" title="${esc(zh ? '结束播放' : 'Stop')}" aria-label="${esc(zh ? '结束播放' : 'Stop')}">✕</button></div>
     <div class="pl-fl">${ak ? `<span class="pl-tail"><span class="tl-fb" data-tail="${esc(ak)}"></span></span>` : ''}<div class="pl-txt">
       <div class="pl-no"><b>${esc(f.no || '—')}</b><span class="route${f.purpose === 'academic' ? ' acad' : ''}"><b>${esc(f.from.iata)}</b><span class="arrow">→</span><b>${esc(f.to.iata)}</b></span></div>
-      <div class="pl-sub">${esc(city(f.from))} – ${esc(city(f.to))} · ${nf(f.km)} km</div>
+      <div class="pl-sub">${esc(apName(f.from))} – ${esc(apName(f.to))} · ${nf(f.km)} km</div>
       <div class="pl-sub">${esc([al, acName(f), f.reg].filter(Boolean).join(' · '))}</div></div></div>
     <div class="pl-bar"><span style="width:${(PLAY.done ? 100 : (k - 1) / n * 100).toFixed(1)}%"></span></div>
     <div class="pl-ctl">${btn('prev', 'prev', zh ? '上一班' : 'Previous', PLAY.i === 0 && !PLAY.done)}${btn('toggle', mainIc, mainL)}${btn('next', 'next', zh ? '下一班' : 'Next', PLAY.done)}
