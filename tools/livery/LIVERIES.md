@@ -88,7 +88,7 @@ Fins are quad-warped from a clear tail photo, with the background flattened and 
 | CA | 中国国际航空 Air China | A | A | legoboyvdlp IAE `CCA` |
 | CZ | 中国南方航空 China Southern | A | A | Devansh1007 `CSN` A320neo; kapok fully inside the fin since the corner fix |
 | MU | 中国东方航空 China Eastern | A | A | legoboyvdlp CFM-NEO `CES` |
-| MF | 厦门航空 Xiamen Air | B | B | photo, layout `XMN`, painted titles |
+| MF | 厦门航空 Xiamen Air | C | B | fuselage drawn by `mf_xiamen.py` (light-blue band over blue and navy belly, large blue sweep behind the wing); fin from the photo; painted titles and windows |
 | HU | 海南航空 Hainan | A | A | FGMEMBERS A330-200 `CHH` |
 | 3U | 四川航空 Sichuan | D | D | `LOGO.sichuan` oval (gull over water bands) on an all-red fin; red cheatline widening aft and wrapping the rear; `fromNose` Chinese title |
 | ZH | 深圳航空 Shenzhen | C | C | A320neo tail photo; gold / dark-red / gold sweep from the crown behind the titles to the belly behind the wing; navy titles |
@@ -102,8 +102,8 @@ Fins are quad-warped from a clear tail photo, with the background flattened and 
 | GT | 桂林航空 Air Guilin | C | C | tail photo + official logo; titles and mark cut from the official artwork |
 | G5 | 华夏航空 China Express | C | C | official logo artwork: dove on the fin and titles; deep-blue fin with light-blue cap |
 | KL | KLM | A | D | `KLM` sheet fuselage; fin painted (`paintTail`), crown and KLM sized to the chord |
-| AF, LH, AY, TK | Air France, Lufthansa, Finnair, Turkish | A | A | legoboyvdlp `AFR`, `DLH`, `FIN`, `THY` |
-| BA, NH, QR, OS | British Airways, ANA, Qatar, Austrian | A | A | `BAW`, `ANA`, `QTR`, `AUA` sheets |
+| AF, LH, AY, TK | Air France, Lufthansa, Finnair, Turkish | A | A | legoboyvdlp `AFR`, `DLH`, `FIN`, `THY`; Lufthansa rear rebuilt as one navy wrap (`lh_lufthansa_rear.py`) and fin edge filled (`fin_edges.py LH`) |
+| BA, NH, QR, OS | British Airways, ANA, Qatar, Austrian | A | A | `BAW`, `ANA`, `QTR`, `AUA` sheets; Austrian fin has the single red arrow only (`os_austrian_fin.py` removes the sheet's grey arrow) |
 | TO, HV | Transavia | A | A | `TVF` sheet (HV reuses TO) |
 | FR, VY | Ryanair, Vueling | A | A | FlightGear sheets |
 | CX, SQ, EK | Cathay, Singapore, Emirates | A | A | A330 side sheets (`CPA`, `SIA`, `UAE`); Cathay fin flattened to teal plus the white brushstroke |
@@ -125,3 +125,5 @@ Fins are quad-warped from a clear tail photo, with the background flattened and 
 - Logos drawn directly into fin texture space are sheared on the model; draw in photo space and warp, or use a `TAILS` painter.
 - Chinese titles are painted reading from the nose on both sides; use separate Chinese and English calls, and `fromNose` when they share one call.
 - Use the official artwork for typefaces; system fonts never match a corporate wordmark.
+- A320 sheets carry tail-cone and stabiliser-fairing pieces that land on our loft as stepped blocks; redraw the rear when the livery colours it (Lufthansa).
+- Side-view photos map wing, engine and shadow areas onto the lower fuselage as mixed patches; draw the lower body from the livery geometry instead (Xiamen).
