@@ -8,7 +8,7 @@
     "en": "Conferences, workshops and research visits.",
     "zh": "参加过的学术会议、研讨会与学术访问。"
   },
-  "updated": "2026-10-03",
+  "updated": "2026-10-05",
   "places": [
     {
       "id": "pl-27e5613631",
@@ -296,7 +296,7 @@
       },
       "lat": 53.3331,
       "lon": -6.2489,
-      "when": "2024-07",
+      "when": "2024-08",
       "academic": true,
       "kind": "conference",
       "event": {
@@ -432,7 +432,7 @@
       },
       "lat": 51.5085,
       "lon": -0.1257,
-      "when": "2023-07",
+      "when": "2024-08",
       "academic": true,
       "kind": "conference",
       "event": {
