@@ -291,6 +291,8 @@
   .xbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; margin: 0 0 0.9rem; }
   .sec-link { margin-left: auto; font-size: 0.78rem; color: var(--cyan); text-decoration: none; white-space: nowrap; }
   .sec-link:hover { text-decoration: underline; }
+  h2.sec-hangar { flex-wrap: nowrap; align-items: center; gap: 0.35rem; }   /* Hangar, its blinking cursor, and the explorer link on one line */
+  h2.sec-hangar .kicker::before { margin-right: 0; }
   .ac-body { padding: 0.45rem 0.65rem 0.55rem; display: flex; flex-direction: column; gap: 0.15rem; }
   .ac-body .ac-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ac-km { position: absolute; z-index: 1; left: 0.6rem; bottom: 0.4rem; font-family: var(--f-mono); font-size: 0.72rem; color: var(--muted); }
@@ -626,7 +628,7 @@
       </footer>    </main>
     <aside class="col right">
       <section class="sec-fleet">
-        <h2 class="sec"><span data-en="Hangar" data-zh="机库">Hangar</span><span class="kicker" data-en="Hover to rotate · click to inspect" data-zh="悬停旋转 · 点击查看">Hover to rotate · click to inspect</span><a class="dl sec-link" href="#explore" data-en="Explore all types ›" data-zh="机库探索 ›">Explore all types ›</a></h2>
+        <h2 class="sec sec-hangar"><span data-en="Hangar" data-zh="机库">Hangar</span><span class="kicker" aria-hidden="true"></span><a class="dl sec-link" href="#explore" data-en="Explore all types ›" data-zh="机库探索 ›">Explore all types ›</a></h2>
         <button type="button" class="chip m-only" id="fleet-ftog" data-en="Filter the hangar" data-zh="筛选机库">Filter the hangar</button>
         <div class="fleet-filters" id="fleet-filters"></div>
         <div class="fleet" id="fleet"></div>
