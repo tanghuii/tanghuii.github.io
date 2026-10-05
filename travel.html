@@ -620,7 +620,8 @@
   @media (prefers-reduced-motion: reduce) { .mv.enter { animation: none; } }
   .mv-top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 16px; background: rgba(var(--paper-rgb), 0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--subtle); }
   .mv-back { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--subtle); background: var(--card-bg); color: var(--ink); font-size: 1.1rem; cursor: pointer; }
-  .mv-crumb { min-width: 0; display: flex; flex-direction: column; }
+  .mv-crumb { min-width: 0; display: flex; flex-direction: column; flex: 1; }
+  .mv-top .mv-theme { flex: none; width: 38px; height: 38px; }
   .mv-crumb small { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
   .mv-crumb b { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mv-body { padding: 1rem 16px 3rem; }
@@ -1904,8 +1905,8 @@ function routeMob() {
 function mobShell(kicker, title, body, cls = '') {
   const keep = document.getElementById('mv'); closeMobView();
   const el = document.createElement('div'); el.id = 'mv'; el.className = 'mv ' + cls; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
-  el.innerHTML = `<div class="mv-top"><button type="button" class="mv-back" aria-label="${LANG === 'zh' ? '返回' : 'Back'}">←</button><div class="mv-crumb"><small>${esc(kicker)}</small><b>${esc(title)}</b></div></div><div class="mv-body">${body}</div>`;
-  document.body.appendChild(el); document.body.style.overflow = 'hidden';
+  el.innerHTML = `<div class="mv-top"><button type="button" class="mv-back" aria-label="${LANG === 'zh' ? '返回' : 'Back'}">←</button><div class="mv-crumb"><small>${esc(kicker)}</small><b>${esc(title)}</b></div><button type="button" class="icon-btn mv-theme" data-theme-toggle></button></div><div class="mv-body">${body}</div>`;
+  document.body.appendChild(el); document.body.style.overflow = 'hidden'; window.SiteTheme?.paintButtons();
   if (!keep) el.classList.add('enter');
   el.querySelector('.mv-back').onclick = mobBack;
   wireCards(el, false); wireMobCards(el); lazyCovers(el);
