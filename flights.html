@@ -757,13 +757,14 @@ const mapColors = () => document.documentElement.dataset.theme === 'light'
 // The gliders live in their own Leaflet SVG renderer, so they pan and zoom with the route lines; the paths are re-projected on
 // zoom and routes too short on screen go without. With reduced motion, a static chevron sits past the middle instead.
 const ARROWS = new WeakMap();   // map → { rend, g, specs }
+let ARROW_MAPS = 0;   // each map gets its own id prefix for the glider tracks, so a detail map's <mpath> never points at the main map's paths
 const ARROW_SVG = (col, halo) => `<svg viewBox="0 0 18 18" width="18" height="18"><path d="M5 3l7 6-7 6" fill="none" stroke="${halo}" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/><path d="M5 3l7 6-7 6" fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const SVGNS = 'http://www.w3.org/2000/svg';
 function routeArrows(map, path, ab, ba, col, on = true) {
   let st = ARROWS.get(map);
   if (!st) {
     const rend = L.svg({ pane: 'overlayPane' }).addTo(map), g = document.createElementNS(SVGNS, 'g'); g.setAttribute('class', 'fl-gliders'); rend._rootGroup.appendChild(g);
-    st = { rend, g, specs: [], marks: L.layerGroup().addTo(map), n: 0 }; ARROWS.set(map, st);
+    st = { rend, g, specs: [], marks: L.layerGroup().addTo(map), n: 0, uid: ++ARROW_MAPS }; ARROWS.set(map, st);
     map.on('zoomend viewreset', () => drawArrows(map));
   }
   st.specs.push({ path, ab, ba, col, on, km: A.distKm({ lat: path[0][0], lon: path[0][1] }, { lat: path[path.length - 1][0], lon: path[path.length - 1][1] }) });
@@ -784,7 +785,7 @@ function drawArrows(map) {
       if (ab && ba && px >= 160) { put(0.6, false); put(0.4, true); } else put(0.5, !(ab >= (ba || 0)));
       return;
     }
-    const id = `fl-gp-${st.n}-${si}`, d = pts.map((q, i) => `${i ? 'L' : 'M'}${q.x.toFixed(1)} ${q.y.toFixed(1)}`).join('');
+    const id = `fl-gp-${st.uid}-${st.n}-${si}`, d = pts.map((q, i) => `${i ? 'L' : 'M'}${q.x.toFixed(1)} ${q.y.toFixed(1)}`).join('');
     const track = document.createElementNS(SVGNS, 'path'); track.setAttribute('id', id); track.setAttribute('d', d); track.setAttribute('fill', 'none'); track.setAttribute('stroke', 'none'); st.g.appendChild(track);
     const dur = Math.min(18, Math.max(5, 4 + sp.km / 700)), scale = Math.min(1, px / 260) * 0.3 + 0.8;   // slower on long hauls, a touch smaller on short hops
     const glider = (rev, k) => {
