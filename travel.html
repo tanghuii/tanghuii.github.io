@@ -650,6 +650,15 @@
   .mh-gh .mh-n { margin-left: auto; font-size: 0.85rem; color: var(--muted); }
   .mh-gh .mh-n b { color: var(--ink); font-size: 0.95rem; }
   .mh-gh .hx-bar { flex-basis: 100%; }
+  /* phones: the top bar must fit the narrowest screens (a too-wide bar widens the whole page in mobile Chrome) */
+  html, body { overflow-x: clip; }
+  @media (max-width: 520px) {
+    .top-bar-inner { gap: 0.5rem; }
+    .back-link { font-size: 1.35rem; }
+    .bar-right { gap: 0.4rem; }
+    .lang-btn { padding: 0.25rem 0.55rem; }
+  }
+  @media (max-width: 400px) { .back-link > span:not(.back-arrow) { display: none; } }
 </style>
 </head>
 <body>
