@@ -1105,8 +1105,14 @@ function flightLink(p) {
   const fs = placeFlights(p); if (!fs.length) return '';
   const href = fs.length === 1 ? `flights.html#fl=${encodeURIComponent(fs[0])}` : `flights.html#pl=${encodeURIComponent(p.id)}`;
   const tip = LANG === 'zh' ? `${fs.length} 个航班 · 在云间岁月中查看` : `${fs.length} flight${fs.length === 1 ? '' : 's'} · open in My Air Times`;
-  return `<a class="fl-plane-link" href="${esc(href)}" title="${esc(tip)}" aria-label="${esc(tip)}">${PLANE_SVG}</a>`;
+  return `<a class="fl-plane-link" href="${esc(href)}" data-pid="${esc(p.id)}" title="${esc(tip)}" aria-label="${esc(tip)}">${PLANE_SVG}</a>`;
 }
+// Before leaving for the flights, this page's address becomes #pl=<place>, so coming back (back button, or a reload of
+// this history entry) lands on the same city again: its card and map on wide screens, its country or province page on phones
+document.addEventListener('click', e => {
+  const a = e.target.closest('a.fl-plane-link'); if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+  history.replaceState(history.state, '', '#pl=' + encodeURIComponent(a.dataset.pid));
+});
 function cityCard(p) {
   const photosLabel = n => LANG === 'zh' ? `${n} 张照片` : `${n} photo${n === 1 ? '' : 's'}`;
       const ph = p.photos || [];
@@ -1881,7 +1887,9 @@ function renderMob() {
 }
 function closeMobView() { const el = document.getElementById('mv'); if (el) { el.remove(); document.body.style.overflow = ''; } }
 function mobGo(h, sid = '') { MOB_SID = sid; if (location.hash !== h) history.pushState({ mob: 1 }, '', h); MOB_CUR = null; routeMob(); }
-function mobBack() { if (history.state?.mob) history.back(); else { const up = /^#v=pr:/.test(location.hash) ? '#v=cc:CN' : ''; history.replaceState(null, '', up || location.pathname + location.search); MOB_CUR = null; routeMob(); } }
+// opened straight from another page of the site (a flight's "on the travel map" link): back returns there
+const CAME_FROM_SITE = (() => { try { const r = new URL(document.referrer); return r.origin === location.origin && !/\/travel\.html$/.test(r.pathname) && !!location.hash; } catch (e) { return false; } })();
+function mobBack() { if (history.state?.mob || (CAME_FROM_SITE && history.length > 1)) history.back(); else { const up = /^#v=pr:/.test(location.hash) ? '#v=cc:CN' : ''; history.replaceState(null, '', up || location.pathname + location.search); MOB_CUR = null; routeMob(); } }
 function routeMob() {
   if (!mobMode() || !DATA) { closeMobView(); MOB_CUR = null; return; }
   const h = location.hash; if (h === MOB_CUR) return; MOB_CUR = h;
