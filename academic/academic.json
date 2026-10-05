@@ -525,7 +525,24 @@
         "en": "",
         "zh": ""
       },
-      "sights": [],
+      "sights": [
+        {
+          "pub": true,
+          "id": "amap-B025003X94",
+          "name": {
+            "en": "Xiamen University",
+            "zh": "厦门大学(思明校区)"
+          },
+          "lat": 24.438721439976515,
+          "lon": 118.09671330040156,
+          "tags": [],
+          "enwiki": "",
+          "zhwiki": "",
+          "url": "",
+          "amap": "https://www.amap.com/place/B025003X94",
+          "baike": "https://baike.baidu.com/item/%E5%8E%A6%E9%97%A8%E5%A4%A7%E5%AD%A6"
+        }
+      ],
       "photos": [
         {
           "id": "f5400cb12b",
