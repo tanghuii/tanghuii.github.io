@@ -366,7 +366,6 @@
   .qf-n { position: absolute; z-index: 1; right: -9px; top: -9px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; display: grid; place-items: center;
     background: var(--cyan); color: var(--on-cyan); font-family: var(--f-mono); font-weight: 600; font-size: 0.72rem; line-height: 1; box-shadow: 0 0 0 2px var(--bg); }
   .flags-head { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-  .flags-hint { font-size: 0.8rem; color: var(--muted); }
   #flags-n, #tails-n { font-size: 0.82rem; letter-spacing: 0.14em; }
   #flags-n b, #tails-n b { font-size: 1.7rem; font-weight: 700; letter-spacing: 0; margin-right: 0.3em; line-height: 1; vertical-align: -0.12em; text-shadow: 0 0 14px rgba(var(--cyan-rgb), var(--glow)); }
   .credits a { color: var(--muted); }
@@ -571,6 +570,26 @@
   .pl-spd .chip { padding: 0.28rem 0.45rem; font-size: 0.74rem; }
   .pl-ctl .fl-go { margin-left: auto; }
   @media (max-width: 720px) { .player { top: auto; bottom: 3.4rem; right: 0.6rem; left: 0.6rem; width: auto; } }
+  /* record rankings */
+  a.rec { display: block; color: inherit; text-decoration: none; transition: border-color 0.15s, transform 0.15s; }
+  a.rec:hover { border-color: var(--cyan); transform: translateY(-1px); }
+  .rec .k .more-i { margin-left: 0.4em; color: var(--cyan); }
+  .rank-tabs { margin-bottom: 1rem; max-width: 100%; }
+  .rank-list { list-style: none; padding: 0.3rem 0; margin: 0; }
+  .rank-list li + li { border-top: 1px solid var(--line-soft); }
+  .rank-list a { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) auto; align-items: center; gap: 0.2rem 0.9rem; padding: 0.6rem 1rem; color: var(--ink); text-decoration: none; }
+  .rank-list a:hover { background: rgba(var(--cyan-rgb), 0.07); }
+  .rk-i { font-family: var(--f-mono); font-weight: 600; font-size: 1.05rem; color: var(--muted); text-align: right; }
+  .rank-list li:nth-child(-n+3) .rk-i { color: var(--cyan); font-size: 1.25rem; }
+  .rk-main { min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+  .rk-l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rk-nm { color: var(--muted); font-size: 0.86rem; margin-left: 0.4rem; }
+  .rk-code { font-family: var(--f-mono); font-size: 0.78rem; color: var(--cyan); margin-right: 0.5rem; }
+  .rk-main small { color: var(--muted); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rk-main .bar { margin-top: 0.2rem; }
+  .rk-v { font-family: var(--f-mono); font-weight: 600; font-size: 1.05rem; color: var(--ink-strong); white-space: nowrap; text-align: right; }
+  .rk-v small { font-size: 0.7em; color: var(--muted); margin-left: 0.15em; font-weight: 400; }
+  @media (max-width: 720px) { .rank-list a { grid-template-columns: 1.8rem minmax(0, 1fr) auto; padding: 0.55rem 0.7rem; gap: 0.15rem 0.6rem; } .rk-nm { display: block; margin: 0.1rem 0 0; } .rk-l { white-space: normal; } }
   /* search palette */
   .fsearch { position: fixed; inset: 0; z-index: 2100; background: var(--overlay); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: flex-start; padding: min(12vh, 110px) 1rem 1rem; }
   .fs-box { width: min(640px, 100%); max-height: calc(100vh - min(12vh, 110px) - 2rem); display: flex; flex-direction: column; background: var(--box); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35); }
@@ -662,7 +681,7 @@
       <div class="stats" id="stats"></div>
       <section class="sec-flags">
         <h2 class="sec small fold-h"><span data-en="Flags" data-zh="国旗墙">Flags</span><span class="kicker" id="flags-n"></span></h2>
-        <div class="flags-head"><div class="seg box" id="f-flags" role="group" aria-label="Sort"></div><span class="flags-hint" data-en="Badge: take-offs and landings in that country" data-zh="角标：在该国的起降次数">Badge: take-offs and landings in that country</span></div>
+        <div class="flags-head"><div class="seg box" id="f-flags" role="group" aria-label="Sort"></div></div>
         <div class="flags" id="flags"></div>
       </section>
       <section class="sec-tails">
@@ -1135,14 +1154,15 @@ function recordsHtml(list) {
   const years = tally(FLIGHTS, f => f.year, k => k), first = [...FLIGHTS].sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
   const fl = f => `<span class="mono">${esc(f.from.iata)} → ${esc(f.to.iata)}</span> · ${nf(f.km)} km`;
   const cards = [
-    [tr('longest'), fl(longest), `${esc(longest.no || '')} · ${esc(acName(longest))} · ${esc(fmtDateY(longest.date))}`],
-    list.length > 1 ? [tr('shortest'), fl(shortest), `${esc(shortest.no || '')} · ${esc(acName(shortest))} · ${esc(fmtDateY(shortest.date))}`] : null,
-    routes[0] && routes[0].n > 1 ? [tr('topRoute'), `<span class="mono">${esc(routes[0].label)}</span>`, `${routes[0].n} ${LANG === 'zh' ? '次' : 'flights'}`] : null,
-    types[0] ? [tr('topType'), esc(types[0].label), `${types[0].n} ${LANG === 'zh' ? '次' : (types[0].n === 1 ? 'flight' : 'flights')} · ${nf(types[0].km)} km`] : null,
-    YEAR === 'all' && years[0] && years.length > 1 ? [tr('busiest'), `<span class="mono">${esc(years[0].label)}</span>`, `${years[0].n} ${LANG === 'zh' ? '次' : 'flights'} · ${nf(years[0].km)} km`] : null,
-    YEAR === 'all' && first ? [tr('first'), `<span class="mono">${esc(first.from.iata)} → ${esc(first.to.iata)}</span>`, esc(fmtDateY(first.date))] : null,
+    [tr('longest'), fl(longest), `${esc(longest.no || '')} · ${esc(acName(longest))} · ${esc(fmtDateY(longest.date))}`, 'longest'],
+    list.length > 1 ? [tr('shortest'), fl(shortest), `${esc(shortest.no || '')} · ${esc(acName(shortest))} · ${esc(fmtDateY(shortest.date))}`, 'shortest'] : null,
+    routes[0] && routes[0].n > 1 ? [tr('topRoute'), `<span class="mono">${esc(routes[0].label)}</span>`, `${routes[0].n} ${LANG === 'zh' ? '次' : 'flights'}`, 'routes'] : null,
+    types[0] ? [tr('topType'), esc(types[0].label), `${types[0].n} ${LANG === 'zh' ? '次' : (types[0].n === 1 ? 'flight' : 'flights')} · ${nf(types[0].km)} km`, 'types'] : null,
+    YEAR === 'all' && years[0] && years.length > 1 ? [tr('busiest'), `<span class="mono">${esc(years[0].label)}</span>`, `${years[0].n} ${LANG === 'zh' ? '次' : 'flights'} · ${nf(years[0].km)} km`, 'years'] : null,
+    YEAR === 'all' && first ? [tr('first'), `<span class="mono">${esc(first.from.iata)} → ${esc(first.to.iata)}</span>`, esc(fmtDateY(first.date)), 'first'] : null,
   ].filter(Boolean);
-  return cards.map(([k, v, s]) => `<div class="hud rec"><div class="k">${esc(k)}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
+  // each record opens its full ranking (#rank=longest|shortest|routes|types|years|first)
+  return cards.map(([k, v, s, r]) => `<a class="hud rec dl" href="#rank=${r}" title="${esc(LANG === 'zh' ? '查看完整排行' : 'See the full ranking')}"><div class="k">${esc(k)}<span class="more-i">›</span></div><div class="v">${v}</div><div class="s">${s}</div></a>`).join('');
 }
 
 // Hangar: one card per aircraft type, a 3D model in the livery of the airline flown most on it (chips switch liveries)
@@ -1364,7 +1384,7 @@ $('#q').addEventListener('input', e => { Q = e.target.value; renderLog(scoped())
 // Each is a plain link, so it opens in the same view or (middle-click) in a new tab; the hash is the state.
 let DMAP = null, FL_VIEWER = null;
 const DETAIL_KINDS = { al: 'airlines', ap: 'airports', cc: 'countries', ac: 'types', rt: 'routes', pl: 'place' };
-function detailOf(hash) { if (/^#(log|hangar|records|explore)$/.test(hash || '')) return { kind: 'page', key: hash.slice(1) }; const m = /^#(al|ap|cc|ac|rt|fl|pl|list)=(.+)$/.exec(hash || ''); return m ? { kind: m[1], key: decodeURIComponent(m[2]) } : null; }
+function detailOf(hash) { if (/^#(log|hangar|records|explore)$/.test(hash || '')) return { kind: 'page', key: hash.slice(1) }; const m = /^#(al|ap|cc|ac|rt|fl|pl|rank|list)=(.+)$/.exec(hash || ''); return m ? { kind: m[1], key: decodeURIComponent(m[2]) } : null; }
 const inDetail = (d, f) => d.kind === 'al' ? alKey(f) === d.key : d.kind === 'ap' ? (f.from.iata === d.key || f.to.iata === d.key) : d.kind === 'cc' ? (A.statCC(f.from.cc) === d.key || A.statCC(f.to.cc) === d.key)
   : d.kind === 'ac' ? acKey(f) === d.key : d.kind === 'rt' ? routeKey(f) === d.key : d.kind === 'pl' ? !!PLACES.find(p => p.id === d.key)?.flights.includes(f.id) : true;
 function closeDetail() {
@@ -1388,9 +1408,55 @@ function headBadges(d, list) {
   const html = want.map(strip).join('');
   return { html: html ? `<div class="dh-badges">${html}</div>` : '', tails };
 }
+// ── Record rankings (#rank=…): every flight by distance (longest first, or shortest first), every flight in date order,
+// routes and aircraft types by how often they were flown, years by flights. Respects the year / purpose filter.
+const RANKS = {
+  longest: ['Longest flights', '最长航班'], shortest: ['Shortest flights', '最短航班'], routes: ['Most flown routes', '最常飞航线'],
+  types: ['Most flown aircraft', '最常乘坐机型'], years: ['Busiest years', '飞得最多的年份'], first: ['In date order', '按时间顺序'],
+};
+function renderRank(key) {
+  const zh = LANG === 'zh', list = FLIGHTS.filter(inYear), k = RANKS[key] ? key : 'longest';
+  const el = document.createElement('div'); el.id = 'detail'; el.className = 'detail'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+  const times = n => `${n} ${zh ? '次' : (n === 1 ? 'flight' : 'flights')}`;
+  const byDate = (a, b) => String(a.date).localeCompare(String(b.date)) || String(a.dep || '').localeCompare(String(b.dep || ''));
+  let rows = [];   // { href, main (html), sub, val (html), w (bar 0..1) }
+  if (k === 'longest' || k === 'shortest' || k === 'first') {
+    const fs = [...list].sort(k === 'longest' ? (a, b) => b.km - a.km || byDate(a, b) : k === 'shortest' ? (a, b) => a.km - b.km || byDate(a, b) : byDate);
+    const max = Math.max(...fs.map(f => f.km), 1);
+    rows = fs.map(f => ({ href: '#fl=' + encodeURIComponent(f.id), main: `<span class="route${f.purpose === 'academic' ? ' acad' : ''}"><b>${esc(f.from.iata)}</b><span class="arrow">→</span><b>${esc(f.to.iata)}</b></span> <span class="rk-nm">${esc(apName(f.from))} – ${esc(apName(f.to))}</span>`,
+      sub: [f.no, A.airlineName(f.airline, LANG), acName(f), k === 'first' ? `${nf(f.km)} km` : fmtDateY(f.date)].filter(Boolean).join(' · '), val: k === 'first' ? esc(fmtDateY(f.date)) : `${nf(f.km)}<small>km</small>`, w: f.km / max }));
+  } else if (k === 'routes') {
+    const rs = tally(list, routeKey, x => x.replace('-', ' ⇄ ')).sort((a, b) => b.n - a.n || b.km - a.km), max = rs[0]?.n || 1;
+    rows = rs.map(r => { const [a, b] = r.key.split('-'), pa = r.f.from.iata === a ? r.f.from : r.f.to, pb = r.f.from.iata === a ? r.f.to : r.f.from;
+      return { href: '#rt=' + encodeURIComponent(r.key), main: `<span class="route"><b>${esc(a)}</b><span class="arrow">⇄</span><b>${esc(b)}</b></span> <span class="rk-nm">${esc(apName(pa))} – ${esc(apName(pb))}</span>`,
+        sub: `${nf(A.distKm(pa, pb))} km ${zh ? '单程' : 'each way'} · ${nf(r.km)} km ${zh ? '合计' : 'in all'}`, val: `${r.n}<small>×</small>`, w: r.n / max }; });
+  } else if (k === 'types') {
+    const rs = tally(list, acKey, (x, f) => acName(f)).sort((a, b) => b.n - a.n || b.km - a.km), max = rs[0]?.n || 1;
+    rows = rs.map(r => { const ty = A.type(r.key); return { href: '#ac=' + encodeURIComponent(r.key), main: `${ty ? `<span class="rk-code">${esc(ty.code)}</span>` : ''}<b>${esc(r.label)}</b>`,
+      sub: [ty ? A.mfrName(ty.mfr, LANG) : '', `${nf(r.km)} km`].filter(Boolean).join(' · '), val: `${r.n}<small>×</small>`, w: r.n / max }; });
+  } else if (k === 'years') {
+    const rs = tally(FLIGHTS.filter(f => PURPOSE === 'all' || (PURPOSE === 'academic') === (f.purpose === 'academic')), f => f.year, x => x).sort((a, b) => b.n - a.n || b.km - a.km || b.key.localeCompare(a.key)), max = rs[0]?.n || 1;
+    rows = rs.map(r => ({ href: '', year: r.key, main: `<b class="mono">${esc(r.key)}</b>`, sub: `${nf(r.km)} km`, val: `${r.n}<small>${zh ? '次' : '×'}</small>`, w: r.n / max }));
+  }
+  const tabs = Object.keys(RANKS).map(x => `<a class="chip dl${x === k ? ' on' : ''}" href="#rank=${x}">${esc(RANKS[x][zh ? 1 : 0])}</a>`).join('');
+  const scope = YEAR !== 'all' || PURPOSE !== 'all' ? [k !== 'years' && YEAR !== 'all' ? YEAR : '', PURPOSE !== 'all' ? tr(PURPOSE) : ''].filter(Boolean).join(' · ') : '';
+  el.innerHTML = `<div class="detail-top"><button type="button" class="icon-btn" id="detail-back" aria-label="${esc(tr('back'))}" title="${esc(tr('back'))}">←</button>
+      <div class="crumb"><span class="kicker">${esc(zh ? '飞行纪录' : 'Records')}</span><b>${esc(RANKS[k][zh ? 1 : 0])}</b></div>
+      <div class="lang-toggle detail-lang" role="group" aria-label="Language"><button type="button" class="lang-btn${LANG === 'en' ? ' active' : ''}" data-lang="en">EN</button><button type="button" class="lang-btn${LANG === 'zh' ? ' active' : ''}" data-lang="zh">中</button></div>
+      <a class="icon-btn" href="${esc(location.hash)}" target="_blank" rel="noopener" title="${esc(tr('newTab'))}" aria-label="${esc(tr('newTab'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M21 3l-9 9M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></a></div>
+    <div class="detail-head"><div><h2>${esc(RANKS[k][zh ? 1 : 0])}</h2><p class="sub">${esc(zh ? `共 ${rows.length} 项` : `${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}`)}${scope ? ` · ${esc(scope)}` : ''}</p></div></div>
+    <div class="seg box rank-tabs" id="rank-tabs">${tabs}</div>
+    <ol class="hud rank-list">${rows.map((r, i) => `<li><a class="dl" href="${esc(r.href || '#')}"${r.year ? ` data-year="${esc(r.year)}"` : ''}><span class="rk-i">${i + 1}</span><span class="rk-main"><span class="rk-l">${r.main}</span>${r.sub ? `<small>${esc(r.sub)}</small>` : ''}<span class="bar"><span style="width:${(r.w * 100).toFixed(1)}%"></span></span></span><span class="rk-v">${r.val}</span></a></li>`).join('') || `<li class="empty">${esc(tr('none'))}</li>`}</ol>`;
+  document.body.appendChild(el); document.body.style.overflow = 'hidden';
+  $('#detail-back').onclick = () => { if (history.state?.fromPage) history.back(); else location.hash = ''; };
+  // a year opens the page filtered to that year
+  el.querySelectorAll('[data-year]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); YEAR = a.dataset.year; SEL = null; FIRST_FIT = true; location.hash = ''; renderAll(); scrollTo({ top: 0, behavior: 'smooth' }); }, true));
+  fitSegs(); el.scrollTop = 0;
+}
 function renderDetail() {
   const d = detailOf(location.hash); closeDetail(); if (!d || !FLIGHTS.length) return;
   if (d.kind === 'fl') return renderFlight(d.key);
+  if (d.kind === 'rank') return renderRank(d.key);
   const zh = LANG === 'zh', all = FLIGHTS.filter(f => inDetail(d, f)), list = all.filter(inYear);
   const el = document.createElement('div'); el.id = 'detail'; el.className = 'detail'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
   // header: what this is
