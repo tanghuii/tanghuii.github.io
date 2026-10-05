@@ -1459,7 +1459,7 @@ function renderRank(key) {
     <div class="seg box rank-tabs" id="rank-tabs">${tabs}</div>
     <ol class="hud rank-list">${rows.map((r, i) => `<li><a class="dl" href="${esc(r.href || '#')}"${r.year ? ` data-year="${esc(r.year)}"` : ''}><span class="rk-i">${i + 1}</span><span class="rk-main"><span class="rk-l">${r.main}</span>${r.sub ? `<small>${esc(r.sub)}</small>` : ''}<span class="bar"><span style="width:${(r.w * 100).toFixed(1)}%"></span></span></span><span class="rk-v">${r.val}</span></a></li>`).join('') || `<li class="empty">${esc(tr('none'))}</li>`}</ol>`;
   document.body.appendChild(el); document.body.style.overflow = 'hidden';
-  $('#detail-back').onclick = () => { if (history.state?.fromPage) history.back(); else location.hash = ''; };
+  $('#detail-back').onclick = detailBack;
   // a year opens the page filtered to that year
   el.querySelectorAll('[data-year]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); YEAR = a.dataset.year; SEL = null; FIRST_FIT = true; location.hash = ''; renderAll(); scrollTo({ top: 0, behavior: 'smooth' }); }, true));
   fitSegs(); el.scrollTop = 0;
@@ -1527,7 +1527,7 @@ function renderDetail() {
       <th>${esc(zh ? '日期' : 'Date')}</th><th>${esc(zh ? '航班' : 'Flight')}</th><th>${esc(zh ? '航线' : 'Route')}</th><th class="col-x">${esc(zh ? '航空公司' : 'Airline')}</th><th>${esc(zh ? '机型' : 'Aircraft')}</th><th class="num">${esc(zh ? '距离' : 'Distance')}</th><th class="num col-x">${esc(zh ? '时长' : 'Time')}</th><th class="go"></th></tr></thead>
       <tbody>${rows.length ? rowsHtml(rows, false) : `<tr><td colspan="8" class="empty">${esc(tr('none'))}</td></tr>`}</tbody></table></div></div></div>`}`;
   document.body.appendChild(el); document.body.style.overflow = 'hidden';
-  $('#detail-back').onclick = () => { if (history.state?.fromPage) history.back(); else location.hash = ''; };
+  $('#detail-back').onclick = detailBack;
   if (d.kind !== 'list' && d.kind !== 'page' && rows.length) {
     DMAP = L.map('dmap', { worldCopyJump: true, minZoom: 2, maxZoom: 12, zoomSnap: 0.25, attributionControl: true }).setView([35, 60], 2);
     MapBase.attach(DMAP, LANG);
@@ -1574,7 +1574,7 @@ function renderFlight(id) {
   if (!f) {
     el.innerHTML = top('—') + `<p class="empty" style="padding:2rem 0">${esc(zh ? '找不到这个航班，它可能已被删除。' : 'This flight is not in the log (it may have been deleted).')}</p>`;
     document.body.appendChild(el); document.body.style.overflow = 'hidden';
-    $('#detail-back').onclick = () => { if (history.state?.fromPage) history.back(); else location.hash = ''; };
+    $('#detail-back').onclick = detailBack;
     return;
   }
   // neighbours in the log (FLIGHTS is newest first)
@@ -1623,7 +1623,7 @@ function renderFlight(id) {
     <div class="stats">${stats}</div>
     <div class="detail-grid"><div class="hud map-card"><div class="dmap" id="dmap"></div></div>${acCard}${tripHtml}</div>`;
   document.body.appendChild(el); document.body.style.overflow = 'hidden';
-  $('#detail-back').onclick = () => { if (history.state?.fromPage) history.back(); else location.hash = ''; };
+  $('#detail-back').onclick = detailBack;
   $('#fl-replay').onclick = () => {
     location.hash = ''; closeDetail();
     SEL = { kind: 'route', key: routeKey(f), label: `${f.from.iata} ⇄ ${f.to.iata}` }; renderAll();
@@ -1655,10 +1655,14 @@ function renderFlight(id) {
     stage.querySelector('.ac-open').onclick = () => openViewer({ code: f.ac, key: acKey(f), label: acName(f), n: sameType.length, km: sameType.reduce((s, x) => s + x.km, 0), als: [{ al: f.airline, n: 1, label: al }] }, 0);
   });
 }
+// Back from a detail view: the previous view when this one was opened inside the page; the page the visitor came from
+// (e.g. a city on travel.html) when the view was opened straight from another page of the site; else the overview.
+const ENTRY_FROM_SITE = (() => { try { const r = new URL(document.referrer); return r.origin === location.origin && !/\/flights\.html$/.test(r.pathname) && !!location.hash; } catch (e) { return false; } })();
+function detailBack() { if (history.state?.fromPage || (ENTRY_FROM_SITE && history.length > 1)) history.back(); else location.hash = ''; }
 addEventListener('hashchange', () => { if (!$('#app').hidden) renderDetail(); });
-document.addEventListener('click', e => { const a = e.target.closest('a.dl'); if (a && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0 && a.getAttribute('href')?.startsWith('#')) { e.preventDefault(); const h = a.getAttribute('href'); if (location.hash !== h) history.pushState({ fromPage: !$('#detail') || history.state?.fromPage }, '', h); renderDetail(); } });
+document.addEventListener('click', e => { const a = e.target.closest('a.dl'); if (a && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0 && a.getAttribute('href')?.startsWith('#')) { e.preventDefault(); const h = a.getAttribute('href'); if (location.hash !== h) history.pushState({ fromPage: true }, '', h); renderDetail(); } });
 addEventListener('popstate', () => { if (!$('#app').hidden) renderDetail(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#detail') && !$('.v3d')) { if (history.state?.fromPage) history.back(); else location.hash = ''; } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#detail') && !$('.v3d')) detailBack(); });
 
 // ── Language ──
 function applyLang(lang) {
