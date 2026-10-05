@@ -175,12 +175,20 @@
   .chip:hover { color: var(--ink); border-color: var(--cyan); }
   .chip.on { background: var(--cyan); border-color: var(--cyan); color: var(--on-cyan); font-weight: 600; }
   .chip.amber.on { background: var(--amber); border-color: var(--amber); }
+  /* segmented box: one frame per filter, one row; the picked option fills with the accent (scrolls sideways if it ever overflows) */
+  .seg.box { flex-wrap: nowrap; gap: 0; align-self: stretch; max-width: 100%; overflow-x: auto; scrollbar-width: none; border: 1px solid var(--line-2); border-radius: 4px; background: var(--field); }
+  .seg.box::-webkit-scrollbar { display: none; }
+  .seg.box .chip { flex: 1 0 auto; border: 0; border-radius: 0; background: transparent; padding: 0.34rem 0.5rem; white-space: nowrap; text-align: center; }
+  .seg.box .chip + .chip { border-left: 1px solid var(--line); }
+  .seg.box .chip:hover { background: rgba(var(--cyan-rgb), 0.08); }
+  .seg.box .chip.on { background: var(--cyan); color: var(--on-cyan); }
+  .seg.box .chip.amber.on { background: var(--amber); color: var(--on-cyan); }
 
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.8rem; }
-  .stat { padding: 0.95rem 1rem 0.85rem; }
-  .stat .n { font-family: var(--f-mono); font-weight: 600; font-size: 1.85rem; color: var(--cyan); line-height: 1.1; text-shadow: 0 0 18px rgba(var(--cyan-rgb), var(--glow)); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; }
+  .stat { padding: 0.75rem 0.9rem 0.7rem; }
+  .stat .n { font-family: var(--f-mono); font-weight: 600; font-size: 1.7rem; color: var(--cyan); line-height: 1.1; text-shadow: 0 0 18px rgba(var(--cyan-rgb), var(--glow)); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .stat .n small { font-size: 0.55em; color: var(--muted); margin-left: 0.15em; text-shadow: none; }
-  .stat .l { font-family: var(--f-hud); font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); margin-top: 0.35rem; }
+  .stat .l { font-family: var(--f-hud); font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); margin-top: 0.25rem; }
   .stat .s { font-size: 0.82rem; color: var(--muted); }
 
   /* Map */
@@ -232,6 +240,7 @@
   .fleet-filters { display: flex; flex-direction: column; gap: 0.4rem; margin: -0.3rem 0 0.2rem; }
   @media (max-width: 1099px) { .fleet-filters { display: none; } .sec-fleet.ff-open .fleet-filters { display: flex; } #fleet-ftog { align-self: flex-start; } .sec-fleet.ff-open #fleet-ftog { color: var(--on-cyan); background: var(--cyan); border-color: var(--cyan); } }
   .fleet-filters .seg:empty { display: none; }
+  .fleet-filters .seg.box { max-width: 520px; }
   .fsel { appearance: none; -webkit-appearance: none; max-width: 100%; padding-right: 1.6rem; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238ea3bd' stroke-width='1.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.55rem center; background-size: 10px; align-self: flex-start; color: var(--ink); }
   .ac { overflow: hidden; display: flex; flex-direction: column; }
   .ac-pic { position: relative; aspect-ratio: 16 / 10; background: radial-gradient(circle at 50% 45%, rgba(var(--cyan-rgb), 0.10), transparent 65%), linear-gradient(rgba(var(--cyan-rgb), 0.08) 1px, transparent 1px) 0 0 / 12px 12px, linear-gradient(90deg, rgba(var(--cyan-rgb), 0.08) 1px, transparent 1px) 0 0 / 12px 12px, var(--pic-bg); color: var(--cyan); display: grid; place-items: center; border-bottom: 1px solid var(--line); }
@@ -540,13 +549,13 @@
         <h1 data-en="My Air Times" data-zh="云间岁月">My Air Times</h1>
       </section>
       <div class="filters sec-filters">
-        <div class="seg" id="f-year" role="group" aria-label="Year"></div>
-        <div class="seg" id="f-purpose" role="group" aria-label="Purpose"></div>
+        <div class="seg box" id="f-year" role="group" aria-label="Year"></div>
+        <div class="seg box" id="f-purpose" role="group" aria-label="Purpose"></div>
       </div>
       <div class="stats" id="stats"></div>
       <section class="sec-flags">
         <h2 class="sec small fold-h"><span data-en="Flags" data-zh="国旗墙">Flags</span><span class="kicker" id="flags-n"></span></h2>
-        <div class="flags-head"><div class="seg" id="f-flags" role="group" aria-label="Sort"></div><span class="flags-hint" data-en="Badge: take-offs and landings in that country" data-zh="角标：在该国的起降次数">Badge: take-offs and landings in that country</span></div>
+        <div class="flags-head"><div class="seg box" id="f-flags" role="group" aria-label="Sort"></div><span class="flags-hint" data-en="Badge: take-offs and landings in that country" data-zh="角标：在该国的起降次数">Badge: take-offs and landings in that country</span></div>
         <div class="flags" id="flags"></div>
       </section>
       <section class="sec-tails">
@@ -715,7 +724,7 @@ function tally(list, keyFn, labelFn) {
 function renderFilters() {
   const years = [...new Set(FLIGHTS.map(f => f.year))].sort().reverse();
   if (YEAR !== 'all' && !years.includes(YEAR)) YEAR = 'all';
-  $('#f-year').innerHTML = [['all', tr('allYears')], ...years.map(y => [y, y])].map(([v, l]) => `<button type="button" class="chip${YEAR === v ? ' on' : ''}" data-year="${esc(v)}">${esc(l)}</button>`).join('');
+  $('#f-year').innerHTML = [['all', tr('all')], ...years.map(y => [y, y])].map(([v, l]) => `<button type="button" class="chip${YEAR === v ? ' on' : ''}" data-year="${esc(v)}">${esc(l)}</button>`).join('');
   $('#f-purpose').innerHTML = [['all', tr('all')], ['personal', tr('personal')], ['academic', tr('academic')]].map(([v, l]) => `<button type="button" class="chip${v === 'academic' ? ' amber' : ''}${PURPOSE === v ? ' on' : ''}" data-purpose="${v}">${esc(l)}</button>`).join('');
   $('#f-year').querySelectorAll('[data-year]').forEach(b => b.onclick = () => { YEAR = b.dataset.year; SEL = null; FIRST_FIT = true; renderAll(); });
   $('#f-purpose').querySelectorAll('[data-purpose]').forEach(b => b.onclick = () => { PURPOSE = b.dataset.purpose; SEL = null; FIRST_FIT = true; renderAll(); });
@@ -1028,8 +1037,8 @@ function renderFleetFilters(list) {
   if (FLEET_F.mfr !== 'all' && !mfrs.includes(FLEET_F.mfr)) FLEET_F.mfr = 'all';
   if (FLEET_F.al !== 'all' && !als.some(a => a.key === FLEET_F.al)) FLEET_F.al = 'all';
   const chip = (k, v, l) => `<button type="button" class="chip${FLEET_F[k] === v ? ' on' : ''}" data-fk="${k}" data-fv="${esc(v)}">${esc(l)}</button>`;
-  $('#fleet-filters').innerHTML = `<div class="seg">${chip('body', 'all', tr('all'))}${bodies.map(b => chip('body', b, BODY_L[b]?.[zh ? 1 : 0] || b)).join('')}</div>
-    <div class="seg">${mfrs.length > 1 ? chip('mfr', 'all', zh ? '所有制造商' : 'All makers') + mfrs.map(m => chip('mfr', m, A.mfrName(m, LANG))).join('') : ''}</div>
+  $('#fleet-filters').innerHTML = `<div class="seg box">${chip('body', 'all', tr('all'))}${bodies.map(b => chip('body', b, BODY_L[b]?.[zh ? 1 : 0] || b)).join('')}</div>
+    <div class="seg box">${mfrs.length > 1 ? chip('mfr', 'all', zh ? '所有制造商' : 'All makers') + mfrs.map(m => chip('mfr', m, A.mfrName(m, LANG))).join('') : ''}</div>
     <select class="chip fsel" id="fleet-al" aria-label="${esc(tr('airlines'))}"><option value="all">${esc(zh ? '所有航空公司' : 'All airlines')}</option>${als.map(a => `<option value="${esc(a.key)}"${FLEET_F.al === a.key ? ' selected' : ''}>${esc(a.label)} (${a.n})</option>`).join('')}</select>`;
   $('#fleet-filters').querySelectorAll('[data-fk]').forEach(b => b.onclick = () => { FLEET_F[b.dataset.fk] = b.dataset.fv; renderFleet(scoped()); });
   $('#fleet-al').onchange = e => { FLEET_F.al = e.target.value; renderFleet(scoped()); };
