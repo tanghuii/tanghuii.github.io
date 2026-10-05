@@ -628,7 +628,7 @@ const L10N = {
   empty: ['No flights yet. Add them in Site Manager → Flights.', '还没有飞行记录。请在 Site Manager → Flights 中添加。'],
   clear: ['clear', '清除'], unknownType: ['Other / unknown', '其他 / 未知'], est: ['estimated', '估算'], details: ['Details', '查看详情'],
   back: ['Back', '返回'], movements: ['Take-offs and landings', '起降次数'], regs: ['Aircraft flown', '乘坐过的飞机'], years: ['By year', '按年份'],
-  flight: ['Flight', '航班'], first2: ['First', '首次'], last: ['Latest', '最近'], hours: ['Hours', '小时'], newTab: ['Open in a new tab', '在新标签页打开'], destinations: ['Destinations', '目的地'],
+  flight: ['Flight', '航班'], place: ['Place', '地点'], first2: ['First', '首次'], last: ['Latest', '最近'], hours: ['Hours', '小时'], newTab: ['Open in a new tab', '在新标签页打开'], destinations: ['Destinations', '目的地'],
 };
 const tr = k => (L10N[k] || [k, k])[LANG === 'zh' ? 1 : 0];
 const nf = (n, d = 0) => Number(n).toLocaleString(LANG === 'zh' ? 'zh-CN' : 'en', { maximumFractionDigits: d, minimumFractionDigits: d });
@@ -1208,13 +1208,13 @@ function renderAll() {
 }
 $('#q').addEventListener('input', e => { Q = e.target.value; renderLog(scoped()); });
 
-// ── Detail views: #al=CA (airline), #ap=PEK (airport), #cc=CN (country), #ac=A359 (type), #rt=AMS-PEK (route), #fl=fl-… (one flight), #list=airlines|airports|countries|types|routes ──
+// ── Detail views: #al=CA (airline), #ap=PEK (airport), #cc=CN (country), #ac=A359 (type), #rt=AMS-PEK (route), #fl=fl-… (one flight), #pl=pl-… (a place on travel.html), #list=airlines|airports|countries|types|routes ──
 // Each is a plain link, so it opens in the same view or (middle-click) in a new tab; the hash is the state.
 let DMAP = null, FL_VIEWER = null;
-const DETAIL_KINDS = { al: 'airlines', ap: 'airports', cc: 'countries', ac: 'types', rt: 'routes' };
-function detailOf(hash) { if (/^#(log|hangar|records|explore)$/.test(hash || '')) return { kind: 'page', key: hash.slice(1) }; const m = /^#(al|ap|cc|ac|rt|fl|list)=(.+)$/.exec(hash || ''); return m ? { kind: m[1], key: decodeURIComponent(m[2]) } : null; }
+const DETAIL_KINDS = { al: 'airlines', ap: 'airports', cc: 'countries', ac: 'types', rt: 'routes', pl: 'place' };
+function detailOf(hash) { if (/^#(log|hangar|records|explore)$/.test(hash || '')) return { kind: 'page', key: hash.slice(1) }; const m = /^#(al|ap|cc|ac|rt|fl|pl|list)=(.+)$/.exec(hash || ''); return m ? { kind: m[1], key: decodeURIComponent(m[2]) } : null; }
 const inDetail = (d, f) => d.kind === 'al' ? alKey(f) === d.key : d.kind === 'ap' ? (f.from.iata === d.key || f.to.iata === d.key) : d.kind === 'cc' ? (A.statCC(f.from.cc) === d.key || A.statCC(f.to.cc) === d.key)
-  : d.kind === 'ac' ? acKey(f) === d.key : d.kind === 'rt' ? routeKey(f) === d.key : true;
+  : d.kind === 'ac' ? acKey(f) === d.key : d.kind === 'rt' ? routeKey(f) === d.key : d.kind === 'pl' ? !!PLACES.find(p => p.id === d.key)?.flights.includes(f.id) : true;
 function closeDetail() {
   const el = $('#detail'); if (!el) return;
   if (DMAP) { DMAP.remove(); DMAP = null; } if (FL_VIEWER) { FL_VIEWER.destroy(); FL_VIEWER = null; } el.remove(); document.body.style.overflow = '';
@@ -1232,6 +1232,8 @@ function renderDetail() {
   else if (d.kind === 'cc') { title = A.countryName(d.key, LANG); sub = zh ? '在该国的起降记录' : 'Take-offs and landings in this country'; emblem = `<img class="emblem" src="https://flagcdn.com/w80/${d.key.toLowerCase()}.png" alt="">`; }
   else if (d.kind === 'ac') { title = f0 ? acName(f0) : d.key; const ty = A.type(d.key); sub = ty ? `${ty.code} · ${specLine(ty)}` : ''; }
   else if (d.kind === 'rt') { const [a, b] = d.key.split('-'); const fa = f0 ? (f0.from.iata === a ? f0.from : f0.to) : null, fb = f0 ? (f0.from.iata === b ? f0.from : f0.to) : null; title = `${a} ⇄ ${b}`; sub = fa && fb ? `${apName(fa)} – ${apName(fb)} · ${nf(A.distKm(fa, fb))} km` : ''; }
+  else if (d.kind === 'pl') { const p = PLACES.find(x => x.id === d.key); title = p ? tv(p.city) : d.key; sub = p ? [tv(p.country), p.when].filter(Boolean).join(' · ') : '';
+    emblem = p?.cc ? `<img class="emblem" src="https://flagcdn.com/w80/${esc(String(p.cc).toLowerCase())}.png" alt="" onerror="this.remove()">` : ''; }
   else if (d.kind === 'page') { title = { log: zh ? '飞行日志' : 'Flight log', hangar: zh ? '机库' : 'Hangar', records: zh ? '飞行纪录' : 'Records', explore: zh ? '机库探索' : 'Explore the hangar' }[d.key]; sub = d.key === 'hangar' ? (zh ? '悬停旋转 · 点击查看' : 'Hover to rotate · click to inspect') : d.key === 'explore' ? (zh ? '数据库里的全部机型 · 虚线卡片尚未解锁 · 可为任意机型换上任意航司涂装' : 'Every type in the database · dashed cards are not flown yet · dress any type in any airline\'s livery') : ''; }
   else { title = tr(d.key); sub = zh ? '点击任意一项查看详情' : 'Pick one for its details'; }
   const km = list.reduce((s, f) => s + f.km, 0), min = list.reduce((s, f) => s + f.min, 0), dates = list.map(f => f.date).sort();
@@ -1270,6 +1272,7 @@ function renderDetail() {
       <div class="lang-toggle detail-lang" role="group" aria-label="Language"><button type="button" class="lang-btn${LANG === 'en' ? ' active' : ''}" data-lang="en">EN</button><button type="button" class="lang-btn${LANG === 'zh' ? ' active' : ''}" data-lang="zh">中</button></div>
       <a class="icon-btn" href="${esc(location.hash)}" target="_blank" rel="noopener" title="${esc(tr('newTab'))}" aria-label="${esc(tr('newTab'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M21 3l-9 9M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></a></div>
     <div class="detail-head"><div class="${d.kind === 'al' ? 'al-head' : ''}">${emblem}<div><h2>${esc(title)}</h2><p class="sub">${esc(sub)}${esc(scopeNote)}</p></div></div></div>
+    ${d.kind === 'pl' ? `<div class="fl-acts" style="margin:-0.4rem 0 1.2rem"><a class="chip" href="travel.html#pl=${esc(encodeURIComponent(d.key))}">${zh ? '在足迹地图中查看' : 'Open on the travel map'} ›</a></div>` : ''}
     ${d.kind === 'al' && A.airlineInfo(d.key) ? (info => `<div class="hud al-profile"><div class="row"><b>${zh ? '成立' : 'Founded'}</b>${esc(info.founded)}</div><div class="row"><b>${zh ? '基地' : 'Base'}</b>${esc(info.base)}</div><div class="row"><b>${zh ? '联盟' : 'Alliance'}</b>${esc(info.alliance)}</div><p>${esc(zh ? info.zh : info.en)}</p></div>`)(A.airlineInfo(d.key)) : ''}
     ${stats}
     ${d.kind === 'page' ? pageHtml : d.kind === 'list' ? listHtml : `<div class="detail-grid"><div class="hud map-card"><div class="dmap" id="dmap"></div></div><div class="dlist">${parts.join('')}</div>
