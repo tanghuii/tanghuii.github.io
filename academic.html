@@ -94,6 +94,7 @@
   .hero h1 { font-family: var(--font-head); font-weight: 300; font-size: 2.6rem; line-height: 1.15; }
   body.zh .hero h1 { font-family: var(--font-head); font-weight: 300; }
   .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero h1 strong { font-weight: 600; }
   .hero .intro { color: var(--muted); margin-top: 0.5rem; max-width: 620px; font-size: 1.05rem; }
   .stats { display: flex; gap: 2rem; }
   .stat { text-align: center; }
@@ -951,7 +952,8 @@ function renderHeader() {
   const nCountries = new Set(places.map(p => normCC(p.cc) || t(p.country))).size;
   const nPhotos = places.reduce((n, p) => n + (p.photos || []).length, 0);
   const title = (PRIVATE && (!DATA.title || /旅行足迹|Places I have/.test(t(DATA.title))) ? (LANG === 'zh' ? '山河逆旅' : 'Life in Passage') : t(DATA.title)) || (PRIVATE ? (LANG === 'zh' ? '山河逆旅' : 'Life in Passage') : (LANG === 'zh' ? '学术足迹' : 'Academic footprint'));
-  $('#title').innerHTML = esc(title).replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  $('#title').innerHTML = SiteLang.richTitle(title);
+  document.title = SiteLang.plainTitle(title) + (LANG === 'zh' ? ' | 唐辉' : ' | Hui Tang');
   $('#intro').textContent = t(DATA.intro) || '';
   $('#intro').hidden = !t(DATA.intro);
   // Highlights: how many World Heritage sites and 5A scenic areas appear in the visited sights

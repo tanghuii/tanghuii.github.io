@@ -63,6 +63,13 @@
   .field { margin-bottom: 0.9rem; min-width: 0; }
   .row { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
   .row.two { grid-template-columns: 1fr 1fr; }
+  .tf-row { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: start; }
+  .tf + .tf { margin-top: 0.5rem; }
+  .tf-in { display: flex; gap: 0.3rem; align-items: center; } .tf-in input { flex: 1; min-width: 0; }
+  .tf-btn { flex: none; width: 2rem; padding-left: 0; padding-right: 0; font-family: Georgia, serif; }
+  .tf-prev { margin-top: 0.25rem; padding: 0.15rem 0.1rem; font-family: var(--font-head, Georgia, serif); font-size: 1.35rem; font-weight: 300; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; }
+  .tf-prev em { font-style: italic; color: var(--accent); } .tf-prev strong { font-weight: 700; }
+  .thumb .tools .btn.cover.on { color: #b8860b; border-color: #e0b84a; background: rgba(224, 184, 74, 0.14); }
   .hint { font-size: 15px; color: var(--muted); margin-top: 0.3rem; }
   .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border: 1px solid var(--subtle); border-radius: 6px; background: var(--card); cursor: pointer; font-weight: 500; transition: all .2s; white-space: nowrap; }
   .btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -1114,6 +1121,42 @@ function biField(label, obj, key, type = 'text') {
     <div>${bind(obj[key], 'en', type, 'placeholder="English"')}</div>
     <div>${bind(obj[key], 'zh', type, 'placeholder="中文"')}</div></div></div>`;
 }
+// A page title in two languages: B / I buttons mark the selected words **bold** or *italic*, with a live preview
+function titleField(label, obj, key) {
+  obj[key] ||= { en: '', zh: '' };
+  const one = l => `<div class="tf"><div class="tf-in">${bind(obj[key], l, 'text', `placeholder="${l === 'en' ? 'English' : '中文'}"`)}<button type="button" class="btn sm tf-btn" data-wrap="b" title="Bold"><b>B</b></button><button type="button" class="btn sm tf-btn" data-wrap="i" title="Italic"><i>I</i></button></div><div class="tf-prev" translate="no">${SiteLang.richTitle(obj[key][l]) || '&nbsp;'}</div></div>`;
+  return `<div class="field"><label>${label}</label>${one('en')}${one('zh')}</div>`;
+}
+// Toggle bold or italic on the selected words (nothing selected: the whole title). The title is read as characters
+// with their marks, the selection is changed, and the marks are written back as * italic, ** bold, *** both.
+function toggleMark(inp, kind) {
+  const v = inp.value, box = document.createElement('div'), chars = [];
+  box.innerHTML = SiteLang.richTitle(v);
+  (function walk(n, b, i) { for (const c of n.childNodes) { if (c.nodeType === 3) { const t = c.nodeValue; for (let x = 0; x < t.length; x++) chars.push({ ch: t[x], b, i }); } else walk(c, b || c.tagName === 'STRONG', i || c.tagName === 'EM'); } })(box, false, false);
+  const at = []; for (let x = 0, j = 0; x <= v.length; x++) { at[x] = j; if (x < v.length && j < chars.length && v[x] === chars[j].ch) j++; }   // text box offset → character
+  let s = at[inp.selectionStart ?? 0], e = at[inp.selectionEnd ?? 0];
+  if (s === e) { s = 0; e = chars.length; }
+  if (s === e) return;
+  const k = kind === 'b' ? 'b' : 'i', on = !chars.slice(s, e).every(c => c[k]);
+  for (let x = s; x < e; x++) chars[x][k] = on;
+  let out = '', ns = 0, ne = 0;
+  for (let x = 0; x < chars.length;) {
+    let y = x; while (y < chars.length && chars[y].b === chars[x].b && chars[y].i === chars[x].i) y++;
+    const m = '*'.repeat((chars[x].b ? 2 : 0) + (chars[x].i ? 1 : 0));
+    if (s >= x && s < y) ns = out.length + m.length + (s - x);
+    if (e > x && e <= y) ne = out.length + m.length + (e - x);
+    out += m + chars.slice(x, y).map(c => c.ch).join('') + m; x = y;
+  }
+  inp.value = out; inp.focus(); inp.setSelectionRange(ns, ne);
+  inp.dispatchEvent(new Event('input', { bubbles: true }));
+}
+function wireTitleFields(root) {
+  root.querySelectorAll('.tf').forEach(box => {
+    const inp = box.querySelector('input'), prev = box.querySelector('.tf-prev');
+    inp.addEventListener('input', () => { prev.innerHTML = SiteLang.richTitle(inp.value) || '&nbsp;'; });
+    box.querySelectorAll('[data-wrap]').forEach(b => { b.onmousedown = e => e.preventDefault(); b.onclick = () => toggleMark(inp, b.dataset.wrap); });
+  });
+}
 function field(label, obj, key, type = 'text', hint = '', extra = '') {
   return `<div class="field"><label>${label}</label>${bind(obj, key, type, extra)}${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
 }
@@ -1853,7 +1896,7 @@ async function ghDeleteFile(path, message) {
 function normalizeFP(d) {
   d.v ||= 1; d.places ||= []; d.flights ||= [];
   d.title ||= { en: 'Life in *Passage*', zh: '山河逆旅' }; d.intro ||= { en: '', zh: '' };
-  d.pub_title ||= { en: 'Academic *footprint*', zh: '学术足迹' }; d.pub_intro ||= { en: 'Conferences, workshops and research visits.', zh: '参加过的学术会议、研讨会与学术访问。' };
+  d.pub_title ||= { en: 'Academic *footprint*', zh: '学术足迹' }; d.fl_title ||= { en: 'My Air Times', zh: '云间岁月' }; d.covers ||= {}; d.pub_intro ||= { en: 'Conferences, workshops and research visits.', zh: '参加过的学术会议、研讨会与学术访问。' };
   d.places.forEach(p => { p.id ||= 'pl-' + rid(); p.photos ||= []; p.note ||= { en: '', zh: '' }; p.city ||= { en: '', zh: '' }; p.country ||= { en: '', zh: '' }; p.when ||= '';
     p.academic = !!p.academic; p.trip ||= ''; p.icon ||= ''; p.kind ||= 'conference'; p.event ||= { en: '', zh: '' }; p.talk ||= ''; p.talk_type ||= '';
     p.sights ||= []; p.sights.forEach(g => { g.name ||= { en: '', zh: '' }; g.tags ||= []; });
@@ -3370,11 +3413,13 @@ function viewFootprints(v, introOverride) {
     <span class="sort-seg" id="tv-sort" role="group" aria-label="Sort"><button type="button" data-psort="name" class="${PLACE_SORT === 'name' ? 'on' : ''}">A–Z</button><button type="button" data-psort="date" class="${PLACE_SORT === 'date' ? 'on' : ''}">Newest first</button></span>
     <button class="btn sm" type="button" id="tv-open-all">Expand all</button><button class="btn sm" type="button" id="tv-close-all">Collapse all</button></div>
   <div id="tv-places"></div>
-  <div class="tv-folds">${foldCard('pages', 'Page titles &amp; introductions', 'travel.html and academic.html', `<p class="hint" style="margin-bottom:0.8rem">One list of places for two pages. <a href="travel.html" target="_blank">travel.html</a> shows everything and opens only with the <b>travel password</b> (share it with family and friends; it gives no access to this manager). Entries ticked as <b>academic visit</b> are also published, in clear, on the public <a href="academic.html" target="_blank">academic.html</a>.</p>
-    <div class="row two">
-      <div><h3 style="font-size:1.1rem">Travel page (private)</h3>${biField('Title (use *asterisks* for the italic blue word)', T, 'title')}${biField('Introduction', T, 'intro', 'textarea')}</div>
-      <div><h3 style="font-size:1.1rem">Academic page (public)</h3>${biField('Title', T, 'pub_title')}${biField('Introduction', T, 'pub_intro', 'textarea')}</div></div>
-    <div class="toolbar"><a class="btn sm" href="travel.html" target="_blank">Open travel.html ↗</a><a class="btn sm" href="academic.html" target="_blank">Open academic.html ↗</a></div>`)}
+  <div class="tv-folds">${foldCard('pages', 'Page titles &amp; introductions', 'travel.html, academic.html and flights.html', `<p class="hint" style="margin-bottom:0.8rem">One list of places for two pages. <a href="travel.html" target="_blank">travel.html</a> shows everything and opens only with the <b>travel password</b> (share it with family and friends; it gives no access to this manager). Entries ticked as <b>academic visit</b> are also published, in clear, on the public <a href="academic.html" target="_blank">academic.html</a>.</p>
+    <p class="hint" style="margin-bottom:0.8rem">Titles: select words, then press B (bold) or I (italic, in the page’s accent colour); with nothing selected it applies to the whole title. The text box shows them as **bold** and *italic*.</p>
+    <div class="row tf-row">
+      <div><h3 style="font-size:1.1rem">Travel page (private)</h3>${titleField('Title', T, 'title')}${biField('Introduction', T, 'intro', 'textarea')}</div>
+      <div><h3 style="font-size:1.1rem">Academic page (public)</h3>${titleField('Title', T, 'pub_title')}${biField('Introduction', T, 'pub_intro', 'textarea')}</div>
+      <div><h3 style="font-size:1.1rem">Flights page (private)</h3>${titleField('Title', T, 'fl_title')}</div></div>
+    <div class="toolbar"><a class="btn sm" href="travel.html" target="_blank">Open travel.html ↗</a><a class="btn sm" href="academic.html" target="_blank">Open academic.html ↗</a><a class="btn sm" href="flights.html" target="_blank">Open flights.html ↗</a></div>`)}
   ${(T.flights || []).length ? foldCard('flmatch', 'Link flights to places', `${T.places.filter(p => (p.flights || []).length).length} places linked · ${[...flightSuggestionMap(T).values()].reduce((n, l) => n + l.length, 0)} suggestions`, `<p class="hint" style="margin-bottom:0.6rem">Each place can list the flights that took you there or away; travel.html shows them on the place and they open the flight on flights.html, which links back. A flight belongs to the city of each of its airports: the nearest place within ${AIRPORT_CITY_KM} km (PEK and PKX → Beijing, KIX → Osaka). New flights are linked this way when you add them; below are the flights not linked yet. Untick any that are wrong, then link. One-off links can also be added in each place's <b>Flights</b> field.</p><div id="tv-flmatch"></div>`) : ''}
   ${foldCard('check', 'Check all tags', '5A, national parks, World Heritage', `<div class="toolbar" style="margin:0"><button class="btn sm primary" id="tv-check">✓ Check all tags</button>
     <span class="hint" style="margin:0">Re-checks every saved sight: 5A against the official list (358, May 2025), national parks against the official rule, and World Heritage / 5A-area grouping. Tags you set by hand are checked too.</span></div>
@@ -3389,6 +3434,7 @@ function viewFootprints(v, introOverride) {
       <div class="toolbar"><button class="btn sm" type="submit" id="tv-chgo">Change travel password</button><span class="hint" id="tv-chmsg"></span></div></form>`)}</div>`;
 
   v.querySelectorAll('details.fold').forEach(d => d.addEventListener('toggle', () => { if (d.open) FP_FOLDS.add(d.dataset.fold); else FP_FOLDS.delete(d.dataset.fold); }));
+  wireTitleFields(v);
 
   // Search
   const doSearch = async () => {
@@ -3642,12 +3688,18 @@ function viewFootprints(v, introOverride) {
     $(`[data-sg-add="${i}"]`).onclick = () => { p.sights.push({ pub: p.academic ? false : undefined, id: 's-' + rid(), name: { en: '', zh: '' }, lat: null, lon: null, tags: [], enwiki: '', zhwiki: '' }); markDirty(); renderSights(p, i); renderThumbs(p, i); };
     renderResults(p, i);
   };
+  // the province a photo can be the cover of (its tile on the phone travel page), for places in China
+  const COVER_ON = 'Cover of this province on the phone travel page. Click to use the first photo again.', COVER_OFF = 'Use as the cover of this province on the phone travel page (without a choice, the first photo is used)';
+  const coverBtn = (pr, ph) => { const on = T.covers?.[pr.zh] === ph.id;
+    return `<button class="btn cover${on ? ' on' : ''}" data-pact="cover" data-cover-prov="${esc(pr.zh)}" data-phid="${esc(ph.id)}" title="${on ? COVER_ON : COVER_OFF}">${on ? '★' : '☆'}</button>`; };
+  const paintCovers = zh => document.querySelectorAll(`[data-cover-prov="${CSS.escape(zh)}"]`).forEach(b => { const on = T.covers?.[zh] === b.dataset.phid; b.classList.toggle('on', on); b.textContent = on ? '★' : '☆'; b.title = on ? COVER_ON : COVER_OFF; });
   const renderThumbs = (p, i) => {
     const box = $('#tv-ph-' + i); if (!box) return;
+    const pr = groupCC(p) === 'CN' ? provOfPlace(p) : null;
     box.innerHTML = p.photos.map((ph, j) => `<div class="thumb tv" data-j="${j}"><div class="ph"><img alt="" hidden>…</div>
       <div class="cap">${bind(ph.caption ||= { en: '', zh: '' }, 'en', 'text', 'placeholder="Caption (EN)"')}${bind(ph.caption, 'zh', 'text', 'placeholder="说明（中文）"')}</div>
       ${p.sights.length ? `<div class="ph-sg">${p.sights.map(g => `<button type="button" class="tagbtn ${(ph.sights || []).includes(g.id) ? 'on' : ''}" data-tag="5a" data-psg="${esc(g.id)}" title="Shown when visitors hover this sight">${esc(g.name.zh && g.name.zh !== g.name.en ? g.name.zh : g.name.en || 'sight')}</button>`).join('')}</div>` : ''}
-      <div class="tools"><button class="btn" title="Move left" data-pact="left" ${j === 0 ? 'disabled' : ''}>←</button><button class="btn" title="Move right" data-pact="right" ${j === p.photos.length - 1 ? 'disabled' : ''}>→</button><button class="btn danger" data-pact="del">✕</button>${p.academic || isPublicPhoto(ph) ? `<button class="btn vis ${isPublicPhoto(ph) ? 'pub' : ''}" data-pact="vis" title="${isPublicPhoto(ph) ? 'Public: shown on the academic page. Click to make it private.' : 'Private: travel page only. Click to make it public.'}">${isPublicPhoto(ph) ? '🌐 public' : '🔒 private'}</button>` : ''}</div></div>`).join('') || '<p class="hint" style="grid-column:1/-1">No photos yet.</p>';
+      <div class="tools"><button class="btn" title="Move left" data-pact="left" ${j === 0 ? 'disabled' : ''}>←</button><button class="btn" title="Move right" data-pact="right" ${j === p.photos.length - 1 ? 'disabled' : ''}>→</button><button class="btn danger" data-pact="del">✕</button>${pr && ph.id ? coverBtn(pr, ph) : ''}${p.academic || isPublicPhoto(ph) ? `<button class="btn vis ${isPublicPhoto(ph) ? 'pub' : ''}" data-pact="vis" title="${isPublicPhoto(ph) ? 'Public: shown on the academic page. Click to make it private.' : 'Private: travel page only. Click to make it public.'}">${isPublicPhoto(ph) ? '🌐 public' : '🔒 private'}</button>` : ''}</div></div>`).join('') || '<p class="hint" style="grid-column:1/-1">No photos yet.</p>';
     wireBindings(box);
     box.querySelectorAll('.thumb').forEach(el => {
       const j = Number(el.dataset.j), ph = p.photos[j], img = el.querySelector('img');
@@ -3659,6 +3711,10 @@ function viewFootprints(v, introOverride) {
       });
       el.querySelectorAll('[data-pact]').forEach(b => b.onclick = async () => {
         const act = b.dataset.pact;
+        if (act === 'cover') {
+          T.covers ||= {}; if (T.covers[pr.zh] === ph.id) delete T.covers[pr.zh]; else T.covers[pr.zh] = ph.id;
+          markDirty(); paintCovers(pr.zh); toast(T.covers[pr.zh] ? 'Province cover set. Publish changes to show it.' : 'The province uses its first photo again.'); return;
+        }
         if (act === 'left' && j > 0) [p.photos[j - 1], p.photos[j]] = [p.photos[j], p.photos[j - 1]];
         if (act === 'right' && j < p.photos.length - 1) [p.photos[j + 1], p.photos[j]] = [p.photos[j], p.photos[j + 1]];
         if (act === 'vis') {
@@ -3670,7 +3726,7 @@ function viewFootprints(v, introOverride) {
         if (act === 'del') {
           if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Delete?'; setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = '✕'; } }, 2500); return; }
           b.disabled = true; b.textContent = '…';
-          try { await ghDeleteFile(ph.full, 'Remove photo'); await ghDeleteFile(ph.thumb, 'Remove photo'); p.photos.splice(j, 1); await saveFootprints('Remove photo'); toast('Photo deleted.'); }
+          try { await ghDeleteFile(ph.full, 'Remove photo'); await ghDeleteFile(ph.thumb, 'Remove photo'); p.photos.splice(j, 1); for (const k in T.covers || {}) if (T.covers[k] === ph.id) delete T.covers[k]; await saveFootprints('Remove photo'); toast('Photo deleted.'); }
           catch (e) { toast(e.message, true); }
         }
         markDirty(); renderThumbs(p, i);
