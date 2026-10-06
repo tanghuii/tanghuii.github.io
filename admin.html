@@ -76,7 +76,7 @@
   .tp-it.mv { border-left-color: #e07a1f; }
   .tp-it-h { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
   .tp-it-h select { width: auto; padding: 0.3rem 0.4rem; }
-  .tp-it-h input { padding: 0.3rem 0.5rem; } .tp-time { width: 7.5rem !important; } .tp-no { width: 10rem !important; }
+  .tp-it-h input { padding: 0.3rem 0.5rem; } .tp-time { width: 7.5rem !important; } .tp-no { width: 10rem !important; } .tp-ac { width: 7.5rem !important; } .tp-al { margin: 0; white-space: nowrap; }
   .tp-tools { margin-left: auto; display: flex; gap: 0.2rem; } .tp-tools .btn { padding: 0.15rem 0.5rem; }
   .tp-two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
   .tp-loc { margin-top: 0.4rem; } .tp-lab { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
@@ -3277,6 +3277,8 @@ const planPrice = it => typeof it.price === 'number' ? `${CUR_SIGN[it.cur] || ''
 const planCur = T => (T.plans || []).flatMap(p => p.days.flatMap(d => d.items || [])).findLast(x => x.cur)?.cur || 'EUR';
 // Google Flights has no public API: a search for this flight's route and day opens in a new tab
 const gflightsUrl = (it, date) => it.from?.iata && it.to?.iata ? `https://www.google.com/travel/flights?q=${encodeURIComponent(`Flights from ${it.from.iata} to ${it.to.iata} on ${date || ''} one way`.replace(/\s+/g, ' '))}` : '';
+// the airline of a flight number ("VY1234" → Vueling): its livery paints the 3D model on plan.html
+const planAirlineHint = it => { const m = /^\s*([A-Z0-9]{2})\s*\d/i.exec(it.no || ''), al = m && AVDB.airlines?.find(a => a.iata === m[1].toUpperCase()); return al ? `<span class="hint tp-al" title="Airline from the flight number: its livery is used for the 3D model">${esc(al.name)}</span>` : ''; };
 const planAirport = code => { const ap = AVDB.byIata?.get(String(code || '').trim().toUpperCase()); return ap ? { ...apRecord(ap), name: { en: ap.city || ap.name, zh: cityZhNear(ap) || ap.city || ap.name } } : null; };
 
 function viewPlans(v) {
@@ -3304,7 +3306,7 @@ function renderPlanList(T) {
   const itemHtml = (it, p, di, ii) => {
     const mv = PLAN_MOVES.has(it.kind);
     return `<div class="tp-it${mv ? ' mv' : ''}" data-it="${esc(it.id)}"><div class="tp-it-h"><select data-tp-kind="${esc(it.id)}" title="What is it">${kindOpts(it.kind)}</select>
-        ${mv ? `${bind(it, 'no', 'text', `placeholder="${it.kind === 'flight' ? 'Flight no. KL897' : it.kind === 'train' ? 'Train no. G1' : 'No. (optional)'}" class="tp-no" data-tp-no="${esc(it.id)}"`)}${bind(it, 'dep', 'text', 'placeholder="Dep 08:10" class="tp-time"')}${bind(it, 'arr', 'text', 'placeholder="Arr 10:30" class="tp-time"')}` : bind(it, 'time', 'text', 'placeholder="Time 09:00" class="tp-time"')}
+        ${mv ? `${bind(it, 'no', 'text', `placeholder="${it.kind === 'flight' ? 'Flight no. KL897' : it.kind === 'train' ? 'Train no. G1' : 'No. (optional)'}" class="tp-no" data-tp-no="${esc(it.id)}"`)}${it.kind === 'flight' ? `${bind(it, 'ac', 'text', 'placeholder="Aircraft A320" class="tp-ac" maxlength="4" style="text-transform:uppercase" title="ICAO type code (A320, B738, A21N …): the 3D model flown on plan.html. Without one, an A320."')}${planAirlineHint(it)}` : ''}${bind(it, 'dep', 'text', 'placeholder="Dep 08:10" class="tp-time"')}${bind(it, 'arr', 'text', 'placeholder="Arr 10:30" class="tp-time"')}` : bind(it, 'time', 'text', 'placeholder="Time 09:00" class="tp-time"')}
         <span class="tp-tools"><button type="button" class="btn sm" data-tp-mv="${esc(it.id)}|up" title="Move up (to the day before at the top)">↑</button><button type="button" class="btn sm" data-tp-mv="${esc(it.id)}|down" title="Move down (to the next day at the bottom)">↓</button><button type="button" class="btn sm danger" data-tp-mv="${esc(it.id)}|del" title="Remove">✕</button></span></div>
       ${mv ? `<div class="tp-two">${locHtml(it, 'from', 'From')}${locHtml(it, 'to', 'To')}</div>` : locHtml(it, '', 'Where')}
       <div class="tp-row tp-foot"><input type="text" class="tp-price" data-tp-price="${esc(it.id)}" value="${esc(planPrice(it))}" placeholder="${mv ? 'Price, e.g. €89' : it.kind === 'stay' ? 'Price, e.g. €120' : 'Price (optional)'}" title="Price: €89, ¥1,280 or 320 EUR. Added up on plan.html.">${it.kind === 'flight' && gflightsUrl(it, planDay(p.start, di)) ? `<a class="btn sm" href="${esc(gflightsUrl(it, planDay(p.start, di)))}" target="_blank" rel="noopener" title="Search this route and day on Google Flights">Google Flights ↗</a>` : ''}${bind(it, 'note', 'text', 'placeholder="Note (optional): tickets, booking, what to see …" class="tp-note"')}</div></div>`;
@@ -3378,10 +3380,11 @@ function renderPlanList(T) {
   });
   // a flight number you have flown before fills in the airports
   box.querySelectorAll('[data-tp-no]').forEach(inp => inp.addEventListener('change', () => {
-    const f = findItem(inp.dataset.tpNo); if (!f || f.it.kind !== 'flight' || (f.it.from?.iata && f.it.to?.iata)) return;
-    const prev = (T.flights || []).findLast(x => flNo(x.no) === flNo(inp.value) && x.from?.iata && x.to?.iata); if (!prev) return;
+    const f = findItem(inp.dataset.tpNo); if (!f || f.it.kind !== 'flight') return;
+    if (f.it.from?.iata && f.it.to?.iata) { again(); return; }
+    const prev = (T.flights || []).findLast(x => flNo(x.no) === flNo(inp.value) && x.from?.iata && x.to?.iata); if (!prev) { again(); return; }
     f.it.from = planAirport(prev.from.iata) || f.it.from; f.it.to = planAirport(prev.to.iata) || f.it.to;
-    if (!f.it.dep && prev.dep) f.it.dep = String(prev.dep).replace(/\+\d$/, ''); markDirty(); again(); toast(`Airports filled in from your earlier ${flNo(inp.value)}.`);
+    if (!f.it.dep && prev.dep) f.it.dep = String(prev.dep).replace(/\+\d$/, ''); if (!f.it.ac && prev.ac) f.it.ac = prev.ac; markDirty(); again(); toast(`Airports filled in from your earlier ${flNo(inp.value)}.`);
   }));
 }
 function viewFlights(v) {
