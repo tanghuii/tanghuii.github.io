@@ -40,8 +40,9 @@
   [hidden] { display: none !important; }
 
   /* Top bar (same as the travel page) */
-  .top-bar { position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(16px); background: rgba(var(--paper-rgb), 0.88); border-bottom: 1px solid var(--subtle); }
-  .top-bar-inner { max-width: 1400px; margin: 0 auto; padding: 0 2rem; height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  /* a solid bar: a blurred one would re-blur the map under it on every frame */
+  .top-bar { position: sticky; top: 0; z-index: 1000; background: var(--paper); border-bottom: 1px solid var(--subtle); }
+  .top-bar-inner { margin: 0 auto; padding: 0 1.4rem; height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   .back-link { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--accent); font-family: 'Pinyon Script', cursive; font-size: 1.68rem; white-space: nowrap; }
   .back-arrow { font-family: var(--font-body); font-size: 1.1rem; }
   .bar-right { display: flex; align-items: center; gap: 0.9rem; }
@@ -70,13 +71,17 @@
   .gate-msg { min-height: 1.4em; margin-top: 0.7rem; text-align: center; font-size: 0.92rem; color: var(--err); }
   .gate-foot { margin-top: 1.4rem; font-size: 0.9rem; color: var(--muted); text-align: center; }
 
-  /* Page */
-  .wrap { max-width: 1400px; margin: 0 auto; padding: 1.2rem 2rem 3rem; }
-  .hero { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
-  .hero h1 { font-family: var(--font-head); font-weight: 300; font-size: 2.3rem; line-height: 1.15; }
-  .hero h1 em { font-style: italic; color: var(--accent); }
-  .hero h1 strong { font-weight: 600; }
-  .hero .sub { color: var(--muted); font-size: 0.95rem; }
+  /* Page: the whole window. On wide screens a panel on the left scrolls by itself and the map fills everything else;
+     the page itself does not scroll, so the map never moves under the reader */
+  .shell { display: grid; grid-template-columns: clamp(360px, 30vw, 560px) minmax(0, 1fr); height: calc(100vh - 61px); height: calc(100dvh - 61px); }
+  body.app-on { overflow: hidden; }
+  .panel { overflow-y: auto; overscroll-behavior: contain; border-right: 1px solid var(--subtle); padding: 1rem 1.1rem 2rem; background: var(--paper); scrollbar-width: thin; }
+  .p-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+  .p-head h1 { font-family: var(--font-head); font-weight: 300; font-size: 2rem; line-height: 1.15; }
+  .p-head h1 em { font-style: italic; color: var(--accent); }
+  .p-head h1 strong { font-weight: 600; }
+  .p-head .sub { color: var(--muted); font-size: 0.9rem; }
+  .stage { position: relative; min-width: 0; }
 
   /* Trips */
   .trips { display: flex; gap: 0.6rem; overflow-x: auto; padding: 0.2rem 0.1rem 0.7rem; scrollbar-width: thin; }
@@ -90,13 +95,26 @@
   .badge.soon { background: var(--highlight); color: var(--accent); }
   .badge.past { background: rgba(var(--highlight-rgb), 0.5); color: var(--muted); }
 
-  .split { display: grid; grid-template-columns: minmax(330px, 440px) minmax(0, 1fr); gap: 1.2rem; align-items: start; }
-  .side { min-width: 0; }
-  .mapcol { position: sticky; top: 76px; }
-  #map { height: calc(100vh - 92px); min-height: 420px; border-radius: 12px; border: 1px solid var(--subtle); background: var(--highlight); overflow: hidden; }
-  .legend { display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; font-size: 0.8rem; color: var(--muted); margin-top: 0.45rem; }
-  .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
-  .legend svg { width: 30px; height: 8px; }
+  #map { position: absolute; inset: 0; background: var(--highlight); }
+  /* floating on the map: the days at the bottom, the legend top right */
+  .dock { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 700; max-width: calc(100% - 32px); display: flex; align-items: center; gap: 0.35rem; padding: 0.35rem; border-radius: 100px; background: var(--card-bg); border: 1px solid var(--subtle); box-shadow: 0 8px 28px rgba(13, 27, 42, 0.18); overflow-x: auto; scrollbar-width: none; }
+  .dock::-webkit-scrollbar { display: none; }
+  .dock:empty { display: none; }
+  .dock button { flex: none; border: none; background: none; border-radius: 100px; padding: 0.3rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem; color: var(--ink); white-space: nowrap; }
+  .dock button:hover { background: var(--highlight); }
+  .dock button.on { background: var(--accent); color: var(--on-accent); }
+  .dock .dd { width: 0.6rem; height: 0.6rem; border-radius: 100px; background: var(--dc); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7); }
+  .dock .sep { flex: none; width: 1px; align-self: stretch; margin: 0.2rem 0.15rem; background: var(--subtle); }
+  .dock #btn-play { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .dock #btn-play svg { width: 12px; height: 12px; }
+  .legend { position: absolute; top: 12px; right: 12px; z-index: 700; background: var(--card-bg); border: 1px solid var(--subtle); border-radius: 10px; box-shadow: 0 6px 20px rgba(13, 27, 42, 0.14); font-size: 0.8rem; color: var(--muted); max-width: 240px; }
+  .legend summary { cursor: pointer; padding: 0.35rem 0.7rem; font-weight: 600; color: var(--ink); list-style: none; }
+  .legend summary::-webkit-details-marker { display: none; }
+  .legend summary::after { content: ' ▾'; color: var(--muted); }
+  .legend[open] summary::after { content: ' ▴'; }
+  .legend .lg { display: grid; gap: 0.25rem; padding: 0 0.75rem 0.6rem; }
+  .legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
+  .legend svg { width: 30px; height: 8px; flex: none; }
 
   /* Trip summary */
   .sum { background: var(--card-bg); border: 1px solid var(--subtle); border-radius: 12px; padding: 0.9rem 1rem; margin-bottom: 0.8rem; }
@@ -106,11 +124,6 @@
   .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.55rem; }
   .chip { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; padding: 0.12rem 0.55rem; border-radius: 100px; background: var(--highlight); color: var(--accent); }
   .chip svg { width: 13px; height: 13px; }
-  .ctrl { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.7rem; }
-  .pill { border: 1px solid var(--subtle); background: var(--card-bg); color: var(--ink); border-radius: 100px; padding: 0.22rem 0.8rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; }
-  .pill:hover { border-color: var(--accent); color: var(--accent); }
-  .pill.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-  .pill svg { width: 12px; height: 12px; }
 
   /* Days */
   .day { background: var(--card-bg); border: 1px solid var(--subtle); border-radius: 12px; margin-bottom: 0.7rem; overflow: hidden; transition: border-color 0.2s, opacity 0.2s; }
@@ -165,19 +178,22 @@
   .runner.mode { width: 28px; height: 28px; border-width: 2px; display: flex; align-items: center; justify-content: center; color: #fff; background: var(--c); }
   .runner.mode svg { width: 15px; height: 15px; }
 
+  /* phones and narrow windows: the map on top, the plan below it, the page scrolls */
   @media (max-width: 900px) {
-    .split { grid-template-columns: minmax(0, 1fr); }
-    .mapcol { position: static; order: -1; }
-    #map { height: 52vh; min-height: 300px; }
+    .shell { display: flex; flex-direction: column-reverse; height: auto; }
+    body.app-on { overflow: visible; }
+    .panel { overflow: visible; border-right: none; padding: 0.9rem 16px 2.5rem; }
+    .stage { height: 56vh; min-height: 320px; }
+    .dock { bottom: 34px; }
+    .leaflet-container .leaflet-control-attribution { font-size: 9px; line-height: 1.3; }
+    .legend { top: 10px; right: 10px; }
   }
   @media (max-width: 640px) {
     .top-bar-inner { padding: 0 12px; height: 54px; gap: 0.5rem; }
     .back-link { font-size: 1.35rem; }
     .bar-right { gap: 0.4rem; }
     .lang-btn { padding: 0.25rem 0.55rem; }
-    .wrap { padding: 0.9rem 16px 2.5rem; }
-    .hero h1 { font-size: 1.8rem; }
-    .mapcol { top: 54px; }
+    .p-head h1 { font-size: 1.7rem; }
     .it { padding: 0.38rem 0.7rem; grid-template-columns: 2.8rem 1.6rem minmax(0, 1fr); }
   }
   @media (max-width: 400px) { .back-link > span:not(.back-arrow) { display: none; } }
@@ -227,13 +243,17 @@
 
 <!-- Unlocked content -->
 <div id="app" hidden>
-  <div class="wrap">
-    <div class="hero"><h1 id="title"></h1><span class="sub" id="sub"></span></div>
-    <div class="trips" id="trips" role="tablist"></div>
-    <div class="split" id="split">
+  <div class="shell">
+    <aside class="panel" id="panel">
+      <div class="p-head"><h1 id="title"></h1><span class="sub" id="sub"></span></div>
+      <div class="trips" id="trips" role="tablist"></div>
       <div class="side" id="side"></div>
-      <div class="mapcol"><div id="map" role="region" aria-label="Map of the trip"></div><div class="legend" id="legend"></div></div>
-    </div>
+    </aside>
+    <section class="stage" id="stage">
+      <div id="map" role="region" aria-label="Map of the trip"></div>
+      <div class="dock" id="dock" role="toolbar" aria-label="Days"></div>
+      <details class="legend" id="legend"></details>
+    </section>
   </div>
 </div>
 
@@ -414,7 +434,7 @@ function itemHtml(it, di, ii) {
 }
 function renderTrip() {
   const p = CUR, side = $('#side');
-  if (!p) { side.innerHTML = `<div class="empty">${zh() ? '还没有行程。在 Site Manager →「旅行规划」中添加。' : 'No trips planned yet. Add one in the Site Manager → Trip plans.'}</div>`; renderMap(); return; }
+  if (!p) { $('#dock').innerHTML = ''; side.innerHTML = `<div class="empty">${zh() ? '还没有行程。在 Site Manager →「旅行规划」中添加。' : 'No trips planned yet. Add one in the Site Manager → Trip plans.'}</div>`; renderMap(); return; }
   const { segs, pins } = route(p);
   const cities = new Set(p.days.flatMap(d => (d.items || []).filter(it => it.kind === 'city').map(it => placeName(it)))).size;
   const byMode = {}; segs.filter(s => s.mode !== 'link').forEach(s => { (byMode[s.mode] ||= { n: 0, km: 0 }); byMode[s.mode].n++; byMode[s.mode].km += s.km; });
@@ -429,11 +449,13 @@ function renderTrip() {
   side.innerHTML = `<div class="sum"><h2>${esc(t(p.title) || (zh() ? '未命名行程' : 'Untitled trip'))}</h2>
       <div class="dates">${esc(fmtRange(p))} · ${p.days.length} ${zh() ? '天' : p.days.length === 1 ? 'day' : 'days'}${total >= 1 ? ` · ${zh() ? '全程约' : 'about'} ${nf(total)} km` : ''}</div>
       ${t(p.note) ? `<p class="note">${esc(t(p.note))}</p>` : ''}${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}${budgetHtml}
-      <div class="ctrl"><button type="button" class="pill${DAY === null ? ' on' : ''}" data-day="all">${zh() ? '全部行程' : 'Whole trip'}</button>${segs.length ? `<button type="button" class="pill" id="btn-play">${PLAY ? IC.stop : IC.play}<span>${PLAY ? (zh() ? '停止' : 'Stop') : (zh() ? '播放轨迹' : 'Play the route')}</span></button>` : ''}</div></div>
+</div>
     <div class="days${DAY !== null ? ' focus' : ''}">${p.days.map((d, di) => { const date = dayDate(p.start, di);
       return `<section class="day${DAY === di ? ' on' : ''}" style="--dc:${dayColor(di)}" data-day-card="${di}"><button type="button" class="day-h" data-day="${di}"><span class="dn"><small>${zh() ? '第' : 'DAY'}</small>${di + 1}</span><span class="dt"><b>${esc(t(d.title) || dayAuto(d) || fmtDate(date))}${date === TODAY ? `<span class="today">${zh() ? '今天' : 'Today'}</span>` : ''}</b><small>${esc(fmtDate(date, false))}</small></span>${Object.keys(sumPrices(d.items || [])).length ? `<span class="dsum">${esc(moneyList(sumPrices(d.items || [])))}</span>` : ''}</button>
         ${(d.items || []).length ? `<ul class="items">${d.items.map((it, ii) => itemHtml(it, di, ii)).join('')}</ul>` : `<p class="empty-day">${zh() ? '自由活动' : 'Free day'}</p>`}</section>`; }).join('')}</div>`;
-  side.querySelectorAll('[data-day]').forEach(b => b.onclick = () => focusDay(b.dataset.day === 'all' ? null : +b.dataset.day));
+  // the days on the map: the whole trip, one chip per day, and Play
+  $('#dock').innerHTML = `<button type="button" data-day="all" class="${DAY === null ? 'on' : ''}">${zh() ? '全部' : 'All'}</button>${p.days.map((d, di) => `<button type="button" data-day="${di}" class="${DAY === di ? 'on' : ''}" style="--dc:${dayColor(di)}" title="${esc(t(d.title) || dayAuto(d) || '')} · ${esc(fmtDate(dayDate(p.start, di)))}"><span class="dd"></span>${zh() ? `第${di + 1}天` : `Day ${di + 1}`}</button>`).join('')}${segs.length ? `<span class="sep"></span><button type="button" id="btn-play">${PLAY ? IC.stop : IC.play}<span>${PLAY ? (zh() ? '停止' : 'Stop') : (zh() ? '播放轨迹' : 'Play')}</span></button>` : ''}`;
+  document.querySelectorAll('#side [data-day], #dock [data-day]').forEach(b => b.onclick = () => focusDay(b.dataset.day === 'all' ? null : +b.dataset.day));
   side.querySelectorAll('.it').forEach(li => { li.onclick = e => { if (!e.target.closest('a')) focusItem(+li.dataset.di, +li.dataset.ii); }; li.onmouseenter = () => hotItem(+li.dataset.di, +li.dataset.ii, true); li.onmouseleave = () => hotItem(+li.dataset.di, +li.dataset.ii, false); });
   $('#btn-play')?.addEventListener('click', () => PLAY ? stopPlay() : startPlay());
   renderMap(segs, pins);
@@ -459,6 +481,13 @@ function dayAuto(d) {
   return out.slice(0, 4).map(x => x.name).join(' → ');
 }
 
+const NARROW = () => matchMedia('(max-width: 900px)').matches;
+// scroll the panel (not the page) so an element shows, without smooth scrolling fighting the map animation
+function panelTo(el) {
+  const pn = $('#panel'), r = el.getBoundingClientRect(), pr = pn.getBoundingClientRect();
+  if (r.top < pr.top + 8 || r.bottom > pr.bottom - 8) pn.scrollTop += r.top - pr.top - pn.clientHeight / 3;
+}
+
 // ── Map ──
 function legendHtml() {
   const line = m => { const s = MOVES[m]; return `<svg viewBox="0 0 30 8" aria-hidden="true">${s.rail ? '<line x1="0" y1="4" x2="30" y2="4" stroke="var(--muted)" stroke-width="5"/><line x1="0" y1="4" x2="30" y2="4" stroke="var(--card-bg)" stroke-width="1.6" stroke-dasharray="4 3"/>' : `<line x1="0" y1="4" x2="30" y2="4" stroke="var(--muted)" stroke-width="${Math.min(s.weight, 3.5)}" stroke-linecap="round" ${s.dash ? `stroke-dasharray="${s.dash}"` : ''}/>`}</svg>`; };
@@ -466,14 +495,16 @@ function legendHtml() {
 }
 function ensureMap() {
   if (MAP) return;
-  MAP = L.map('map', { worldCopyJump: true, minZoom: 2, maxZoom: 18, zoomControl: true, attributionControl: true, zoomSnap: 0.25 }).setView([30, 60], 2);
+  MAP = L.map('map', { worldCopyJump: true, minZoom: 2, maxZoom: 18, zoomControl: true, attributionControl: true, zoomSnap: 0.5 }).setView([30, 60], 2);
   MAP.attributionControl.setPrefix('');
   MapBase.attach(MAP, LANG);
+  new ResizeObserver(() => MAP.invalidateSize({ pan: false })).observe($('#stage'));
 }
 let PIN_MARKERS = [], SEG_LINES = [];
 function renderMap(segs, pins) {
   ensureMap(); MapBase.setLang(LANG);
-  $('#legend').innerHTML = CUR ? legendHtml() : '';
+  const lg = $('#legend'); lg.hidden = !CUR;
+  if (CUR) { const was = lg.dataset.init ? lg.open : !NARROW(); lg.innerHTML = `<summary>${zh() ? '图例' : 'Legend'}</summary><div class="lg">${legendHtml()}</div>`; lg.open = was; lg.dataset.init = '1'; }
   if (LAYER) LAYER.remove(); LAYER = L.layerGroup().addTo(MAP); PIN_MARKERS = []; SEG_LINES = [];
   if (!CUR) return;
   if (!segs) ({ segs, pins } = route(CUR));
@@ -512,19 +543,20 @@ function boundsOf(di) {
   SEG_LINES.filter(({ s }) => di === null || s.di === di).forEach(({ s }) => { pts.push([s.a.lat, s.a.lon], [s.b.lat, s.b.lon]); });
   return pts.length ? L.latLngBounds(pts) : null;
 }
+// room for the day dock at the bottom (and the legend top right) when fitting
+const FIT_PAD = () => NARROW() ? { paddingTopLeft: [30, 50], paddingBottomRight: [30, 70] } : { paddingTopLeft: [60, 60], paddingBottomRight: [60, 100] };
 function fitTo(di, animate) {
   const b = boundsOf(di) || (di !== null ? boundsOf(null) : null); if (!b) return;
-  const opts = { padding: [50, 50], maxZoom: 13 };
-  if (animate) MAP.flyToBounds(b, { ...opts, duration: 0.8 }); else MAP.fitBounds(b, opts);
+  MAP.fitBounds(b, { ...FIT_PAD(), maxZoom: 13, animate: !!animate });
 }
 function focusDay(di, keepScroll) {
   if (PLAY) stopPlay();
   DAY = di; history.replaceState(history.state, '', `#trip=${encodeURIComponent(CUR.id)}${di !== null ? `&day=${di + 1}` : ''}`);
   document.querySelectorAll('.day').forEach(el => el.classList.toggle('on', +el.dataset.dayCard === di));
   document.querySelector('.days')?.classList.toggle('focus', di !== null);
-  document.querySelectorAll('[data-day="all"]').forEach(b => b.classList.toggle('on', di === null));
+  document.querySelectorAll('#dock [data-day]').forEach(b => b.classList.toggle('on', b.dataset.day === (di === null ? 'all' : String(di))));
   applyDayDim(); fitTo(di, true);
-  if (!keepScroll && di !== null && matchMedia('(max-width: 900px)').matches) $('#map').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (!keepScroll && di !== null && NARROW() && $('#stage').getBoundingClientRect().bottom < 120) $('#stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 function itemPoints(di, ii) {
   return PIN_MARKERS.filter(({ p }) => p.di === di && p.ii === ii);
@@ -533,11 +565,11 @@ function focusItem(di, ii) {
   if (PLAY) stopPlay();
   if (DAY !== null && DAY !== di) { DAY = di; document.querySelectorAll('.day').forEach(el => el.classList.toggle('on', +el.dataset.dayCard === di)); applyDayDim(); }
   const pts = itemPoints(di, ii); if (!pts.length) return;
-  if (pts.length === 1) MAP.flyTo([pts[0].p.lat, pts[0].p.lon], Math.max(MAP.getZoom(), 12), { duration: 0.8 });
-  else MAP.flyToBounds(L.latLngBounds(pts.map(({ p }) => [p.lat, p.lon])), { padding: [60, 60], maxZoom: 12, duration: 0.8 });
+  if (pts.length === 1) MAP.setView([pts[0].p.lat, pts[0].p.lon], Math.max(MAP.getZoom(), 12), { animate: true });
+  else MAP.fitBounds(L.latLngBounds(pts.map(({ p }) => [p.lat, p.lon])), { ...FIT_PAD(), maxZoom: 12, animate: true });
   pts[0].m.openTooltip();
   const li = document.querySelector(`.it[data-di="${di}"][data-ii="${ii}"]`); flash(li);
-  if (matchMedia('(max-width: 900px)').matches) $('#map').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (NARROW() && $('#stage').getBoundingClientRect().bottom < 120) $('#stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 function hotItem(di, ii, on) {
   itemPoints(di, ii).forEach(({ m }) => m.getElement()?.querySelector('.stop-pin')?.classList.toggle('hot', on));
@@ -559,7 +591,7 @@ function startPlay() {
   }
   paintPlayBtn(); playLeg();
 }
-function paintPlayBtn() { const b = $('#btn-play'); if (b) b.innerHTML = `${PLAY ? IC.stop : IC.play}<span>${PLAY ? (zh() ? '停止' : 'Stop') : (zh() ? '播放轨迹' : 'Play the route')}</span>`; }
+function paintPlayBtn() { const b = $('#btn-play'); if (b) b.innerHTML = `${PLAY ? IC.stop : IC.play}<span>${PLAY ? (zh() ? '停止' : 'Stop') : (zh() ? '播放轨迹' : 'Play')}</span>`; }
 function endFly(P) { if (P.fly) { P.fly.model.destroy(); P.fly.el.remove(); P.fly = null; } }
 async function playLeg() {
   const P = PLAY; if (!P || P.stopped) return;
@@ -567,9 +599,11 @@ async function playLeg() {
   const s = P.segs[P.i], c = dayColor(s.di), d = km(s.a, s.b), flight = s.mode === 'flight';
   const path = (flight && window.Aviation?.greatCircle ? Aviation.greatCircle(s.a, s.b, 160) : segPath(s)).map(([a, b]) => L.latLng(a, b));
   document.querySelectorAll('.day').forEach(el => el.classList.toggle('on', +el.dataset.dayCard === s.di));
-  if (s.it) { const li = document.querySelector(`.it[data-di="${s.di}"][data-ii="${s.ii}"]`); flash(li); li?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
-  else document.querySelector(`[data-day-card="${s.di}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  MAP.flyToBounds(L.latLngBounds(path), { padding: [80, 80], maxZoom: d < 30 ? 13 : 9, duration: 0.7 });
+  const li = s.it ? document.querySelector(`.it[data-di="${s.di}"][data-ii="${s.ii}"]`) : document.querySelector(`[data-day-card="${s.di}"]`);
+  if (s.it) flash(li);
+  if (li && !NARROW()) panelTo(li);
+  document.querySelectorAll('#dock [data-day]').forEach(b => b.classList.toggle('on', b.dataset.day === String(s.di)));
+  MAP.fitBounds(L.latLngBounds(path), { ...FIT_PAD(), maxZoom: d < 30 ? 13 : 9, animate: true });
   // a flight: the live model of its aircraft type in the airline's livery
   let model = null;
   if (flight && P.f3d && await P.f3d) {
@@ -596,9 +630,11 @@ async function playLeg() {
     // heading from a stretch of the path around the plane, eased so it never twitches; climb, cruise, descend
     const pa = MAP.latLngToContainerPoint(path[Math.max(0, k - 4)]), pb = MAP.latLngToContainerPoint(path[Math.min(n, k + 4)]), raw = Math.atan2(pb.y - pa.y, pb.x - pa.x);
     if (heading === null) heading = raw; else { let dh = raw - heading; while (dh > Math.PI) dh -= 2 * Math.PI; while (dh < -Math.PI) dh += 2 * Math.PI; heading += dh * 0.15; }
-    const e = Math.min(1, Math.min(f, 1 - f) / 0.18), alt = e * e * (3 - 2 * e), p = MAP.latLngToContainerPoint(ll), sh = 4 + 14 * alt;
+    const e = Math.min(1, Math.min(f, 1 - f) / 0.18), alt = e * e * (3 - 2 * e), p = MAP.latLngToContainerPoint(ll);
     P.fly.el.style.transform = `translate3d(${(p.x - S / 2).toFixed(1)}px, ${(p.y - S / 2).toFixed(1)}px, 0)`;
-    P.fly.el.style.filter = `drop-shadow(${sh * 0.6}px ${sh}px ${3 + 5 * alt}px rgba(0, 0, 0, ${0.32 - 0.12 * alt}))`;
+    // the shadow falls further away the higher it flies; a new filter means a repaint, so it changes in steps
+    const q = Math.round(alt * 8) / 8, sh = 4 + 14 * q;
+    if (P.fly.q !== q) { P.fly.q = q; P.fly.el.style.filter = `drop-shadow(${sh * 0.6}px ${sh}px ${3 + 5 * q}px rgba(0, 0, 0, ${0.32 - 0.12 * q}))`; }
     model.draw(heading, alt, now);
   };
   place(1, path[0], 0, performance.now());
@@ -626,7 +662,7 @@ function renderAll() { renderTitle(); fromHash(); renderTrips(); renderTrip(); }
 document.addEventListener('click', e => {
   const a = e.target.closest('a.trip'); if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
   e.preventDefault(); if (location.hash !== a.getAttribute('href')) history.pushState(null, '', a.getAttribute('href'));
-  renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  renderAll(); $('#panel').scrollTop = 0; if (NARROW()) window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 addEventListener('popstate', () => { if (!$('#app').hidden) renderAll(); });
 addEventListener('hashchange', () => { if (!$('#app').hidden) renderAll(); });
@@ -644,7 +680,7 @@ function applyLang(lang) {
 $('#lang-toggle').addEventListener('click', e => { const b = e.target.closest('.lang-btn'); if (b && b.dataset.lang !== LANG) applyLang(b.dataset.lang); });
 
 function showApp() {
-  $('#gate').hidden = true; $('#app').hidden = false; ['#btn-lock', '#btn-travel', '#btn-flights'].forEach(s => { $(s).hidden = false; });
+  $('#gate').hidden = true; $('#app').hidden = false; document.body.classList.add('app-on'); ['#btn-lock', '#btn-travel', '#btn-flights'].forEach(s => { $(s).hidden = false; });
   renderAll(); setTimeout(() => { MAP?.invalidateSize(); fitTo(DAY); }, 60);
 }
 if (LANG !== 'en') applyLang(LANG);
