@@ -417,10 +417,13 @@ function renderTrip() {
   renderMap(segs, pins);
 }
 // a day without its own title: the cities it goes through ("Amsterdam → Paris"). Cities come from the city stops and
-// the ends of longer moves; a city stop next to a station or an airport takes its place (Xi'an rather than Xi'an North)
+// the ends of longer moves; a station or an airport near one of the trip's city stops goes by that city (Lisbon, not
+// Lisboa Santa Apolónia)
 function dayAuto(d) {
-  const out = [];   // { name, at, city }
+  const out = [], cities = CUR.days.flatMap(x => (x.items || []).filter(it => it.kind === 'city' && loc(it)));
+  const cityNear = o => loc(o) ? cities.find(c => km(c, o) < 30) : null;
   const add = (o, city) => {
+    if (!city) { const c = cityNear(o); if (c) { o = c; city = true; } }
     const name = placeName(o); if (!name) return;
     const prev = out[out.length - 1], near = prev && loc(o) && prev.at && km(prev.at, o) < 30;
     if (near) { if (city && !prev.city) Object.assign(prev, { name, at: o, city }); return; }
