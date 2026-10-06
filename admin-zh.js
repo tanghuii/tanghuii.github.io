@@ -93,6 +93,8 @@ window.ADMIN_ZH = {
   'Optional: what the trip is about, who comes along …': '可选：行程主题、同行的人…', 'Open on plan.html (after publishing)': '在 plan.html 上打开（发布后）', 'A trip needs at least one day.': '行程至少要有一天。',
   'Nothing found. Try another name, the English or Chinese name, or paste coordinates.': '没有找到。换个名称、英文或中文名，或直接粘贴坐标。', 'What is it': '类型',
   'Move up (to the day before at the top)': '上移（在最上面时移到前一天）', 'Move down (to the next day at the bottom)': '下移（在最下面时移到后一天）',
+  'Price, e.g. €89': '价格，如 €89', 'Price, e.g. €120': '价格，如 €120', 'Price (optional)': '价格（可选）', 'Price: €89, ¥1,280 or 320 EUR. Added up on plan.html.': '价格：€89、¥1,280 或 320 EUR，会在 plan.html 上汇总。',
+  'Search this route and day on Google Flights': '在 Google Flights 上搜索这条航线和日期', 'Write the price as €89, ¥1,280 or 320 EUR.': '价格请写成 €89、¥1,280 或 320 EUR。',
   'Page titles & introductions': '页面标题与简介', 'Title': '标题', 'Introduction': '简介', 'Flights page (private)': '飞行页（私密）', 'Open flights.html ↗': '打开 flights.html ↗', 'travel.html, academic.html and flights.html': 'travel.html、academic.html 和 flights.html', 'Bold': '加粗', 'Italic': '斜体',
   'Titles: select words, then press B (bold) or I (italic, in the page’s accent colour); with nothing selected it applies to the whole title. The text box shows them as **bold** and *italic*.': '标题：选中文字后点 B（加粗）或 I（斜体，显示为页面强调色）；不选中则作用于整个标题。文本框里显示为 **加粗** 和 *斜体*。',
   'Cover of this province on the phone travel page. Click to use the first photo again.': '手机版旅行页上该省份的头图。再点一次恢复使用第一张照片。', 'Use as the cover of this province on the phone travel page (without a choice, the first photo is used)': '设为手机版旅行页上该省份的头图（未设置时使用第一张照片）',

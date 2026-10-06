@@ -84,7 +84,8 @@
   .tp-row .tp-iata { flex: none; width: 6.5rem; }
   .tp-coord { flex: none; font-size: 0.8rem; color: var(--warn, #8a5300); white-space: nowrap; } .tp-coord.ok { color: var(--ok, #2f7a4f); }
   .tp-res { margin-top: 0.3rem; display: grid; gap: 0.25rem; }
-  .tp-note { margin-top: 0.4rem; padding: 0.3rem 0.5rem; font-size: 0.92em; }
+  .tp-note { padding: 0.3rem 0.5rem; font-size: 0.92em; }
+  .tp-foot { margin-top: 0.4rem; } .tp-row .tp-price { flex: none; width: 10.5rem; } .tp-foot .btn { flex: none; white-space: nowrap; }
   .tp-add { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin-top: 0.5rem; }
   @media (max-width: 700px) { .tp-two { grid-template-columns: 1fr; } .tp-day-h { grid-template-columns: auto 1fr auto; } .tp-day-h input { grid-column: 1 / -1; } }
   .thumb .tools .btn.cover.on { color: #b8860b; border-color: #e0b84a; background: rgba(224, 184, 74, 0.14); }
@@ -3270,6 +3271,12 @@ async function planSearch(q, ref, kind) {
   const [g, n] = await Promise.all([geo, near]);
   return kind === 'city' ? [...g, ...n] : [...n, ...g];
 }
+// Prices: any item can carry one (a ticket, a night, an entrance), typed as "€89", "¥1,280" or "320 EUR"
+const CUR_SIGN = { EUR: '€', CNY: '¥', USD: '$', GBP: '£', JPY: 'JP¥', HKD: 'HK$' };
+const planPrice = it => typeof it.price === 'number' ? `${CUR_SIGN[it.cur] || ''}${it.price.toLocaleString('en')}${CUR_SIGN[it.cur] ? '' : ' ' + (it.cur || '')}`.trim() : '';
+const planCur = T => (T.plans || []).flatMap(p => p.days.flatMap(d => d.items || [])).findLast(x => x.cur)?.cur || 'EUR';
+// Google Flights has no public API: a search for this flight's route and day opens in a new tab
+const gflightsUrl = (it, date) => it.from?.iata && it.to?.iata ? `https://www.google.com/travel/flights?q=${encodeURIComponent(`Flights from ${it.from.iata} to ${it.to.iata} on ${date || ''} one way`.replace(/\s+/g, ' '))}` : '';
 const planAirport = code => { const ap = AVDB.byIata?.get(String(code || '').trim().toUpperCase()); return ap ? { ...apRecord(ap), name: { en: ap.city || ap.name, zh: cityZhNear(ap) || ap.city || ap.name } } : null; };
 
 function viewPlans(v) {
@@ -3300,7 +3307,7 @@ function renderPlanList(T) {
         ${mv ? `${bind(it, 'no', 'text', `placeholder="${it.kind === 'flight' ? 'Flight no. KL897' : it.kind === 'train' ? 'Train no. G1' : 'No. (optional)'}" class="tp-no" data-tp-no="${esc(it.id)}"`)}${bind(it, 'dep', 'text', 'placeholder="Dep 08:10" class="tp-time"')}${bind(it, 'arr', 'text', 'placeholder="Arr 10:30" class="tp-time"')}` : bind(it, 'time', 'text', 'placeholder="Time 09:00" class="tp-time"')}
         <span class="tp-tools"><button type="button" class="btn sm" data-tp-mv="${esc(it.id)}|up" title="Move up (to the day before at the top)">↑</button><button type="button" class="btn sm" data-tp-mv="${esc(it.id)}|down" title="Move down (to the next day at the bottom)">↓</button><button type="button" class="btn sm danger" data-tp-mv="${esc(it.id)}|del" title="Remove">✕</button></span></div>
       ${mv ? `<div class="tp-two">${locHtml(it, 'from', 'From')}${locHtml(it, 'to', 'To')}</div>` : locHtml(it, '', 'Where')}
-      ${bind(it, 'note', 'text', 'placeholder="Note (optional): tickets, booking, what to see …" class="tp-note"')}</div>`;
+      <div class="tp-row tp-foot"><input type="text" class="tp-price" data-tp-price="${esc(it.id)}" value="${esc(planPrice(it))}" placeholder="${mv ? 'Price, e.g. €89' : it.kind === 'stay' ? 'Price, e.g. €120' : 'Price (optional)'}" title="Price: €89, ¥1,280 or 320 EUR. Added up on plan.html.">${it.kind === 'flight' && gflightsUrl(it, planDay(p.start, di)) ? `<a class="btn sm" href="${esc(gflightsUrl(it, planDay(p.start, di)))}" target="_blank" rel="noopener" title="Search this route and day on Google Flights">Google Flights ↗</a>` : ''}${bind(it, 'note', 'text', 'placeholder="Note (optional): tickets, booking, what to see …" class="tp-note"')}</div></div>`;
   };
   box.innerHTML = sorted.map(p => {
     const open = PLAN_OPEN.has(p.id), end = planDay(p.start, p.days.length - 1), n = p.days.reduce((s, d) => s + (d.items || []).length, 0);
@@ -3361,6 +3368,13 @@ function renderPlanList(T) {
     if (!inp.value.trim()) { f.it[fieldKey] = planLoc(); markDirty(); again(); return; }
     if (!ap) return toast(`No airport with the code ${inp.value.trim().toUpperCase()}.`, true);
     f.it[fieldKey] = ap; markDirty(); again();
+  });
+  box.querySelectorAll('[data-tp-price]').forEach(inp => inp.onchange = () => {
+    const f = findItem(inp.dataset.tpPrice); if (!f) return;
+    const { fare, cur } = parseFare(inp.value);
+    if (inp.value.trim() && fare === null) return toast('Write the price as €89, ¥1,280 or 320 EUR.', true);
+    if (fare === null) { delete f.it.price; delete f.it.cur; } else { f.it.price = fare; f.it.cur = cur || planCur(T); }
+    inp.value = planPrice(f.it); markDirty();
   });
   // a flight number you have flown before fills in the airports
   box.querySelectorAll('[data-tp-no]').forEach(inp => inp.addEventListener('change', () => {
