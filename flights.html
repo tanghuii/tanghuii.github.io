@@ -8,7 +8,7 @@
 <script>(function () { var t = null; try { t = localStorage.getItem('site-theme'); } catch (e) {} if (t !== 'dark' && t !== 'light') t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
 <title>My Air Times | Hui Tang</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Pinyon+Script&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,500;0,600;0,700;1,500;1,700&family=JetBrains+Mono:wght@400;600&family=Pinyon+Script&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="">
 <script src="aviation.js?v=202610052000"></script>
 <script src="fleet3d.js?v=202610052000"></script>
@@ -166,6 +166,8 @@
     background: var(--title-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .hero .sub { color: var(--muted); margin-top: 0.3rem; max-width: 640px; }
   /* a blinking full stop after the title, like a terminal cursor */
+  .hero h1 em { font-style: italic; color: var(--cyan); }
+  .hero h1.has-bold { font-weight: 500; } .hero h1 strong { font-weight: 700; }   /* bold words stand out from the rest */
   .hero h1::after { content: ''; display: inline-block; width: 0.17em; height: 0.17em; margin-left: 0.1em; background: var(--cyan); animation: blink-dot 1s steps(1, end) infinite; }   /* a square full stop that blinks like a cursor */
   @keyframes blink-dot { 50% { opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .hero h1::after { animation: none; } }
@@ -692,7 +694,7 @@
   <div class="layout">
     <aside class="col side">
       <section class="hero sec-hero">
-        <h1 data-en="My Air Times" data-zh="云间岁月">My Air Times</h1>
+        <h1 id="fl-title">My Air Times</h1>
       </section>
       <div class="filters sec-filters">
         <div class="seg box" id="f-year" role="group" aria-label="Year"></div>
@@ -772,7 +774,7 @@ const b64u8 = a => { let s = ''; a.forEach(x => { s += String.fromCharCode(x); }
 const A = window.Aviation;
 const EARTH = 40075, MOON = 384400;
 
-let LANG = window.SiteLang ? SiteLang.initial() : 'en', FLIGHTS = [], PLACES = [], YEAR = 'all', PURPOSE = 'all', Q = '', SEL = null, MAP = null, LAYER = null, FIRST_FIT = true, FLAG_SORT = 'n', VIEWER = null, ALL_BOUNDS = null;
+let LANG = window.SiteLang ? SiteLang.initial() : 'en', FLIGHTS = [], PLACES = [], FL_TITLE = null, YEAR = 'all', PURPOSE = 'all', Q = '', SEL = null, MAP = null, LAYER = null, FIRST_FIT = true, FLAG_SORT = 'n', VIEWER = null, ALL_BOUNDS = null;
 const L10N = {
   all: ['All', '全部'], allYears: ['All years', '全部年份'], personal: ['Personal', '私人'], academic: ['Academic', '学术'],
   flights: ['Flights', '航班'], distance: ['Distance', '飞行距离'], time: ['Time aloft', '飞行时长'], airports: ['Airports', '机场'],
@@ -820,6 +822,7 @@ async function unlockWith(key, file) {
   try { pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8(file.iv) }, key, u8(file.ct)); }
   catch (e) { throw new Error(LANG === 'zh' ? '密码错误。' : 'Wrong password.'); }
   const data = JSON.parse(new TextDecoder().decode(pt));
+  FL_TITLE = data.fl_title || null;
   FLIGHTS = (data.flights || []).filter(f => f && f.from && f.to).map(f => {
     const km = A.distKm(f.from, f.to);
     return { ...f, km, min: f.dur > 0 ? f.dur : A.estMinutes(km), est: !(f.dur > 0), year: String(f.date || '').slice(0, 4) || '—' };
@@ -1693,6 +1696,12 @@ addEventListener('popstate', () => { if (!$('#app').hidden) renderDetail(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#detail') && !$('.v3d')) detailBack(); });
 
 // ── Language ──
+// the page title, set in the Site Manager (travel.enc fl_title) with **bold** and *italic*
+function renderTitle() {
+  const own = FL_TITLE?.[LANG]?.trim(), s = own || (LANG === 'zh' ? '云间岁月' : 'My Air Times'), h = $('#fl-title');
+  h.innerHTML = SiteLang.richTitle(s); h.classList.toggle('has-bold', /\*\*/.test(s));
+  document.title = own ? SiteLang.plainTitle(s) + (LANG === 'zh' ? ' | 唐辉' : ' | Hui Tang') : (LANG === 'zh' ? '云间岁月 · 飞行记录 | 唐辉' : 'My Air Times | Hui Tang');
+}
 function applyLang(lang) {
   LANG = lang; window.SiteLang?.set(lang);
   document.querySelectorAll('.lang-toggle .lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
@@ -1700,7 +1709,7 @@ function applyLang(lang) {
   document.querySelectorAll('[data-en][data-zh]').forEach(el => { el.textContent = el.getAttribute('data-' + lang); });
   document.querySelectorAll('[data-tip-en]').forEach(el => { el.title = el.getAttribute('data-tip-' + lang); });
   document.querySelectorAll('[data-ph-en]').forEach(el => { el.placeholder = el.getAttribute('data-ph-' + lang); });
-  document.title = lang === 'zh' ? '云间岁月 · 飞行记录 | 唐辉' : 'My Air Times | Hui Tang';
+  renderTitle();
   if (MAP) MapBase.setLang(lang);
   paintThemeBtn();
   if (!$('#app').hidden) renderAll();
@@ -1986,7 +1995,7 @@ document.addEventListener('wheel', e => {
   e.preventDefault(); b.scrollLeft += e.deltaY;
 }, { passive: false });
 addEventListener('resize', () => requestAnimationFrame(fitSegs));
-function showApp() { $('#gate').hidden = true; $('#app').hidden = false; $('#btn-lock').hidden = false; $('#btn-search').hidden = false; renderAll(); if (detailOf(location.hash)) renderDetail(); }
+function showApp() { renderTitle(); $('#gate').hidden = true; $('#app').hidden = false; $('#btn-lock').hidden = false; $('#btn-search').hidden = false; renderAll(); if (detailOf(location.hash)) renderDetail(); }
 if (LANG !== 'en') applyLang(LANG);   // open in the language remembered from the rest of the site
 (async () => { if (await tryStoredKey()) showApp(); else $('#pw').focus(); })();
 </script>

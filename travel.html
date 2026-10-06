@@ -94,6 +94,7 @@
   .hero h1 { font-family: var(--font-head); font-weight: 300; font-size: 2.6rem; line-height: 1.15; }
   body.zh .hero h1 { font-family: var(--font-head); font-weight: 300; }
   .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero h1 strong { font-weight: 600; }
   .hero .intro { color: var(--muted); margin-top: 0.5rem; max-width: 620px; font-size: 1.05rem; }
   .stats { display: flex; gap: 2rem; }
   .stat { text-align: center; }
@@ -1030,7 +1031,8 @@ function renderHeader() {
   const nCountries = new Set(places.map(p => normCC(p.cc) || t(p.country))).size;
   const nPhotos = places.reduce((n, p) => n + (p.photos || []).length, 0);
   const title = (PRIVATE && (!DATA.title || /旅行足迹|Places I have/.test(t(DATA.title))) ? (LANG === 'zh' ? '山河逆旅' : 'Life in Passage') : t(DATA.title)) || (PRIVATE ? (LANG === 'zh' ? '山河逆旅' : 'Life in Passage') : (LANG === 'zh' ? '学术足迹' : 'Academic footprint'));
-  $('#title').innerHTML = esc(title).replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  $('#title').innerHTML = SiteLang.richTitle(title);
+  document.title = SiteLang.plainTitle(title) + (LANG === 'zh' ? ' | 唐辉' : ' | Hui Tang');
   $('#intro').textContent = t(DATA.intro) || '';
   $('#intro').hidden = !t(DATA.intro);
   // Highlights: how many World Heritage sites and 5A scenic areas appear in the visited sights
@@ -1874,7 +1876,8 @@ let MOB_CUR = null, MOB_SID = '';
 const ckeyOf = c => c.cc || t(c.name);
 const cityCount = ps => new Set(ps.map(p => (p.city?.en || t(p.city) || p.id).toLowerCase())).size;
 const bigFlag = cc => /^[A-Z]{2}$/.test(cc || '') ? `<img src="https://flagcdn.com/w160/${cc.toLowerCase()}.png" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode('${flagEmoji(cc)}'))">` : '<span class="mf-pin">📍</span>';
-const coverOf = ps => { for (const p of ps) { const ph = (p.photos || [])[0]; if (ph?.thumb) return ph.thumb; } return ''; };
+// a province tile's photo: the one chosen in the Site Manager (DATA.covers, province → photo id), else the first one
+const coverOf = (ps, pick) => { const all = ps.flatMap(p => p.photos || []).filter(ph => ph?.thumb); return ((pick && all.find(ph => ph.id === pick)) || all[0])?.thumb || ''; };
 function renderMob() {
   document.body.classList.toggle('mob', mobMode());
   const box = $('#mob'); if (!box || !mobMode() || !DATA) { if (box) box.innerHTML = ''; return; }
@@ -1932,7 +1935,7 @@ function mobCountry(key, focus) {
   if (c.cc === 'CN' && !provs && !PROVINCE_CC.CN.data) loadProvinces().then(d => { if (d && location.hash === '#v=cc:' + encodeURIComponent(key)) { MOB_CUR = null; routeMob(); } });
   const sub = [provs ? (zh ? `${provs.filter(g => g.zh !== '其他').length} 个省份` : `${provs.filter(g => g.zh !== '其他').length} provinces`) : '', citiesWord(cityCount(c.places)), nPh ? (zh ? `${nPh} 张照片` : `${nPh} photos`) : ''].filter(Boolean).join(' · ');
   const body = mobHead(bigFlag(c.cc), t(c.name), esc(sub)) + (provs
-    ? `<div class="mob-provs">${provs.map(g => { const cv = coverOf(g.places);
+    ? `<div class="mob-provs">${provs.map(g => { const cv = coverOf(g.places, DATA.covers?.[g.zh]);
         return `<a class="mv-link mob-prov${cv ? '' : ' nocover'}" href="#v=pr:${esc(encodeURIComponent(g.zh))}"><span class="mp-cover"${cv ? ` data-cover="${esc(cv)}"` : ''}></span><span class="mp-txt"><b>${esc(zh ? g.zh : g.en)}</b>${zh ? '' : `<small>${esc(g.zh)}</small>`}<span class="mp-n">${esc(citiesWord(cityCount(g.places)))}</span></span>${g.places.some(p => p.highlight) ? '<span class="mf-star" aria-hidden="true">★</span>' : ''}</a>`; }).join('')}</div>`
     : `<div class="mv-cards">${c.places.map(cityCard).join('')}</div>`);
   const el = mobShell(zh ? '国家和地区' : 'Country', t(c.name), body, provs ? 'mv-cn' : '');
