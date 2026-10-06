@@ -1032,7 +1032,7 @@ function renderHeader() {
   const nPhotos = places.reduce((n, p) => n + (p.photos || []).length, 0);
   const title = (PRIVATE && (!DATA.title || /旅行足迹|Places I have/.test(t(DATA.title))) ? (LANG === 'zh' ? '山河逆旅' : 'Life in Passage') : t(DATA.title)) || (PRIVATE ? (LANG === 'zh' ? '山河逆旅' : 'Life in Passage') : (LANG === 'zh' ? '学术足迹' : 'Academic footprint'));
   $('#title').innerHTML = SiteLang.richTitle(title);
-  document.title = SiteLang.plainTitle(title) + (PRIVATE ? '' : LANG === 'zh' ? ' | 唐辉' : ' | Hui Tang');   // the private page: just its title
+  document.title = SiteLang.plainTitle(title);
   $('#intro').textContent = t(DATA.intro) || '';
   $('#intro').hidden = !t(DATA.intro);
   // Highlights: how many World Heritage sites and 5A scenic areas appear in the visited sights
@@ -1988,7 +1988,7 @@ function applyLang(lang) {
   document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
   document.querySelectorAll('[data-en][data-zh]').forEach(el => { el.textContent = el.getAttribute('data-' + lang); });
   document.querySelectorAll('[data-tip-en]').forEach(el => { el.title = el.getAttribute('data-tip-' + lang); });
-  document.title = PRIVATE ? (lang === 'zh' ? '山河逆旅' : 'Life in Passage') : (lang === 'zh' ? '学术足迹 | 唐辉' : 'Academic footprint | Hui Tang');
+  document.title = PRIVATE ? (lang === 'zh' ? '山河逆旅' : 'Life in Passage') : (lang === 'zh' ? '学术足迹' : 'Academic footprint');
   if (DATA && !$('#app').hidden) { renderHeader(); renderList(); renderMap(); }
 }
 $('#lang-toggle').addEventListener('click', e => { const b = e.target.closest('.lang-btn'); if (b && b.dataset.lang !== LANG) applyLang(b.dataset.lang); });
