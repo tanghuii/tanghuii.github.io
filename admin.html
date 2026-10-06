@@ -1882,7 +1882,7 @@ function renderAccount() {
 // with a content key kept inside travel.enc (travel/*.bin).
 // ─────────────────────────────────────────────────────────────────────────────
 const TRAVEL_MIN_PW = 8;
-const FP = { file: 'travel/travel.enc', pubFile: 'academic/academic.json', data: null, orig: '', remote: undefined, sha: null, pubOrig: null, pubSha: null, key: null, ckey: null, loading: false, err: '', urls: new Map() };
+const FP = { file: 'travel/travel.enc', pubFile: 'academic/academic.json', plansFile: 'plans/plans.json', data: null, orig: '', remote: undefined, sha: null, pubOrig: null, pubSha: null, plansOrig: null, plansSha: null, key: null, ckey: null, loading: false, err: '', urls: new Map() };
 const KIND_OPTIONS = [['conference', 'Conference'], ['visit', 'Research visit'], ['workshop', 'Workshop / summer school']];
 const TRIP_OPTIONS = [['', 'No label'], ['lived', 'Lived here'], ['leisure', 'Leisure trip'], ['nature', 'Hiking & nature'], ['family', 'Family & friends'], ['business', 'Business trip'], ['transit', 'Transit / stopover']];
 const TALK_OPTIONS = [['', 'No presentation'], ['oral', 'Oral presentation'], ['poster', 'Poster presentation'], ['invited', 'Invited talk'], ['keynote', 'Keynote']];
@@ -2001,6 +2001,7 @@ async function loadFootprints() {
   try { const r = await ghGetFile(FP.file); FP.sha = r.sha; FP.remote = JSON.parse(b64dec(r.content)); }
   catch (e) { if (/404/.test(e.message)) { FP.sha = null; FP.remote = null; } else { FP.remote = undefined; FP.err = e.message; } }
   try { const r = await ghGetFile(FP.pubFile); FP.pubOrig = b64dec(r.content); FP.pubSha = r.sha; } catch (e) { FP.pubOrig = ''; FP.pubSha = null; }
+  try { const r = await ghGetFile(FP.plansFile); FP.plansOrig = b64dec(r.content); FP.plansSha = r.sha; } catch (e) { FP.plansOrig = ''; FP.plansSha = null; }
   FP.loading = false;
   if (TAB === 'travel' || TAB === 'flights' || TAB === 'plans') render();
 }
@@ -2008,6 +2009,7 @@ async function unlockFootprints(password) {
   const { bundle, key, salt, iter } = await decryptBundle(FP.remote, password);
   FP.data = normalizeFP(bundle); FP.orig = JSON.stringify(FP.data); FP.key = { key, salt, iter }; FP.ckey = await importContentKey(FP.data.key);
 }
+const derivePlans = d => ({ v: 1, title: d.plan_title, updated: new Date().toISOString().slice(0, 10), plans: d.plans || [] });
 async function saveFootprints(message = 'Update footprints via Site Manager') {
   const file = await encryptBundle(FP.data, FP.key.key, FP.key.salt, FP.key.iter);
   file.note = 'Private travel map for travel.html: AES-256-GCM, key derived from the travel password. Photos in this folder are encrypted with a content key stored inside.';
@@ -2020,6 +2022,12 @@ async function saveFootprints(message = 'Update footprints via Site Manager') {
   if (strip(pub) !== strip(FP.pubOrig)) {
     const r2 = await ghPutFile(FP.pubFile, b64enc(pub), 'Update academic footprint (public export)', FP.pubSha);
     FP.pubSha = r2.content.sha; FP.pubOrig = pub;
+  }
+  // Trip plans are public: plan.html reads them in clear from plans/plans.json (the rest of the bundle stays encrypted)
+  const plans = JSON.stringify(derivePlans(FP.data), null, 2) + '\n';
+  if (strip(plans) !== strip(FP.plansOrig)) {
+    const r3 = await ghPutFile(FP.plansFile, b64enc(plans), 'Update trip plans (public export)', FP.plansSha);
+    FP.plansSha = r3.content.sha; FP.plansOrig = plans;
   }
 }
 async function rememberTravelPassword(pw) {
@@ -3282,10 +3290,10 @@ const planAirlineHint = it => { const m = /^\s*([A-Z0-9]{2})\s*\d/i.exec(it.no |
 const planAirport = code => { const ap = AVDB.byIata?.get(String(code || '').trim().toUpperCase()); return ap ? { ...apRecord(ap), name: { en: ap.city || ap.name, zh: cityZhNear(ap) || ap.city || ap.name } } : null; };
 
 function viewPlans(v) {
-  if (!FP.data) { viewFootprints(v, `<h2>Trip plans</h2><p class="lead">Trip plans are stored encrypted together with the footprints and open with the same <b>travel password</b> on <a href="plan.html" target="_blank">plan.html</a>.</p>`); return; }
+  if (!FP.data) { viewFootprints(v, `<h2>Trip plans</h2><p class="lead">Trip plans are kept with the footprints (sign in with the <b>travel password</b> to edit them) and published in clear on the public <a href="plan.html" target="_blank">plan.html</a>.</p>`); return; }
   const T = FP.data; T.plans ||= [];
   if (!AVDB.airports) { v.innerHTML = `<h2>Trip plans</h2><div class="card"><p class="hint">Loading the airport list…</p></div>`; loadAvdb().then(() => { if (TAB === 'plans') render(); }, e => toast('Could not load the airport list: ' + e.message, true)); return; }
-  v.innerHTML = `<h2>Trip plans</h2><div class="tv-head tv-top"><span class="pill ok">${T.plans.length} trip${T.plans.length === 1 ? '' : 's'}</span><span class="hint">Shown on <a href="plan.html" target="_blank">plan.html</a> (travel password) · saved with <b>Publish changes</b>.</span><button class="btn sm primary" id="tp-new">+ New trip</button></div>
+  v.innerHTML = `<h2>Trip plans</h2><div class="tv-head tv-top"><span class="pill ok">${T.plans.length} trip${T.plans.length === 1 ? '' : 's'}</span><span class="hint">Public on <a href="plan.html" target="_blank">plan.html</a> (no password) · saved with <b>Publish changes</b>.</span><button class="btn sm primary" id="tp-new">+ New trip</button></div>
     <p class="hint" style="margin:-0.4rem 0 1rem">A trip is a start date and its days. Add the stops of each day in order (cities, sights, hotels, food) and how you move between them (flights by airport code, trains, buses, cars, ferries, walks); the page draws the route on a map, one colour per day, and can play it back. Search finds towns, and sights, stations or hotels near the places already in the trip; coordinates (52.37, 4.90) work too.</p>
     <div id="tp-list"></div>`;
   $('#tp-new').onclick = () => { const p = { id: 'tp-' + rid(), title: { en: '', zh: '' }, start: new Date().toISOString().slice(0, 10), note: '', days: [{ title: { en: '', zh: '' }, items: [] }] }; T.plans.unshift(p); PLAN_OPEN.add(p.id); markDirty(); renderPlanList(T); };
@@ -3598,7 +3606,7 @@ function viewFootprints(v, introOverride) {
       <div><h3 style="font-size:1.1rem">Travel page (private)</h3>${titleField('Title', T, 'title')}${biField('Introduction', T, 'intro', 'textarea')}</div>
       <div><h3 style="font-size:1.1rem">Academic page (public)</h3>${titleField('Title', T, 'pub_title')}${biField('Introduction', T, 'pub_intro', 'textarea')}</div>
       <div><h3 style="font-size:1.1rem">Flights page (private)</h3>${titleField('Title', T, 'fl_title')}</div>
-      <div><h3 style="font-size:1.1rem">Trip planner (private)</h3>${titleField('Title', T, 'plan_title')}</div></div>
+      <div><h3 style="font-size:1.1rem">Trip planner (public)</h3>${titleField('Title', T, 'plan_title')}</div></div>
     <div class="toolbar"><a class="btn sm" href="travel.html" target="_blank">Open travel.html ↗</a><a class="btn sm" href="academic.html" target="_blank">Open academic.html ↗</a><a class="btn sm" href="flights.html" target="_blank">Open flights.html ↗</a><a class="btn sm" href="plan.html" target="_blank">Open plan.html ↗</a></div>`)}
   ${(T.flights || []).length ? foldCard('flmatch', 'Link flights to places', `${T.places.filter(p => (p.flights || []).length).length} places linked · ${[...flightSuggestionMap(T).values()].reduce((n, l) => n + l.length, 0)} suggestions`, `<p class="hint" style="margin-bottom:0.6rem">Each place can list the flights that took you there or away; travel.html shows them on the place and they open the flight on flights.html, which links back. A flight belongs to the city of each of its airports: the nearest place within ${AIRPORT_CITY_KM} km (PEK and PKX → Beijing, KIX → Osaka). New flights are linked this way when you add them; below are the flights not linked yet. Untick any that are wrong, then link. One-off links can also be added in each place's <b>Flights</b> field.</p><div id="tv-flmatch"></div>`) : ''}
   ${foldCard('check', 'Check all tags', '5A, national parks, World Heritage', `<div class="toolbar" style="margin:0"><button class="btn sm primary" id="tv-check">✓ Check all tags</button>

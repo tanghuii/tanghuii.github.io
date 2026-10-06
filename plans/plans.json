@@ -1,0 +1,1398 @@
+{
+  "v": 1,
+  "title": {
+    "en": "Trip planner",
+    "zh": "旅行规划"
+  },
+  "updated": "2026-10-06",
+  "plans": [
+    {
+      "id": "tp-df694ae602",
+      "title": {
+        "en": "Iberian Peninsula",
+        "zh": "伊比利亚半岛之行"
+      },
+      "start": "2026-12-11",
+      "note": "马略卡岛 · 巴塞罗那 · 里斯本 · 波尔图，10 天 9 晚。所有时间均为当地时间，葡萄牙比西班牙、荷兰慢 1 小时。大交通预算 €125.46 / 人（4 段飞机 + 里斯本—波尔图），不含岛内租车、Lagos 往返、接驳、门票与住宿。",
+      "days": [
+        {
+          "title": {
+            "en": "Arrive in Palma",
+            "zh": "出发，夜抵 Palma"
+          },
+          "items": [
+            {
+              "id": "ti-9c38718d62",
+              "kind": "flight",
+              "time": "",
+              "no": "FR3532",
+              "dep": "20:10",
+              "arr": "22:30",
+              "note": "Ryanair；提前完成值机与行李手续",
+              "from": {
+                "iata": "EIN",
+                "icao": "EHEH",
+                "name": {
+                  "en": "Eindhoven",
+                  "zh": "埃因霍温"
+                },
+                "city": "Eindhoven",
+                "city_zh": "埃因霍温",
+                "cc": "NL",
+                "lat": 51.4501,
+                "lon": 5.3745
+              },
+              "to": {
+                "iata": "PMI",
+                "icao": "LEPA",
+                "name": {
+                  "en": "Palma de Mallorca",
+                  "zh": "帕尔马"
+                },
+                "city": "Palma de Mallorca",
+                "city_zh": "帕尔马",
+                "cc": "ES",
+                "lat": 39.5517,
+                "lon": 2.7388
+              },
+              "ac": "B738",
+              "price": 36.49,
+              "cur": "EUR"
+            },
+            {
+              "id": "ti-25128f00a9",
+              "kind": "bus",
+              "time": "",
+              "no": "EMT A1",
+              "dep": "22:30",
+              "arr": "",
+              "note": "到市中心再步行入住；末班已过就改乘正规出租车",
+              "from": {
+                "iata": "PMI",
+                "icao": "LEPA",
+                "name": {
+                  "en": "Palma de Mallorca",
+                  "zh": "帕尔马"
+                },
+                "city": "Palma de Mallorca",
+                "city_zh": "帕尔马",
+                "cc": "ES",
+                "lat": 39.5517,
+                "lon": 2.7388
+              },
+              "to": {
+                "name": {
+                  "en": "Hotel, Plaça d'Espanya (Palma)",
+                  "zh": "帕尔马酒店（Plaça d’Espanya 一带）"
+                },
+                "lat": 39.5755,
+                "lon": 2.6541,
+                "cc": "ES"
+              }
+            },
+            {
+              "id": "ti-8390b537ad",
+              "kind": "stay",
+              "time": "",
+              "note": "3 晚：12/11、12、13；靠 A1 与 Estació Intermodal；需支持晚入住，核对停车条件",
+              "name": {
+                "en": "Hotel, Plaça d'Espanya (Palma)",
+                "zh": "帕尔马酒店（Plaça d’Espanya 一带）"
+              },
+              "lat": 39.5755,
+              "lon": 2.6541,
+              "cc": "ES"
+            }
+          ]
+        },
+        {
+          "title": {
+            "en": "Serra de Tramuntana: villages and harbour",
+            "zh": "特拉蒙塔纳山区：山村与海港"
+          },
+          "items": [
+            {
+              "id": "ti-76c086e472",
+              "kind": "car",
+              "time": "",
+              "no": "",
+              "dep": "08:30",
+              "arr": "",
+              "note": "租车 / 包车；公交版：Estació Intermodal 搭 TIB 203",
+              "from": {
+                "name": {
+                  "en": "Hotel, Plaça d'Espanya (Palma)",
+                  "zh": "帕尔马酒店（Plaça d’Espanya 一带）"
+                },
+                "lat": 39.5755,
+                "lon": 2.6541,
+                "cc": "ES"
+              },
+              "to": {
+                "name": {
+                  "en": "Valldemossa",
+                  "zh": "瓦尔德摩萨"
+                },
+                "lat": 39.7106,
+                "lon": 2.6225,
+                "cc": "ES"
+              }
+            },
+            {
+              "id": "ti-bf3cf25300",
+              "kind": "sight",
+              "time": "09:15",
+              "note": "石头房屋、花盆小巷、修道院周边；早餐尝 coca de patata",
+              "name": {
+                "en": "Valldemossa",
+                "zh": "瓦尔德摩萨"
+              },
+              "lat": 39.7106,
+              "lon": 2.6225,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-be22acbcc9",
+              "kind": "car",
+              "time": "",
+              "no": "",
+              "dep": "",
+              "arr": "",
+              "note": "沿 Ma-10",
+              "from": {
+                "name": {
+                  "en": "Valldemossa",
+                  "zh": "瓦尔德摩萨"
+                },
+                "lat": 39.7106,
+                "lon": 2.6225,
+                "cc": "ES"
+              },
+              "to": {
+                "name": {
+                  "en": "Deià",
+                  "zh": "德亚"
+                },
+                "lat": 39.748,
+                "lon": 2.649,
+                "cc": "ES"
+              }
+            },
+            {
+              "id": "ti-72fcc1120e",
+              "kind": "sight",
+              "time": "11:30",
+              "note": "山谷石屋村落、教堂高处视野与午餐；不绕下 Cala Deià（公交只在衔接顺畅时加入）",
+              "name": {
+                "en": "Deià",
+                "zh": "德亚"
+              },
+              "lat": 39.748,
+              "lon": 2.649,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-cf05fd94e8",
+              "kind": "car",
+              "time": "",
+              "no": "",
+              "dep": "",
+              "arr": "",
+              "note": "",
+              "from": {
+                "name": {
+                  "en": "Deià",
+                  "zh": "德亚"
+                },
+                "lat": 39.748,
+                "lon": 2.649,
+                "cc": "ES"
+              },
+              "to": {
+                "name": {
+                  "en": "Port de Sóller",
+                  "zh": "索列尔港"
+                },
+                "lat": 39.7956,
+                "lon": 2.6953,
+                "cc": "ES"
+              }
+            },
+            {
+              "id": "ti-e1bb1a9a9d",
+              "kind": "sight",
+              "time": "14:00",
+              "note": "马蹄形港湾散步，日落前看海；Sóller 镇中心可作途中短停",
+              "name": {
+                "en": "Port de Sóller",
+                "zh": "索列尔港"
+              },
+              "lat": 39.7956,
+              "lon": 2.6953,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-4b17bb9eaf",
+              "kind": "car",
+              "time": "",
+              "no": "",
+              "dep": "17:00",
+              "arr": "",
+              "note": "公交回程优先较直接的 TIB 204；晚上市中心晚餐",
+              "from": {
+                "name": {
+                  "en": "Port de Sóller",
+                  "zh": "索列尔港"
+                },
+                "lat": 39.7956,
+                "lon": 2.6953,
+                "cc": "ES"
+              },
+              "to": {
+                "name": {
+                  "en": "Hotel, Plaça d'Espanya (Palma)",
+                  "zh": "帕尔马酒店（Plaça d’Espanya 一带）"
+                },
+                "lat": 39.5755,
+                "lon": 2.6541,
+                "cc": "ES"
+              }
+            }
+          ]
+        },
+        {
+          "title": {
+            "en": "Formentor: clear bays and cliffs",
+            "zh": "Formentor 北岸：清澈海湾与悬崖"
+          },
+          "items": [
+            {
+              "id": "ti-2a41606fab",
+              "kind": "car",
+              "time": "",
+              "no": "",
+              "dep": "08:30",
+              "arr": "",
+              "note": "经 Port de Pollença；租车 / 包车，含接驳、停车约 1.5–2 小时",
+              "from": {
+                "name": {
+                  "en": "Hotel, Plaça d'Espanya (Palma)",
+                  "zh": "帕尔马酒店（Plaça d’Espanya 一带）"
+                },
+                "lat": 39.5755,
+                "lon": 2.6541,
+                "cc": "ES"
+              },
+              "to": {
+                "name": {
+                  "en": "Mirador Es Colomer",
+                  "zh": "Es Colomer 观景台"
+                },
+                "lat": 39.9216,
+                "lon": 3.1097,
+                "cc": "ES"
+              }
+            },
+            {
+              "id": "ti-a55be807df",
+              "kind": "sight",
+              "time": "10:00",
+              "note": "短步行看悬崖与山海视野",
+              "name": {
+                "en": "Mirador Es Colomer",
+                "zh": "Es Colomer 观景台"
+              },
+              "lat": 39.9216,
+              "lon": 3.1097,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-053bf0943f",
+              "kind": "car",
+              "time": "",
+              "no": "",
+              "dep": "",
+              "arr": "",
+              "note": "",
+              "from": {
+                "name": {
+                  "en": "Mirador Es Colomer",
+                  "zh": "Es Colomer 观景台"
+                },
+                "lat": 39.9216,
+                "lon": 3.1097,
+                "cc": "ES"
+              },
+              "to": {
+                "name": {
+                  "en": "Platja de Formentor",
+                  "zh": "福门托尔海滩"
+                },
+                "lat": 39.9306,
+                "lon": 3.1336,
+                "cc": "ES"
+              }
+            },
+            {
+              "id": "ti-b2813f68c7",
+              "kind": "sight",
+              "time": "11:00",
+              "note": "沙滩、松林、近岸透明海水；沿海边拍照与散步。灯塔为可选延伸，看天气与路况",
+              "name": {
+                "en": "Platja de Formentor",
+                "zh": "福门托尔海滩"
+              },
+              "lat": 39.9306,
+              "lon": 3.1336,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-a54fd0da0b",
+              "kind": "car",
+              "time": "",
+              "no": "",
+              "dep": "",
+              "arr": "",
+              "note": "",
+              "from": {
+                "name": {
+                  "en": "Platja de Formentor",
+                  "zh": "福门托尔海滩"
+                },
+                "lat": 39.9306,
+                "lon": 3.1336,
+                "cc": "ES"
+              },
+              "to": {
+                "name": {
+                  "en": "Port de Pollença",
+                  "zh": "波连萨港"
+                },
+                "lat": 39.9061,
+                "lon": 3.0817,
+                "cc": "ES"
+              }
+            },
+            {
+              "id": "ti-76ff0138c2",
+              "kind": "food",
+              "time": "13:00",
+              "note": "冬季海滩餐饮营业不稳定，午餐放镇上",
+              "name": {
+                "en": "Port de Pollença",
+                "zh": "波连萨港"
+              },
+              "lat": 39.9061,
+              "lon": 3.0817,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-f3842fb879",
+              "kind": "car",
+              "time": "",
+              "no": "",
+              "dep": "",
+              "arr": "",
+              "note": "",
+              "from": {
+                "name": {
+                  "en": "Port de Pollença",
+                  "zh": "波连萨港"
+                },
+                "lat": 39.9061,
+                "lon": 3.0817,
+                "cc": "ES"
+              },
+              "to": {
+                "name": {
+                  "en": "Alcúdia old town",
+                  "zh": "阿尔库迪亚老城"
+                },
+                "lat": 39.8533,
+                "lon": 3.1214,
+                "cc": "ES"
+              }
+            },
+            {
+              "id": "ti-a6bac54e9f",
+              "kind": "sight",
+              "time": "14:30",
+              "note": "城墙周边、石板街、广场与咖啡",
+              "name": {
+                "en": "Alcúdia old town",
+                "zh": "阿尔库迪亚老城"
+              },
+              "lat": 39.8533,
+              "lon": 3.1214,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-e3206bc7a8",
+              "kind": "car",
+              "time": "",
+              "no": "",
+              "dep": "16:30",
+              "arr": "",
+              "note": "约 17:00 前后回 Palma；冬季 334 接驳巴士未确认，纯公交替代：TIB 302 去 Alcúdia + Platja de Muro",
+              "from": {
+                "name": {
+                  "en": "Alcúdia old town",
+                  "zh": "阿尔库迪亚老城"
+                },
+                "lat": 39.8533,
+                "lon": 3.1214,
+                "cc": "ES"
+              },
+              "to": {
+                "name": {
+                  "en": "Hotel, Plaça d'Espanya (Palma)",
+                  "zh": "帕尔马酒店（Plaça d’Espanya 一带）"
+                },
+                "lat": 39.5755,
+                "lon": 2.6541,
+                "cc": "ES"
+              }
+            }
+          ]
+        },
+        {
+          "title": {
+            "en": "Palma → Barcelona",
+            "zh": "Palma → 巴塞罗那"
+          },
+          "items": [
+            {
+              "id": "ti-1fbb2a5f85",
+              "kind": "sight",
+              "time": "08:00",
+              "note": "可选：Parc de la Mar 看大教堂外观，随后回酒店取行李",
+              "name": {
+                "en": "Palma Cathedral (La Seu)",
+                "zh": "帕尔马大教堂"
+              },
+              "lat": 39.5675,
+              "lon": 2.6484,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-3fda406aa3",
+              "kind": "bus",
+              "time": "",
+              "no": "EMT A1",
+              "dep": "09:30",
+              "arr": "",
+              "note": "或出租车；目标约 10:30 到机场",
+              "from": {
+                "name": {
+                  "en": "Hotel, Plaça d'Espanya (Palma)",
+                  "zh": "帕尔马酒店（Plaça d’Espanya 一带）"
+                },
+                "lat": 39.5755,
+                "lon": 2.6541,
+                "cc": "ES"
+              },
+              "to": {
+                "iata": "PMI",
+                "icao": "LEPA",
+                "name": {
+                  "en": "Palma de Mallorca",
+                  "zh": "帕尔马"
+                },
+                "city": "Palma de Mallorca",
+                "city_zh": "帕尔马",
+                "cc": "ES",
+                "lat": 39.5517,
+                "lon": 2.7388
+              }
+            },
+            {
+              "id": "ti-a1caf6ce81",
+              "kind": "flight",
+              "time": "",
+              "no": "FR2494",
+              "dep": "12:35",
+              "arr": "13:30",
+              "note": "Ryanair",
+              "from": {
+                "iata": "PMI",
+                "icao": "LEPA",
+                "name": {
+                  "en": "Palma de Mallorca",
+                  "zh": "帕尔马"
+                },
+                "city": "Palma de Mallorca",
+                "city_zh": "帕尔马",
+                "cc": "ES",
+                "lat": 39.5517,
+                "lon": 2.7388
+              },
+              "to": {
+                "iata": "BCN",
+                "icao": "LEBL",
+                "name": {
+                  "en": "Barcelona",
+                  "zh": "巴塞罗那"
+                },
+                "city": "Barcelona",
+                "city_zh": "巴塞罗那",
+                "cc": "ES",
+                "lat": 41.2971,
+                "lon": 2.0785
+              },
+              "ac": "B738",
+              "price": 17.49,
+              "cur": "EUR"
+            },
+            {
+              "id": "ti-dbf6b2a4cb",
+              "kind": "bus",
+              "time": "",
+              "no": "Aerobús",
+              "dep": "13:30",
+              "arr": "",
+              "note": "A1 (T1) / A2 (T2) 到市中心，45–60 分钟；往返票 €13.30",
+              "from": {
+                "iata": "BCN",
+                "icao": "LEBL",
+                "name": {
+                  "en": "Barcelona",
+                  "zh": "巴塞罗那"
+                },
+                "city": "Barcelona",
+                "city_zh": "巴塞罗那",
+                "cc": "ES",
+                "lat": 41.2971,
+                "lon": 2.0785
+              },
+              "to": {
+                "name": {
+                  "en": "Hotel, Plaça Catalunya (Barcelona)",
+                  "zh": "巴塞罗那酒店（加泰罗尼亚广场一带）"
+                },
+                "lat": 41.387,
+                "lon": 2.17,
+                "cc": "ES"
+              },
+              "price": 7.75,
+              "cur": "EUR"
+            },
+            {
+              "id": "ti-ab3f66a60f",
+              "kind": "stay",
+              "time": "",
+              "note": "1 晚：12/14；Plaça Catalunya 或附近 Eixample，先寄存行李",
+              "name": {
+                "en": "Hotel, Plaça Catalunya (Barcelona)",
+                "zh": "巴塞罗那酒店（加泰罗尼亚广场一带）"
+              },
+              "lat": 41.387,
+              "lon": 2.17,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-6caad7e7cf",
+              "kind": "sight",
+              "time": "16:00",
+              "note": "内部，重点看彩色玻璃与树枝状立柱；预约 16:00 左右。冬季周一至周六 09:00–18:00，仅在线售票",
+              "name": {
+                "en": "Sagrada Família",
+                "zh": "圣家堂"
+              },
+              "lat": 41.4036,
+              "lon": 2.1744,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-42dbce1d3e",
+              "kind": "sight",
+              "time": "18:00",
+              "note": "Passeig de Gràcia，看外观",
+              "name": {
+                "en": "Casa Batlló",
+                "zh": "巴特罗之家"
+              },
+              "lat": 41.3917,
+              "lon": 2.165,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-bb3910ffdb",
+              "kind": "sight",
+              "time": "18:30",
+              "note": "看外观；之后晚餐。古埃尔公园放在次日的替换方案里",
+              "name": {
+                "en": "La Pedrera (Casa Milà)",
+                "zh": "米拉之家"
+              },
+              "lat": 41.3953,
+              "lon": 2.1619,
+              "cc": "ES"
+            }
+          ]
+        },
+        {
+          "title": {
+            "en": "Barcelona → Lisbon",
+            "zh": "巴塞罗那 → 里斯本"
+          },
+          "items": [
+            {
+              "id": "ti-6fa7d4ef75",
+              "kind": "sight",
+              "time": "09:00",
+              "note": "巴塞罗那大教堂外观、Plaça del Rei 与小巷",
+              "name": {
+                "en": "Barri Gòtic",
+                "zh": "哥特区"
+              },
+              "lat": 41.384,
+              "lon": 2.1762,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-55d21ea734",
+              "kind": "sight",
+              "time": "10:30",
+              "note": "外观、街区小店；有余量可走到 Ciutadella 公园。想看古埃尔公园：整段上午改成 09:00 Park Güell + 午餐（需限时票）",
+              "name": {
+                "en": "El Born · Santa Maria del Mar",
+                "zh": "博恩区 · 海上圣母教堂"
+              },
+              "lat": 41.3837,
+              "lon": 2.182,
+              "cc": "ES"
+            },
+            {
+              "id": "ti-50a20957f1",
+              "kind": "bus",
+              "time": "",
+              "no": "Aerobús",
+              "dep": "14:00",
+              "arr": "",
+              "note": "约 14:00 从酒店取行李出发，目标 15:00 到 BCN",
+              "from": {
+                "name": {
+                  "en": "Hotel, Plaça Catalunya (Barcelona)",
+                  "zh": "巴塞罗那酒店（加泰罗尼亚广场一带）"
+                },
+                "lat": 41.387,
+                "lon": 2.17,
+                "cc": "ES"
+              },
+              "to": {
+                "iata": "BCN",
+                "icao": "LEBL",
+                "name": {
+                  "en": "Barcelona",
+                  "zh": "巴塞罗那"
+                },
+                "city": "Barcelona",
+                "city_zh": "巴塞罗那",
+                "cc": "ES",
+                "lat": 41.2971,
+                "lon": 2.0785
+              }
+            },
+            {
+              "id": "ti-ae26234c7b",
+              "kind": "flight",
+              "time": "",
+              "no": "VY1152",
+              "dep": "17:15",
+              "arr": "18:20",
+              "note": "Vueling；18:20 为葡萄牙当地时间",
+              "from": {
+                "iata": "BCN",
+                "icao": "LEBL",
+                "name": {
+                  "en": "Barcelona",
+                  "zh": "巴塞罗那"
+                },
+                "city": "Barcelona",
+                "city_zh": "巴塞罗那",
+                "cc": "ES",
+                "lat": 41.2971,
+                "lon": 2.0785
+              },
+              "to": {
+                "iata": "LIS",
+                "icao": "LPPT",
+                "name": {
+                  "en": "Lisbon",
+                  "zh": "里斯本"
+                },
+                "city": "Lisbon",
+                "city_zh": "里斯本",
+                "cc": "PT",
+                "lat": 38.7813,
+                "lon": -9.1359
+              },
+              "ac": "A320",
+              "price": 21,
+              "cur": "EUR"
+            },
+            {
+              "id": "ti-d914b8f272",
+              "kind": "train",
+              "time": "",
+              "no": "Metro",
+              "dep": "18:20",
+              "arr": "",
+              "note": "地铁红线到 Alameda，换绿线至 Rossio / Baixa-Chiado，含换乘约 40–60 分钟",
+              "from": {
+                "iata": "LIS",
+                "icao": "LPPT",
+                "name": {
+                  "en": "Lisbon",
+                  "zh": "里斯本"
+                },
+                "city": "Lisbon",
+                "city_zh": "里斯本",
+                "cc": "PT",
+                "lat": 38.7813,
+                "lon": -9.1359
+              },
+              "to": {
+                "name": {
+                  "en": "Hotel, Rossio / Baixa (Lisbon)",
+                  "zh": "里斯本酒店（Rossio / Baixa 一带）"
+                },
+                "lat": 38.7139,
+                "lon": -9.1394,
+                "cc": "PT"
+              }
+            },
+            {
+              "id": "ti-2483d7c95f",
+              "kind": "stay",
+              "time": "",
+              "note": "3 晚：12/15、16、17；靠地铁与辛特拉火车站。晚餐后可走 Rua Augusta 至商业广场河边",
+              "name": {
+                "en": "Hotel, Rossio / Baixa (Lisbon)",
+                "zh": "里斯本酒店（Rossio / Baixa 一带）"
+              },
+              "lat": 38.7139,
+              "lon": -9.1394,
+              "cc": "PT"
+            }
+          ]
+        },
+        {
+          "title": {
+            "en": "Lagos coast day trip",
+            "zh": "Lagos 一日游：海岸"
+          },
+          "items": [
+            {
+              "id": "ti-a487c262ef",
+              "kind": "bus",
+              "time": "",
+              "no": "",
+              "dep": "06:30",
+              "arr": "10:30",
+              "note": "FlixBus / Rede Expressos 直达，约 3 小时 40 分；目标 06:00–07:00 出发、11:00 前到；出发站按车票地址核对",
+              "from": {
+                "name": {
+                  "en": "Lisboa Sete Rios coach station",
+                  "zh": "里斯本 Sete Rios 长途站"
+                },
+                "lat": 38.7417,
+                "lon": -9.1663,
+                "cc": "PT"
+              },
+              "to": {
+                "name": {
+                  "en": "Lagos coach station",
+                  "zh": "拉各斯长途站"
+                },
+                "lat": 37.105,
+                "lon": -8.674,
+                "cc": "PT"
+              }
+            },
+            {
+              "id": "ti-2f8a4ce42c",
+              "kind": "sight",
+              "time": "11:00",
+              "note": "崖顶步道、多个观景点，重点拍岩柱与海蚀洞；从长途站短程打车",
+              "name": {
+                "en": "Ponta da Piedade",
+                "zh": "皮达德角"
+              },
+              "lat": 37.0806,
+              "lon": -8.6693,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-14611024ae",
+              "kind": "sight",
+              "time": "12:30",
+              "note": "岩壁间的小海湾，阶梯约 200 级，下沙滩看开放情况与体力",
+              "name": {
+                "en": "Praia do Camilo",
+                "zh": "卡米洛海滩"
+              },
+              "lat": 37.0886,
+              "lon": -8.6696,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-0545f91cfd",
+              "kind": "sight",
+              "time": "13:15",
+              "note": "金色岩壁与海中岩石；含停留共约 1.5 小时",
+              "name": {
+                "en": "Praia Dona Ana",
+                "zh": "多娜安娜海滩"
+              },
+              "lat": 37.092,
+              "lon": -8.671,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-5c22acb3ba",
+              "kind": "food",
+              "time": "14:00",
+              "note": "回老城午餐；Praça Infante、Santa Maria 与堡垒外观，河边短逛",
+              "name": {
+                "en": "Lagos old town",
+                "zh": "拉各斯老城"
+              },
+              "lat": 37.1003,
+              "lon": -8.674,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-878393934b",
+              "kind": "bus",
+              "time": "",
+              "no": "",
+              "dep": "17:30",
+              "arr": "21:00",
+              "note": "回程约 3 小时 30 分；16:00 后取餐食补给，提前去长途站候车；不在 Lagos 过夜",
+              "from": {
+                "name": {
+                  "en": "Lagos coach station",
+                  "zh": "拉各斯长途站"
+                },
+                "lat": 37.105,
+                "lon": -8.674,
+                "cc": "PT"
+              },
+              "to": {
+                "name": {
+                  "en": "Lisboa Sete Rios coach station",
+                  "zh": "里斯本 Sete Rios 长途站"
+                },
+                "lat": 38.7417,
+                "lon": -9.1663,
+                "cc": "PT"
+              }
+            }
+          ]
+        },
+        {
+          "title": {
+            "en": "Sintra and Cabo da Roca",
+            "zh": "辛特拉 + 罗卡角一日游"
+          },
+          "items": [
+            {
+              "id": "ti-4ae691f860",
+              "kind": "train",
+              "time": "",
+              "no": "CP",
+              "dep": "07:30",
+              "arr": "",
+              "note": "CP Sintra 线约 40 分钟；可比较 CP 往返 + 市内接驳与 €11.40 联票",
+              "from": {
+                "name": {
+                  "en": "Lisboa Rossio station",
+                  "zh": "里斯本罗西乌站"
+                },
+                "lat": 38.7139,
+                "lon": -9.1413,
+                "cc": "PT"
+              },
+              "to": {
+                "name": {
+                  "en": "Sintra station",
+                  "zh": "辛特拉站"
+                },
+                "lat": 38.7984,
+                "lon": -9.3857,
+                "cc": "PT"
+              }
+            },
+            {
+              "id": "ti-16146fd01d",
+              "kind": "bus",
+              "time": "",
+              "no": "434",
+              "dep": "",
+              "arr": "",
+              "note": "上山，另留等车和园内步行时间；434 另外买票",
+              "from": {
+                "name": {
+                  "en": "Sintra station",
+                  "zh": "辛特拉站"
+                },
+                "lat": 38.7984,
+                "lon": -9.3857,
+                "cc": "PT"
+              },
+              "to": {
+                "name": {
+                  "en": "Pena Palace",
+                  "zh": "佩纳宫"
+                },
+                "lat": 38.7876,
+                "lon": -9.3906,
+                "cc": "PT"
+              }
+            },
+            {
+              "id": "ti-62f0cd1ccf",
+              "kind": "sight",
+              "time": "10:00",
+              "note": "佩纳宫内部 + 主要平台；门票时刻指宫殿内部入口，园门到宫殿约 30 分钟，无迟到宽限",
+              "name": {
+                "en": "Pena Palace",
+                "zh": "佩纳宫"
+              },
+              "lat": 38.7876,
+              "lon": -9.3906,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-992036ca28",
+              "kind": "bus",
+              "time": "",
+              "no": "434",
+              "dep": "12:00",
+              "arr": "",
+              "note": "下山",
+              "from": {
+                "name": {
+                  "en": "Pena Palace",
+                  "zh": "佩纳宫"
+                },
+                "lat": 38.7876,
+                "lon": -9.3906,
+                "cc": "PT"
+              },
+              "to": {
+                "name": {
+                  "en": "Sintra old town",
+                  "zh": "辛特拉老城"
+                },
+                "lat": 38.7976,
+                "lon": -9.3907,
+                "cc": "PT"
+              }
+            },
+            {
+              "id": "ti-6434438f89",
+              "kind": "food",
+              "time": "12:15",
+              "note": "辛特拉老城简餐，尝 Travesseiro 酥点",
+              "name": {
+                "en": "Sintra old town",
+                "zh": "辛特拉老城"
+              },
+              "lat": 38.7976,
+              "lon": -9.3907,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-1c4390b768",
+              "kind": "bus",
+              "time": "",
+              "no": "1253",
+              "dep": "13:45",
+              "arr": "",
+              "note": "Sintra 车站经罗卡角环线，每程含等车约 60–90 分钟；Carris Metropolitana 另查票价与班次",
+              "from": {
+                "name": {
+                  "en": "Sintra station",
+                  "zh": "辛特拉站"
+                },
+                "lat": 38.7984,
+                "lon": -9.3857,
+                "cc": "PT"
+              },
+              "to": {
+                "name": {
+                  "en": "Cabo da Roca",
+                  "zh": "罗卡角"
+                },
+                "lat": 38.7804,
+                "lon": -9.4989,
+                "cc": "PT"
+              }
+            },
+            {
+              "id": "ti-f10ca6b325",
+              "kind": "sight",
+              "time": "14:30",
+              "note": "灯塔外观、石碑与海岸视野，留约 45–60 分钟；大风雨天优先缩短",
+              "name": {
+                "en": "Cabo da Roca",
+                "zh": "罗卡角"
+              },
+              "lat": 38.7804,
+              "lon": -9.4989,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-211330c196",
+              "kind": "bus",
+              "time": "",
+              "no": "1253",
+              "dep": "15:30",
+              "arr": "",
+              "note": "备选：1624 到 Cascais，再坐 CP 回 Cais do Sodré",
+              "from": {
+                "name": {
+                  "en": "Cabo da Roca",
+                  "zh": "罗卡角"
+                },
+                "lat": 38.7804,
+                "lon": -9.4989,
+                "cc": "PT"
+              },
+              "to": {
+                "name": {
+                  "en": "Sintra station",
+                  "zh": "辛特拉站"
+                },
+                "lat": 38.7984,
+                "lon": -9.3857,
+                "cc": "PT"
+              }
+            },
+            {
+              "id": "ti-7e5bf73af5",
+              "kind": "train",
+              "time": "",
+              "no": "CP",
+              "dep": "",
+              "arr": "",
+              "note": "晚上回里斯本晚餐、整理行李",
+              "from": {
+                "name": {
+                  "en": "Sintra station",
+                  "zh": "辛特拉站"
+                },
+                "lat": 38.7984,
+                "lon": -9.3857,
+                "cc": "PT"
+              },
+              "to": {
+                "name": {
+                  "en": "Lisboa Rossio station",
+                  "zh": "里斯本罗西乌站"
+                },
+                "lat": 38.7139,
+                "lon": -9.1413,
+                "cc": "PT"
+              }
+            }
+          ]
+        },
+        {
+          "title": {
+            "en": "Lisbon → Porto",
+            "zh": "里斯本市区 → 波尔图"
+          },
+          "items": [
+            {
+              "id": "ti-518ee80ce4",
+              "kind": "sight",
+              "time": "08:30",
+              "note": "Baixa → 主教座堂外观 → Alfama；替换路线：上午改去贝伦（热罗尼莫斯修道院外观 + Pastéis de Belém + 河边）",
+              "name": {
+                "en": "Lisbon Cathedral (Sé)",
+                "zh": "里斯本主教座堂"
+              },
+              "lat": 38.7098,
+              "lon": -9.1335,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-a181893415",
+              "kind": "sight",
+              "time": "09:15",
+              "note": "老城小巷；上坡累时坐短程公交或叫车",
+              "name": {
+                "en": "Alfama",
+                "zh": "阿尔法玛"
+              },
+              "lat": 38.7114,
+              "lon": -9.13,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-8e80c682c9",
+              "kind": "sight",
+              "time": "10:00",
+              "note": "两个相邻观景台，看红屋顶与塔霍河",
+              "name": {
+                "en": "Miradouro de Santa Luzia · Portas do Sol",
+                "zh": "圣卢西亚观景台 · 太阳门"
+              },
+              "lat": 38.7118,
+              "lon": -9.1302,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-bc4d770494",
+              "kind": "sight",
+              "time": "11:30",
+              "note": "下坡回商业广场；Rua Augusta、Chiado 午餐或喝咖啡",
+              "name": {
+                "en": "Praça do Comércio · Rua Augusta · Chiado",
+                "zh": "商业广场 · 奥古斯塔街 · 希亚多"
+              },
+              "lat": 38.7075,
+              "lon": -9.1364,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-03fc3c418f",
+              "kind": "bus",
+              "time": "",
+              "no": "",
+              "dep": "16:00",
+              "arr": "19:15",
+              "note": "运营商、交通类型与两端车站以预订凭证为准；若 Oriente：红线，若 Sete Rios：蓝线 Jardim Zoológico。13:30–14:00 回酒店取行李，15:15 前到站候车",
+              "from": {
+                "name": {
+                  "en": "Lisboa Oriente",
+                  "zh": "里斯本东方站"
+                },
+                "lat": 38.7678,
+                "lon": -9.099,
+                "cc": "PT"
+              },
+              "to": {
+                "name": {
+                  "en": "Porto Campanhã",
+                  "zh": "波尔图 Campanhã"
+                },
+                "lat": 41.1488,
+                "lon": -8.5855,
+                "cc": "PT"
+              },
+              "price": 6.48,
+              "cur": "EUR"
+            },
+            {
+              "id": "ti-c2044fc52b",
+              "kind": "stay",
+              "time": "19:30",
+              "note": "2 晚：12/18、19；Trindade 最方便机场（地铁 E 线）；入住后在 Aliados / Bolhão 附近晚餐",
+              "name": {
+                "en": "Hotel, Trindade / Bolhão (Porto)",
+                "zh": "波尔图酒店（Trindade / Bolhão 一带）"
+              },
+              "lat": 41.1525,
+              "lon": -8.6094,
+              "cc": "PT"
+            }
+          ]
+        },
+        {
+          "title": {
+            "en": "Porto old town and the Douro",
+            "zh": "波尔图老城与杜罗河两岸"
+          },
+          "items": [
+            {
+              "id": "ti-c89f40d299",
+              "kind": "sight",
+              "time": "09:00",
+              "note": "大厅蓝白瓷砖 → Rua das Flores",
+              "name": {
+                "en": "São Bento station",
+                "zh": "圣本托火车站"
+              },
+              "lat": 41.1456,
+              "lon": -8.6107,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-c045861043",
+              "kind": "sight",
+              "time": "09:45",
+              "note": "主教座堂周边；想去莱罗书店 / Clérigos：上午改为已预约的 Livraria Lello + Clérigos，取消下午酒窖",
+              "name": {
+                "en": "Porto Cathedral (Sé)",
+                "zh": "波尔图主教座堂"
+              },
+              "lat": 41.1428,
+              "lon": -8.6112,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-196293a699",
+              "kind": "sight",
+              "time": "10:30",
+              "note": "老城小巷下坡到河岸，午餐、拍彩色房屋",
+              "name": {
+                "en": "Ribeira",
+                "zh": "里贝拉河岸"
+              },
+              "lat": 41.1406,
+              "lon": -8.6131,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-1f9f3dd5bb",
+              "kind": "walk",
+              "time": "",
+              "no": "",
+              "dep": "13:00",
+              "arr": "",
+              "note": "Dom Luís I 大桥下层步行到 Gaia 河岸",
+              "from": {
+                "name": {
+                  "en": "Ribeira",
+                  "zh": "里贝拉河岸"
+                },
+                "lat": 41.1406,
+                "lon": -8.6131,
+                "cc": "PT"
+              },
+              "to": {
+                "name": {
+                  "en": "Port wine cellars, Vila Nova de Gaia",
+                  "zh": "加亚新城波特酒窖"
+                },
+                "lat": 41.1374,
+                "lon": -8.6125,
+                "cc": "PT"
+              }
+            },
+            {
+              "id": "ti-70ed35f42e",
+              "kind": "sight",
+              "time": "13:15",
+              "note": "有兴趣预约一家酒窖参观与品酒（付费可选），不安排连续多家",
+              "name": {
+                "en": "Port wine cellars, Vila Nova de Gaia",
+                "zh": "加亚新城波特酒窖"
+              },
+              "lat": 41.1374,
+              "lon": -8.6125,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-5c8f09f6bc",
+              "kind": "sight",
+              "time": "15:00",
+              "note": "看两岸景色；体力够可走大桥上层回 Porto，或 D 线 Jardim do Morro → São Bento",
+              "name": {
+                "en": "Jardim do Morro",
+                "zh": "莫罗花园"
+              },
+              "lat": 41.1376,
+              "lon": -8.6091,
+              "cc": "PT"
+            },
+            {
+              "id": "ti-d5bf9d9603",
+              "kind": "stay",
+              "time": "",
+              "note": "晚餐后回酒店收行李，次日早班返程",
+              "name": {
+                "en": "Hotel, Trindade / Bolhão (Porto)",
+                "zh": "波尔图酒店（Trindade / Bolhão 一带）"
+              },
+              "lat": 41.1525,
+              "lon": -8.6094,
+              "cc": "PT"
+            }
+          ]
+        },
+        {
+          "title": {
+            "en": "Home",
+            "zh": "波尔图机场，返程"
+          },
+          "items": [
+            {
+              "id": "ti-508bc8d42d",
+              "kind": "train",
+              "time": "",
+              "no": "Metro E",
+              "dep": "07:30",
+              "arr": "",
+              "note": "紫色 E 线至 Aeroporto，约 30–40 分钟；目标 08:45 左右到 OPO；Andante 单次按区域购买",
+              "from": {
+                "name": {
+                  "en": "Trindade metro",
+                  "zh": "Trindade 地铁站"
+                },
+                "lat": 41.1525,
+                "lon": -8.6094,
+                "cc": "PT"
+              },
+              "to": {
+                "iata": "OPO",
+                "icao": "LPPR",
+                "name": {
+                  "en": "Porto",
+                  "zh": "波尔图"
+                },
+                "city": "Porto",
+                "city_zh": "波尔图",
+                "cc": "PT",
+                "lat": 41.2481,
+                "lon": -8.6814
+              }
+            },
+            {
+              "id": "ti-0d1362253d",
+              "kind": "flight",
+              "time": "",
+              "no": "HV6004",
+              "dep": "10:55",
+              "arr": "14:40",
+              "note": "Transavia；返程目的地以航班预订凭证为准",
+              "from": {
+                "iata": "OPO",
+                "icao": "LPPR",
+                "name": {
+                  "en": "Porto",
+                  "zh": "波尔图"
+                },
+                "city": "Porto",
+                "city_zh": "波尔图",
+                "cc": "PT",
+                "lat": 41.2481,
+                "lon": -8.6814
+              },
+              "to": {
+                "iata": "AMS",
+                "icao": "EHAM",
+                "name": {
+                  "en": "Amsterdam",
+                  "zh": "阿姆斯特丹"
+                },
+                "city": "Amsterdam",
+                "city_zh": "阿姆斯特丹",
+                "cc": "NL",
+                "lat": 52.3086,
+                "lon": 4.7639
+              },
+              "ac": "B738",
+              "price": 44,
+              "cur": "EUR"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -13,8 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="">
 <style>
-  /* Trip planner: itineraries kept in the encrypted travel file (travel.enc → plans), decrypted in the browser
-     with the travel password, like travel.html and flights.html. */
+  /* Trip planner: public itineraries (plans/plans.json, exported by the Site Manager). */
   :root {
     --on-accent: #ffffff; --ink-2: #334155; --card-2: #fbfcfe; --hover-border: #b9cbe3;
     --paper-rgb: 245, 247, 250; --card-rgb: 255, 255, 255; --accent-rgb: 27, 79, 138; --highlight-rgb: 214, 227, 245;
@@ -52,24 +51,6 @@
   .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--subtle); border-radius: 100px; background: var(--card-bg); color: var(--muted); transition: all 0.2s; text-decoration: none; }
   .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
   .icon-btn svg { width: 15px; height: 15px; }
-
-  /* Password gate */
-  .gate { min-height: calc(100vh - 60px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 16px; }
-  .gate-card { width: 100%; max-width: 420px; background: var(--card-bg); border: 1px solid var(--subtle); border-radius: 12px; padding: 2rem 2rem 1.5rem; box-shadow: 0 12px 40px var(--shadow); }
-  .gate-icon { width: 48px; height: 48px; border-radius: 100px; background: var(--highlight); color: var(--accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
-  .gate-icon svg { width: 22px; height: 22px; }
-  .gate h1 { font-family: var(--font-head); font-weight: 400; font-size: 1.9rem; text-align: center; margin-bottom: 0.3rem; }
-  .gate p.lead { color: var(--muted); text-align: center; font-size: 0.95rem; margin-bottom: 1.3rem; }
-  .gate label { display: block; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem; }
-  .gate input[type=password] { width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--subtle); border-radius: 6px; font: inherit; background: var(--card-bg); color: var(--ink); }
-  .gate input:focus { outline: 2px solid var(--accent-light); outline-offset: 1px; }
-  .check { display: flex; align-items: center; gap: 0.45rem; margin: 0.8rem 0 1rem; font-size: 0.92rem; cursor: pointer; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.6rem 1.1rem; border-radius: 6px; border: 1.5px solid var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600; transition: all 0.2s; text-decoration: none; }
-  .btn:hover { background: var(--card-bg); color: var(--accent); }
-  .btn:disabled { opacity: 0.6; cursor: wait; }
-  .btn.block { width: 100%; }
-  .gate-msg { min-height: 1.4em; margin-top: 0.7rem; text-align: center; font-size: 0.92rem; color: var(--err); }
-  .gate-foot { margin-top: 1.4rem; font-size: 0.9rem; color: var(--muted); text-align: center; }
 
   /* Page: the whole window. On wide screens a panel on the left scrolls by itself and the map fills everything else;
      the page itself does not scroll, so the map never moves under the reader */
@@ -205,15 +186,12 @@
   <div class="top-bar-inner">
     <a href="index.html" class="back-link"><span class="back-arrow">←</span> <span>Hui Tang</span></a>
     <div class="bar-right">
-      <a class="icon-btn" href="travel.html" id="btn-travel" hidden data-tip-en="Life in Passage: travel map" data-tip-zh="山河逆旅：足迹地图" title="Life in Passage: travel map" aria-label="Travel map">
+      <a class="icon-btn" href="travel.html" id="btn-travel" data-tip-en="Life in Passage: travel map" data-tip-zh="山河逆旅：足迹地图" title="Life in Passage: travel map" aria-label="Travel map">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
       </a>
-      <a class="icon-btn" href="flights.html" id="btn-flights" hidden data-tip-en="My Air Times: flight log" data-tip-zh="云间岁月：飞行记录" title="My Air Times: flight log" aria-label="Flight log">
+      <a class="icon-btn" href="flights.html" id="btn-flights" data-tip-en="My Air Times: flight log" data-tip-zh="云间岁月：飞行记录" title="My Air Times: flight log" aria-label="Flight log">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
       </a>
-      <button class="icon-btn" id="btn-lock" hidden data-tip-en="Lock this page" data-tip-zh="锁定页面" title="Lock this page" aria-label="Lock">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-      </button>
       <button type="button" class="icon-btn theme-btn" data-theme-toggle aria-label="Switch to dark mode"></button>
       <div class="lang-toggle" id="lang-toggle">
         <button class="lang-btn active" data-lang="en">EN</button>
@@ -223,26 +201,7 @@
   </div>
 </div>
 
-<!-- Password gate -->
-<div class="gate" id="gate">
-  <div class="gate-card">
-    <div class="gate-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M8 18h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7"/></svg></div>
-    <h1 data-en="Trip planner" data-zh="旅行规划">Trip planner</h1>
-    <p class="lead" data-en="A private page. Enter the travel password to see the plans." data-zh="这是一个私密页面，请输入旅行密码查看行程。">A private page. Enter the travel password to see the plans.</p>
-    <form id="f-gate" autocomplete="on">
-      <input type="text" name="username" value="travel" autocomplete="username" hidden>
-      <label for="pw" data-en="Password" data-zh="密码">Password</label>
-      <input id="pw" type="password" autocomplete="current-password" required>
-      <label class="check"><input type="checkbox" id="keep"> <span data-en="Keep me signed in on this device" data-zh="在此设备上保持登录">Keep me signed in on this device</span></label>
-      <button class="btn block" id="go" type="submit" data-en="Unlock" data-zh="解锁">Unlock</button>
-      <p class="gate-msg" id="gate-msg"></p>
-    </form>
-  </div>
-  <p class="gate-foot" data-en="Everything on this page is stored encrypted and decrypted only in your browser." data-zh="本页所有内容均加密存储，仅在你的浏览器中解密。">Everything on this page is stored encrypted and decrypted only in your browser.</p>
-</div>
-
-<!-- Unlocked content -->
-<div id="app" hidden>
+<div id="app">
   <div class="shell">
     <aside class="panel" id="panel">
       <div class="p-head"><h1 id="title"></h1><span class="sub" id="sub"></span></div>
@@ -263,18 +222,16 @@
 <script src="fleet3d.js?v=202610052000"></script>
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// Trip planner. travel/travel.enc (AES-256-GCM, key from the travel password, shared with travel.html and
-// flights.html) carries the plans written in the Site Manager:
+// Trip planner. plans/plans.json (public; written by the Site Manager, which keeps the plans with the footprints)
+// carries the trips:
 //   plans: [{ id, title: {en, zh}, start: 'yyyy-mm-dd', note, days: [{ title: {en, zh}, items: [item] }] }]
 //   item:  { id, kind, time, name: {en, zh}, lat, lon, note }                       a stop (city, sight, stay, food, other)
 //          { id, kind, time, no, dep, arr, from: {name, lat, lon, iata?}, to: {…}, note }   a move (flight, train, bus, car, ferry, walk)
 // The map draws the whole route in order: line colour = day, line style = how you travel.
 // ─────────────────────────────────────────────────────────────────────────────
-const FILE = 'travel/travel.enc', SS_KEY = 'tv_key', LS_KEY = 'tv_key_persist';
+const FILE = 'plans/plans.json';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const u8 = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
-const b64u8 = a => { let s = ''; a.forEach(x => { s += String.fromCharCode(x); }); return btoa(s); };
 let LANG = window.SiteLang ? SiteLang.initial() : 'en', DATA = null, PLANS = [], MAP = null, LAYER = null, CUR = null, DAY = null, PLAY = null, HOT = null;
 const zh = () => LANG === 'zh';
 const t = o => typeof o === 'string' ? o : (o?.[LANG] || o?.en || o?.zh || '');
@@ -311,46 +268,14 @@ const kindName = k => MOVES[k] ? MOVES[k][LANG] : (STOPS[k] || STOPS.other)[zh()
 const DAY_COLORS = ['#2563c9', '#e07a1f', '#1f9d6b', '#c2410c', '#8b5cf6', '#0e9bb5', '#d6336c', '#7c8a12', '#b45309', '#4f46e5'];
 const dayColor = i => DAY_COLORS[i % DAY_COLORS.length];
 
-// ── Crypto (same file and key as travel.html) ──
-async function deriveKey(password, salt, iter) {
-  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, { name: 'AES-GCM', length: 256 }, true, ['decrypt']);
-}
-async function fetchFile() {
+// ── Data: plans/plans.json, written by the Site Manager when it publishes (public, no password) ──
+async function loadPlans() {
   const r = await fetch(FILE + '?t=' + Date.now(), { cache: 'no-store' });
   if (!r.ok) throw new Error('HTTP ' + r.status);
-  return r.json();
+  const j = await r.json();
+  DATA = { plan_title: j.title, plans: j.plans || [] };
+  PLANS = DATA.plans.filter(p => p && (p.days || []).length);
 }
-async function unlockWith(key, file) {
-  let pt;
-  try { pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8(file.iv) }, key, u8(file.ct)); }
-  catch (e) { throw new Error(zh() ? '密码错误。' : 'Wrong password.'); }
-  DATA = JSON.parse(new TextDecoder().decode(pt));
-  PLANS = (DATA.plans || []).filter(p => p && (p.days || []).length);
-}
-function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-function lsSet(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
-function ssGet(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
-function ssSet(k, v) { try { v === null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} }
-$('#f-gate').onsubmit = async e => {
-  e.preventDefault();
-  const btn = $('#go'), msg = $('#gate-msg'); btn.disabled = true; msg.textContent = zh() ? '解锁中…' : 'Unlocking…';
-  try {
-    const file = await fetchFile();
-    const key = await deriveKey($('#pw').value, u8(file.salt), file.iter || 600000);
-    await unlockWith(key, file);
-    const raw = b64u8(new Uint8Array(await crypto.subtle.exportKey('raw', key)));
-    ssSet(SS_KEY, raw); if ($('#keep').checked) lsSet(LS_KEY, raw);
-    msg.textContent = ''; showApp();
-  } catch (err) { msg.textContent = err.message; btn.disabled = false; $('#pw').select(); }
-};
-async function tryStoredKey() {
-  const raw = ssGet(SS_KEY) || lsGet(LS_KEY);
-  if (!raw) return false;
-  try { const key = await crypto.subtle.importKey('raw', u8(raw), 'AES-GCM', false, ['decrypt']); await unlockWith(key, await fetchFile()); return true; }
-  catch (e) { ssSet(SS_KEY, null); lsSet(LS_KEY, null); return false; }
-}
-$('#btn-lock').onclick = () => { ssSet(SS_KEY, null); lsSet(LS_KEY, null); location.reload(); };
 
 // ── Dates ──
 const TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
@@ -664,8 +589,8 @@ document.addEventListener('click', e => {
   e.preventDefault(); if (location.hash !== a.getAttribute('href')) history.pushState(null, '', a.getAttribute('href'));
   renderAll(); $('#panel').scrollTop = 0; if (NARROW()) window.scrollTo({ top: 0, behavior: 'smooth' });
 });
-addEventListener('popstate', () => { if (!$('#app').hidden) renderAll(); });
-addEventListener('hashchange', () => { if (!$('#app').hidden) renderAll(); });
+addEventListener('popstate', () => { if (DATA) renderAll(); });
+addEventListener('hashchange', () => { if (DATA) renderAll(); });
 
 // ── Language ──
 function applyLang(lang) {
@@ -675,16 +600,19 @@ function applyLang(lang) {
   document.querySelectorAll('[data-en][data-zh]').forEach(el => { el.textContent = el.getAttribute('data-' + lang); });
   document.querySelectorAll('[data-tip-en]').forEach(el => { el.title = el.getAttribute('data-tip-' + lang); });
   document.title = lang === 'zh' ? '旅行规划' : 'Trip planner';
-  if (DATA && !$('#app').hidden) { stopPlay(); renderAll(); }
+  if (DATA) { stopPlay(); renderAll(); }
 }
 $('#lang-toggle').addEventListener('click', e => { const b = e.target.closest('.lang-btn'); if (b && b.dataset.lang !== LANG) applyLang(b.dataset.lang); });
 
 function showApp() {
-  $('#gate').hidden = true; $('#app').hidden = false; document.body.classList.add('app-on'); ['#btn-lock', '#btn-travel', '#btn-flights'].forEach(s => { $(s).hidden = false; });
+  document.body.classList.add('app-on');
   renderAll(); setTimeout(() => { MAP?.invalidateSize(); fitTo(DAY); }, 60);
 }
 if (LANG !== 'en') applyLang(LANG);
-(async () => { if (await tryStoredKey()) showApp(); else $('#pw').focus(); })();
+(async () => {
+  try { await loadPlans(); } catch (e) { DATA = { plans: [] }; PLANS = []; }
+  showApp();
+})();
 </script>
 </body>
 </html>
