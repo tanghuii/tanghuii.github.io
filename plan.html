@@ -136,6 +136,12 @@
   .it .ds { grid-column: 3; font-size: 0.84rem; color: var(--muted); line-height: 1.4; overflow-wrap: anywhere; }
   .it .ds .no { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--ink-2); font-weight: 600; }
   .it .nt { grid-column: 3; font-size: 0.86rem; color: var(--ink-2); white-space: pre-line; }
+  .it .pr { font-weight: 600; color: var(--ok); font-variant-numeric: tabular-nums; }
+  .it .gf { font-size: 0.8rem; text-decoration: none; white-space: nowrap; } .it .gf:hover { text-decoration: underline; }
+  .dsum { flex: none; font-size: 0.82rem; font-weight: 600; color: var(--ok); font-variant-numeric: tabular-nums; }
+  .budget { margin-top: 0.6rem; padding: 0.5rem 0.7rem; border-radius: 8px; background: var(--ok-bg); color: var(--ok); }
+  .budget b { display: block; font-size: 1.02rem; font-variant-numeric: tabular-nums; }
+  .budget small { display: block; font-size: 0.82rem; opacity: 0.9; } .budget .bn { opacity: 0.7; }
   .empty-day { padding: 0.5rem 0.9rem 0.7rem; color: var(--muted); font-size: 0.88rem; }
   .empty { background: var(--card-bg); border: 1px dashed var(--subtle); border-radius: 12px; padding: 2rem; text-align: center; color: var(--muted); }
 
@@ -367,6 +373,12 @@ function segPath(s) {
   if (s.mode === 'flight' && window.Aviation?.greatCircle) return Aviation.greatCircle(s.a, s.b, 64);
   return [[s.a.lat, s.a.lon], [s.b.lat, s.b.lon]];
 }
+// Prices typed in the Site Manager ({ price, cur } on any item), added up per currency
+const money = (v, cur) => { try { return new Intl.NumberFormat(zh() ? 'zh-CN' : 'en-GB', { style: 'currency', currency: cur || 'EUR', maximumFractionDigits: Number.isInteger(v) ? 0 : 2 }).format(v); } catch (e) { return `${nf(v)} ${cur || ''}`.trim(); } };
+const hasPrice = it => typeof it?.price === 'number' && it.price > 0;
+function sumPrices(items) { const m = {}; items.filter(hasPrice).forEach(it => { const c = it.cur || 'EUR'; m[c] = (m[c] || 0) + it.price; }); return m; }
+const moneyList = m => Object.entries(m).map(([c, v]) => money(Math.round(v * 100) / 100, c)).join(' + ');
+const gflightsUrl = (it, date) => it.from?.iata && it.to?.iata ? `https://www.google.com/travel/flights?q=${encodeURIComponent(`Flights from ${it.from.iata} to ${it.to.iata} on ${date || ''} one way`)}` : '';
 const placeName = o => t(o?.name) || (o?.iata ? o.iata : '');
 const apLabel = o => { const n = placeName(o); return o?.iata && n !== o.iata ? `${n} ${o.iata}`.trim() : n; };   // "北京 PEK"
 
@@ -387,13 +399,15 @@ function renderTrips() {
 // ── One trip: summary, then the days ──
 function itemHtml(it, di, ii) {
   const time = isMove(it) ? (it.dep || it.time || '') : (it.time || '');
+  const price = hasPrice(it) ? `<span class="pr">${esc(money(it.price, it.cur))}</span>` : '';
   if (isMove(it)) {
-    const a = it.from || {}, b = it.to || {}, d = loc(a) && loc(b) ? km(a, b) : 0;
+    const a = it.from || {}, b = it.to || {}, d = loc(a) && loc(b) ? km(a, b) : 0, gf = it.kind === 'flight' ? gflightsUrl(it, dayDate(CUR.start, di)) : '';
     const name = it.kind === 'flight' ? `${apLabel(a) || '?'} → ${apLabel(b) || '?'}` : `${placeName(a) || '?'} → ${placeName(b) || '?'}`;
-    const ds = [it.no ? `<span class="no">${esc(it.no)}</span>` : '', it.dep || it.arr ? esc(`${it.dep || '…'} → ${it.arr || '…'}`) : '', d ? `${nf(d)} km` : ''].filter(Boolean).join(' · ');
+    const ds = [it.no ? `<span class="no">${esc(it.no)}</span>` : '', it.dep || it.arr ? esc(`${it.dep || '…'} → ${it.arr || '…'}`) : '', d ? `${nf(d)} km` : '', price,
+      gf ? `<a class="gf" href="${esc(gf)}" target="_blank" rel="noopener" title="${zh() ? '在 Google Flights 上查看这条航线当天的价格' : 'Fares for this route and day on Google Flights'}">Google Flights ↗</a>` : ''].filter(Boolean).join(' · ');
     return `<li class="it mv" data-di="${di}" data-ii="${ii}"><span class="tm">${esc(time)}</span><span class="ic" title="${esc(kindName(it.kind))}">${IC[it.kind]}</span><span class="nm">${esc(name)}<span class="k">${esc(kindName(it.kind))}</span></span>${ds ? `<span class="ds">${ds}</span>` : ''}${it.note ? `<span class="nt">${esc(it.note)}</span>` : ''}</li>`;
   }
-  return `<li class="it" data-di="${di}" data-ii="${ii}"><span class="tm">${esc(time)}</span><span class="ic" title="${esc(kindName(it.kind))}">${IC[it.kind] || IC.other}</span><span class="nm">${esc(placeName(it) || kindName(it.kind))}<span class="k">${esc(kindName(it.kind))}</span></span>${it.note ? `<span class="nt">${esc(it.note)}</span>` : ''}</li>`;
+  return `<li class="it" data-di="${di}" data-ii="${ii}"><span class="tm">${esc(time)}</span><span class="ic" title="${esc(kindName(it.kind))}">${IC[it.kind] || IC.other}</span><span class="nm">${esc(placeName(it) || kindName(it.kind))}<span class="k">${esc(kindName(it.kind))}</span></span>${price ? `<span class="ds">${price}</span>` : ''}${it.note ? `<span class="nt">${esc(it.note)}</span>` : ''}</li>`;
 }
 function renderTrip() {
   const p = CUR, side = $('#side');
@@ -404,15 +418,20 @@ function renderTrip() {
   const chips = Object.entries(byMode).map(([m, v]) => `<span class="chip">${IC[m]}${v.n} ${esc(MOVES[m][LANG])}${v.km >= 1 ? ` · ${nf(v.km)} km` : ''}</span>`);
   if (cities) chips.unshift(`<span class="chip">${IC.city}${cities} ${zh() ? '座城市' : cities === 1 ? 'city' : 'cities'}</span>`);
   const total = segs.reduce((n, s) => n + km(s.a, s.b), 0);
+  // budget: everything with a price, split into getting around, stays and the rest (tickets, food …)
+  const all = p.days.flatMap(d => d.items || []), budget = sumPrices(all);
+  const parts = [[all.filter(isMove), zh() ? '交通' : 'transport'], [all.filter(it => it.kind === 'stay'), zh() ? '住宿' : 'stays'], [all.filter(it => !isMove(it) && it.kind !== 'stay'), zh() ? '门票餐饮等' : 'tickets, food …']]
+    .map(([l, name]) => [sumPrices(l), name]).filter(([m]) => Object.keys(m).length);
+  const budgetHtml = Object.keys(budget).length ? `<div class="budget"><b>${zh() ? '预算' : 'Budget'} ${esc(moneyList(budget))}</b>${parts.length > 1 ? `<small>${parts.map(([m, name]) => `${esc(name)} ${esc(moneyList(m))}`).join(' · ')}</small>` : ''}<small class="bn">${zh() ? `已填价格 ${all.filter(hasPrice).length} / ${all.length} 项` : `${all.filter(hasPrice).length} of ${all.length} items priced`}</small></div>` : '';
   side.innerHTML = `<div class="sum"><h2>${esc(t(p.title) || (zh() ? '未命名行程' : 'Untitled trip'))}</h2>
       <div class="dates">${esc(fmtRange(p))} · ${p.days.length} ${zh() ? '天' : p.days.length === 1 ? 'day' : 'days'}${total >= 1 ? ` · ${zh() ? '全程约' : 'about'} ${nf(total)} km` : ''}</div>
-      ${t(p.note) ? `<p class="note">${esc(t(p.note))}</p>` : ''}${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}
+      ${t(p.note) ? `<p class="note">${esc(t(p.note))}</p>` : ''}${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}${budgetHtml}
       <div class="ctrl"><button type="button" class="pill${DAY === null ? ' on' : ''}" data-day="all">${zh() ? '全部行程' : 'Whole trip'}</button>${segs.length ? `<button type="button" class="pill" id="btn-play">${PLAY ? IC.stop : IC.play}<span>${PLAY ? (zh() ? '停止' : 'Stop') : (zh() ? '播放轨迹' : 'Play the route')}</span></button>` : ''}</div></div>
     <div class="days${DAY !== null ? ' focus' : ''}">${p.days.map((d, di) => { const date = dayDate(p.start, di);
-      return `<section class="day${DAY === di ? ' on' : ''}" style="--dc:${dayColor(di)}" data-day-card="${di}"><button type="button" class="day-h" data-day="${di}"><span class="dn"><small>${zh() ? '第' : 'DAY'}</small>${di + 1}</span><span class="dt"><b>${esc(t(d.title) || dayAuto(d) || fmtDate(date))}${date === TODAY ? `<span class="today">${zh() ? '今天' : 'Today'}</span>` : ''}</b><small>${esc(fmtDate(date, false))}</small></span></button>
+      return `<section class="day${DAY === di ? ' on' : ''}" style="--dc:${dayColor(di)}" data-day-card="${di}"><button type="button" class="day-h" data-day="${di}"><span class="dn"><small>${zh() ? '第' : 'DAY'}</small>${di + 1}</span><span class="dt"><b>${esc(t(d.title) || dayAuto(d) || fmtDate(date))}${date === TODAY ? `<span class="today">${zh() ? '今天' : 'Today'}</span>` : ''}</b><small>${esc(fmtDate(date, false))}</small></span>${Object.keys(sumPrices(d.items || [])).length ? `<span class="dsum">${esc(moneyList(sumPrices(d.items || [])))}</span>` : ''}</button>
         ${(d.items || []).length ? `<ul class="items">${d.items.map((it, ii) => itemHtml(it, di, ii)).join('')}</ul>` : `<p class="empty-day">${zh() ? '自由活动' : 'Free day'}</p>`}</section>`; }).join('')}</div>`;
   side.querySelectorAll('[data-day]').forEach(b => b.onclick = () => focusDay(b.dataset.day === 'all' ? null : +b.dataset.day));
-  side.querySelectorAll('.it').forEach(li => { li.onclick = () => focusItem(+li.dataset.di, +li.dataset.ii); li.onmouseenter = () => hotItem(+li.dataset.di, +li.dataset.ii, true); li.onmouseleave = () => hotItem(+li.dataset.di, +li.dataset.ii, false); });
+  side.querySelectorAll('.it').forEach(li => { li.onclick = e => { if (!e.target.closest('a')) focusItem(+li.dataset.di, +li.dataset.ii); }; li.onmouseenter = () => hotItem(+li.dataset.di, +li.dataset.ii, true); li.onmouseleave = () => hotItem(+li.dataset.di, +li.dataset.ii, false); });
   $('#btn-play')?.addEventListener('click', () => PLAY ? stopPlay() : startPlay());
   renderMap(segs, pins);
 }
