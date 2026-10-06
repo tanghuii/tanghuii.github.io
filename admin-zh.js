@@ -95,6 +95,8 @@ window.ADMIN_ZH = {
   'Move up (to the day before at the top)': '上移（在最上面时移到前一天）', 'Move down (to the next day at the bottom)': '下移（在最下面时移到后一天）',
   'Price, e.g. €89': '价格，如 €89', 'Price, e.g. €120': '价格，如 €120', 'Price (optional)': '价格（可选）', 'Price: €89, ¥1,280 or 320 EUR. Added up on plan.html.': '价格：€89、¥1,280 或 320 EUR，会在 plan.html 上汇总。',
   'Search this route and day on Google Flights': '在 Google Flights 上搜索这条航线和日期', 'Write the price as €89, ¥1,280 or 320 EUR.': '价格请写成 €89、¥1,280 或 320 EUR。',
+  'Aircraft A320': '机型 A320', 'ICAO type code (A320, B738, A21N …): the 3D model flown on plan.html. Without one, an A320.': 'ICAO 机型代码（A320、B738、A21N…）：plan.html 播放时显示的 3D 模型，不填则为 A320。',
+  'Airline from the flight number: its livery is used for the 3D model': '由航班号识别的航司：3D 模型使用其涂装',
   'Page titles & introductions': '页面标题与简介', 'Title': '标题', 'Introduction': '简介', 'Flights page (private)': '飞行页（私密）', 'Open flights.html ↗': '打开 flights.html ↗', 'travel.html, academic.html and flights.html': 'travel.html、academic.html 和 flights.html', 'Bold': '加粗', 'Italic': '斜体',
   'Titles: select words, then press B (bold) or I (italic, in the page’s accent colour); with nothing selected it applies to the whole title. The text box shows them as **bold** and *italic*.': '标题：选中文字后点 B（加粗）或 I（斜体，显示为页面强调色）；不选中则作用于整个标题。文本框里显示为 **加粗** 和 *斜体*。',
   'Cover of this province on the phone travel page. Click to use the first photo again.': '手机版旅行页上该省份的头图。再点一次恢复使用第一张照片。', 'Use as the cover of this province on the phone travel page (without a choice, the first photo is used)': '设为手机版旅行页上该省份的头图（未设置时使用第一张照片）',

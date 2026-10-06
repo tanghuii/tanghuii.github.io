@@ -159,6 +159,8 @@
   .stop-pin.hot { transform: scale(1.35); }
   .leaflet-marker-icon.dim { opacity: 0.3; }
   .tt b { font-weight: 600; } .tt small { color: var(--muted); display: block; }
+  .fly3d { position: absolute; left: 0; top: 0; z-index: 640; pointer-events: none; will-change: transform; }
+  .fly3d canvas { display: block; }
   .runner { width: 16px; height: 16px; border-radius: 100px; background: var(--accent); border: 3px solid var(--map-ring); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.3), 0 2px 8px rgba(0, 0, 0, 0.35); }
   .runner.mode { width: 28px; height: 28px; border-width: 2px; display: flex; align-items: center; justify-content: center; color: #fff; background: var(--c); }
   .runner.mode svg { width: 15px; height: 15px; }
@@ -238,6 +240,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin=""></script>
 <script src="map-base.js"></script>
 <script src="aviation.js"></script>
+<script src="fleet3d.js?v=202610052000"></script>
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
 // Trip planner. travel/travel.enc (AES-256-GCM, key from the travel password, shared with travel.html and
@@ -542,42 +545,75 @@ function hotItem(di, ii, on) {
 }
 function flash(el) { if (!el) return; el.classList.add('hot'); setTimeout(() => el.classList.remove('hot'), 1200); }
 
-// ── Play the route: a marker travels each leg in order, the day and the stop light up as it goes ──
+// ── Play the route: each leg in order, the day and the stop light up as it goes. Flights fly the 3D model of the
+// aircraft in the airline's livery (fleet3d.js, as on flights.html); other legs move a marker with the mode's icon ──
+const planAirline = it => { const m = /^\s*([A-Z0-9]{2})\s*\d/i.exec(it.no || ''); return m ? { iata: m[1].toUpperCase() } : null; };
+const planType = it => { const c = String(it.ac || '').trim().toUpperCase(); return window.Fleet3D?.has(c) ? c : 'A320'; };
 function startPlay() {
   const { segs } = route(CUR); if (!segs.length) return;
   DAY = null; applyDayDim(); document.querySelector('.days')?.classList.remove('focus'); document.querySelectorAll('.day').forEach(el => el.classList.remove('on'));
-  PLAY = { i: 0, segs, raf: 0, marker: null, stopped: false };
+  PLAY = { i: 0, segs, raf: 0, to: 0, marker: null, fly: null, stopped: false, f3d: null };
+  // the 3D library loads in the background; legs before it is ready use the plain marker
+  if (segs.some(x => x.mode === 'flight') && window.Fleet3D && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const P = PLAY; P.f3d = Fleet3D.load().then(ok => ok && !P.stopped).catch(() => false);
+  }
   paintPlayBtn(); playLeg();
 }
 function paintPlayBtn() { const b = $('#btn-play'); if (b) b.innerHTML = `${PLAY ? IC.stop : IC.play}<span>${PLAY ? (zh() ? '停止' : 'Stop') : (zh() ? '播放轨迹' : 'Play the route')}</span>`; }
-function playLeg() {
+function endFly(P) { if (P.fly) { P.fly.model.destroy(); P.fly.el.remove(); P.fly = null; } }
+async function playLeg() {
   const P = PLAY; if (!P || P.stopped) return;
-  if (P.i >= P.segs.length) { P.marker?.remove(); PLAY = null; paintPlayBtn(); fitTo(null, true); document.querySelectorAll('.day').forEach(el => el.classList.remove('on')); return; }
-  const s = P.segs[P.i], path = segPath(s).map(([a, b]) => L.latLng(a, b)), c = dayColor(s.di);
+  if (P.i >= P.segs.length) { P.marker?.remove(); endFly(P); PLAY = null; paintPlayBtn(); fitTo(null, true); document.querySelectorAll('.day').forEach(el => el.classList.remove('on')); return; }
+  const s = P.segs[P.i], c = dayColor(s.di), d = km(s.a, s.b), flight = s.mode === 'flight';
+  const path = (flight && window.Aviation?.greatCircle ? Aviation.greatCircle(s.a, s.b, 160) : segPath(s)).map(([a, b]) => L.latLng(a, b));
   document.querySelectorAll('.day').forEach(el => el.classList.toggle('on', +el.dataset.dayCard === s.di));
   if (s.it) { const li = document.querySelector(`.it[data-di="${s.di}"][data-ii="${s.ii}"]`); flash(li); li?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
   else document.querySelector(`[data-day-card="${s.di}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  const icon = s.mode !== 'link' ? L.divIcon({ className: '', html: `<div class="runner mode" style="--c:${c}">${IC[s.mode]}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }) : L.divIcon({ className: '', html: '<div class="runner"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
-  P.marker?.remove(); P.marker = L.marker(path[0], { icon, interactive: false, zIndexOffset: 2000 }).addTo(MAP);
-  const d = km(s.a, s.b), dur = Math.min(4200, 900 + 700 * Math.log10(1 + d));
   MAP.flyToBounds(L.latLngBounds(path), { padding: [80, 80], maxZoom: d < 30 ? 13 : 9, duration: 0.7 });
-  // cumulative lengths along the path, so the marker moves at an even pace
+  // a flight: the live model of its aircraft type in the airline's livery
+  let model = null;
+  if (flight && P.f3d && await P.f3d) {
+    const type = planType(s.it), airline = planAirline(s.it);
+    try { await Fleet3D.prepare(airline, type); if (!P.stopped) model = Fleet3D.flyer({ type, airline }, innerWidth < 720 ? 96 : 130); } catch (e) { model = null; }
+    if (P.stopped) { model?.destroy(); return; }
+  }
+  if (P.stopped) return;   // stopped while the model was loading
+  P.marker?.remove(); P.marker = null; endFly(P);
+  const S = model ? parseFloat(model.canvas.style.width) : 0;
+  if (model) { const el = document.createElement('div'); el.className = 'fly3d'; el.appendChild(model.canvas); MAP.getContainer().appendChild(el); P.fly = { el, model }; }
+  else {
+    const icon = s.mode !== 'link' ? L.divIcon({ className: '', html: `<div class="runner mode" style="--c:${c}">${IC[s.mode]}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }) : L.divIcon({ className: '', html: '<div class="runner"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
+    P.marker = L.marker(path[0], { icon, interactive: false, zIndexOffset: 2000 }).addTo(MAP);
+  }
+  const dur = model ? Math.min(7000, 2600 + d * 0.9) : Math.min(4200, 900 + 700 * Math.log10(1 + d));
+  // cumulative lengths along the path, so the traveller moves at an even pace
   const cum = [0]; for (let k = 1; k < path.length; k++) cum.push(cum[k - 1] + path[k - 1].distanceTo(path[k]));
-  const total = cum[cum.length - 1] || 1;
-  setTimeout(() => {
+  const total = cum[cum.length - 1] || 1, n = path.length - 1;
+  const at = want => { let k = 1; while (k < n && cum[k] < want) k++; const r = (want - cum[k - 1]) / (cum[k] - cum[k - 1] || 1), A = path[k - 1], B = path[k]; return { k, ll: L.latLng(A.lat + (B.lat - A.lat) * r, A.lng + (B.lng - A.lng) * r) }; };
+  let heading = null;
+  const place = (k, ll, f, now) => {
+    if (!model) { P.marker.setLatLng(ll); return; }
+    // heading from a stretch of the path around the plane, eased so it never twitches; climb, cruise, descend
+    const pa = MAP.latLngToContainerPoint(path[Math.max(0, k - 4)]), pb = MAP.latLngToContainerPoint(path[Math.min(n, k + 4)]), raw = Math.atan2(pb.y - pa.y, pb.x - pa.x);
+    if (heading === null) heading = raw; else { let dh = raw - heading; while (dh > Math.PI) dh -= 2 * Math.PI; while (dh < -Math.PI) dh += 2 * Math.PI; heading += dh * 0.15; }
+    const e = Math.min(1, Math.min(f, 1 - f) / 0.18), alt = e * e * (3 - 2 * e), p = MAP.latLngToContainerPoint(ll), sh = 4 + 14 * alt;
+    P.fly.el.style.transform = `translate3d(${(p.x - S / 2).toFixed(1)}px, ${(p.y - S / 2).toFixed(1)}px, 0)`;
+    P.fly.el.style.filter = `drop-shadow(${sh * 0.6}px ${sh}px ${3 + 5 * alt}px rgba(0, 0, 0, ${0.32 - 0.12 * alt}))`;
+    model.draw(heading, alt, now);
+  };
+  place(1, path[0], 0, performance.now());
+  P.to = setTimeout(() => {
     if (P.stopped) return; const t0 = performance.now();
     const step = now => {
       if (P.stopped) return;
-      const f = Math.min(1, (now - t0) / dur), e = f < 0.5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2, want = e * total;
-      let k = 1; while (k < cum.length - 1 && cum[k] < want) k++;
-      const seg = cum[k] - cum[k - 1] || 1, r = (want - cum[k - 1]) / seg, A = path[k - 1], B = path[k];
-      P.marker.setLatLng([A.lat + (B.lat - A.lat) * r, A.lng + (B.lng - A.lng) * r]);
-      if (f < 1) P.raf = requestAnimationFrame(step); else { P.i++; setTimeout(playLeg, 250); }
+      const f = Math.min(1, (now - t0) / dur), e = f < 0.5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2, { k, ll } = at(e * total);
+      place(k, ll, f, now);
+      if (f < 1) P.raf = requestAnimationFrame(step); else { P.i++; P.to = setTimeout(playLeg, model ? 450 : 250); }
     };
     P.raf = requestAnimationFrame(step);
   }, 750);
 }
-function stopPlay() { if (!PLAY) return; PLAY.stopped = true; cancelAnimationFrame(PLAY.raf); PLAY.marker?.remove(); PLAY = null; paintPlayBtn(); }
+function stopPlay() { if (!PLAY) return; const P = PLAY; P.stopped = true; cancelAnimationFrame(P.raf); clearTimeout(P.to); P.marker?.remove(); endFly(P); PLAY = null; paintPlayBtn(); }
 
 // ── Routing: #trip=<id>[&day=N] ──
 function fromHash() {
