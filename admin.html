@@ -69,6 +69,24 @@
   .tf-btn { flex: none; width: 2rem; padding-left: 0; padding-right: 0; font-family: Georgia, serif; }
   .tf-prev { margin-top: 0.25rem; padding: 0.15rem 0.1rem; font-family: var(--font-head, Georgia, serif); font-size: 1.35rem; font-weight: 300; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; }
   .tf-prev em { font-style: italic; color: var(--accent); } .tf-prev strong { font-weight: 700; }
+  .tp-day { border: 1px solid var(--subtle); border-radius: 10px; padding: 0.6rem 0.7rem; margin: 0.7rem 0; background: var(--card-2, var(--card)); }
+  .tp-day-h { display: grid; grid-template-columns: auto auto minmax(0, 1fr) minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+  .tp-day-h input { padding: 0.3rem 0.5rem; font-size: 0.92em; }
+  .tp-it { border: 1px solid var(--subtle); border-left: 3px solid var(--accent-light); border-radius: 8px; padding: 0.5rem 0.6rem; margin: 0.45rem 0; background: var(--card); }
+  .tp-it.mv { border-left-color: #e07a1f; }
+  .tp-it-h { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+  .tp-it-h select { width: auto; padding: 0.3rem 0.4rem; }
+  .tp-it-h input { padding: 0.3rem 0.5rem; } .tp-time { width: 7.5rem !important; } .tp-no { width: 10rem !important; }
+  .tp-tools { margin-left: auto; display: flex; gap: 0.2rem; } .tp-tools .btn { padding: 0.15rem 0.5rem; }
+  .tp-two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .tp-loc { margin-top: 0.4rem; } .tp-lab { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .tp-row { display: flex; gap: 0.35rem; align-items: center; margin-top: 0.25rem; } .tp-row input { flex: 1; min-width: 0; padding: 0.3rem 0.5rem; }
+  .tp-row .tp-iata { flex: none; width: 6.5rem; }
+  .tp-coord { flex: none; font-size: 0.8rem; color: var(--warn, #8a5300); white-space: nowrap; } .tp-coord.ok { color: var(--ok, #2f7a4f); }
+  .tp-res { margin-top: 0.3rem; display: grid; gap: 0.25rem; }
+  .tp-note { margin-top: 0.4rem; padding: 0.3rem 0.5rem; font-size: 0.92em; }
+  .tp-add { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin-top: 0.5rem; }
+  @media (max-width: 700px) { .tp-two { grid-template-columns: 1fr; } .tp-day-h { grid-template-columns: auto 1fr auto; } .tp-day-h input { grid-column: 1 / -1; } }
   .thumb .tools .btn.cover.on { color: #b8860b; border-color: #e0b84a; background: rgba(224, 184, 74, 0.14); }
   .hint { font-size: 15px; color: var(--muted); margin-top: 0.3rem; }
   .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border: 1px solid var(--subtle); border-radius: 6px; background: var(--card); cursor: pointer; font-weight: 500; transition: all .2s; white-space: nowrap; }
@@ -1089,12 +1107,13 @@ const TABS = [
   ['photos', 'Photos'],
   ['travel', 'Footprints'],
   ['flights', 'Flights'],
+  ['plans', 'Trip plans'],
   ['cv', 'CV & site settings'],
   ['json', 'Raw JSON'],
 ];
 function tabCount(id) {
   if (!C) return '';
-  return { research: C.research_interests.length, education: C.education.length, publications: C.publications.length, awards: C.awards.length, photos: C.carousels.flat().length, travel: FP.data ? FP.data.places.length : '', flights: FP.data ? (FP.data.flights || []).length : '' }[id] ?? '';
+  return { research: C.research_interests.length, education: C.education.length, publications: C.publications.length, awards: C.awards.length, photos: C.carousels.flat().length, travel: FP.data ? FP.data.places.length : '', flights: FP.data ? (FP.data.flights || []).length : '', plans: FP.data ? (FP.data.plans || []).length : '' }[id] ?? '';
 }
 function renderNav() {
   $('#nav').innerHTML = TABS.map(([id, label]) => `<button data-tab="${id}" class="${TAB === id ? 'active' : ''}">${label}<span class="count">${tabCount(id)}</span></button>`).join('');
@@ -1202,7 +1221,7 @@ function render() {
   BIND.clear();
   renderNav();
   const v = $('#view');
-  const fn = { overview: viewOverview, profile: viewProfile, research: viewResearch, education: viewEducation, publications: viewPublications, awards: viewAwards, photos: viewPhotos, travel: viewFootprints, flights: viewFlights, cv: viewCV, json: viewJSON }[TAB];
+  const fn = { overview: viewOverview, profile: viewProfile, research: viewResearch, education: viewEducation, publications: viewPublications, awards: viewAwards, photos: viewPhotos, travel: viewFootprints, flights: viewFlights, plans: viewPlans, cv: viewCV, json: viewJSON }[TAB];
   v.innerHTML = ''; fn(v); wireBindings(v);
 }
 
@@ -1896,7 +1915,7 @@ async function ghDeleteFile(path, message) {
 function normalizeFP(d) {
   d.v ||= 1; d.places ||= []; d.flights ||= [];
   d.title ||= { en: 'Life in *Passage*', zh: '山河逆旅' }; d.intro ||= { en: '', zh: '' };
-  d.pub_title ||= { en: 'Academic *footprint*', zh: '学术足迹' }; d.fl_title ||= { en: 'My Air Times', zh: '云间岁月' }; d.covers ||= {}; d.pub_intro ||= { en: 'Conferences, workshops and research visits.', zh: '参加过的学术会议、研讨会与学术访问。' };
+  d.pub_title ||= { en: 'Academic *footprint*', zh: '学术足迹' }; d.fl_title ||= { en: 'My Air Times', zh: '云间岁月' }; d.plan_title ||= { en: 'Trip planner', zh: '旅行规划' }; d.covers ||= {}; d.plans ||= []; d.pub_intro ||= { en: 'Conferences, workshops and research visits.', zh: '参加过的学术会议、研讨会与学术访问。' };
   d.places.forEach(p => { p.id ||= 'pl-' + rid(); p.photos ||= []; p.note ||= { en: '', zh: '' }; p.city ||= { en: '', zh: '' }; p.country ||= { en: '', zh: '' }; p.when ||= '';
     p.academic = !!p.academic; p.trip ||= ''; p.icon ||= ''; p.kind ||= 'conference'; p.event ||= { en: '', zh: '' }; p.talk ||= ''; p.talk_type ||= '';
     p.sights ||= []; p.sights.forEach(g => { g.name ||= { en: '', zh: '' }; g.tags ||= []; });
@@ -1982,7 +2001,7 @@ async function loadFootprints() {
   catch (e) { if (/404/.test(e.message)) { FP.sha = null; FP.remote = null; } else { FP.remote = undefined; FP.err = e.message; } }
   try { const r = await ghGetFile(FP.pubFile); FP.pubOrig = b64dec(r.content); FP.pubSha = r.sha; } catch (e) { FP.pubOrig = ''; FP.pubSha = null; }
   FP.loading = false;
-  if (TAB === 'travel' || TAB === 'flights') render();
+  if (TAB === 'travel' || TAB === 'flights' || TAB === 'plans') render();
 }
 async function unlockFootprints(password) {
   const { bundle, key, salt, iter } = await decryptBundle(FP.remote, password);
@@ -3208,6 +3227,149 @@ function wireFlightForm(P, F, T, editId, onDone) {
   if (g('clear')) g('clear').onclick = () => { FL_FORM = flBlank(); onDone(); };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Trip plans: itineraries stored inside the encrypted footprints bundle (FP.data.plans), shown on plan.html
+// (same travel password). A trip has a start date and a list of days; each day a list of items in order:
+// stops (city, sight, stay, food, other) with a location, and moves (flight, train, bus, car, ferry, walk)
+// from one location to another. plan.html draws them as one route.
+// ─────────────────────────────────────────────────────────────────────────────
+const PLAN_KINDS = [['city', 'City'], ['sight', 'Sight'], ['stay', 'Stay'], ['food', 'Food'], ['other', 'Other place'], ['flight', 'Flight'], ['train', 'Train'], ['bus', 'Bus'], ['car', 'Car / taxi'], ['ferry', 'Ferry'], ['walk', 'Walk']];
+const PLAN_MOVES = new Set(['flight', 'train', 'bus', 'car', 'ferry', 'walk']);
+const PLAN_OPEN = new Set(), PLAN_RES = new Map(), PLAN_Q = new Map();   // trips open for editing; search results and queries per location field
+const planLoc = () => ({ name: { en: '', zh: '' }, lat: null, lon: null, cc: '' });
+const hasLoc = o => o && typeof o.lat === 'number' && typeof o.lon === 'number';
+function planItem(kind) {
+  const it = { id: 'ti-' + rid(), kind, time: '', note: '' };
+  if (PLAN_MOVES.has(kind)) Object.assign(it, { no: '', dep: '', arr: '', from: planLoc(), to: planLoc() }); else Object.assign(it, planLoc());
+  return it;
+}
+function planDay(start, i) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(start || ''); if (!m) return ''; return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + i)).toISOString().slice(0, 10); }
+const planWd = iso => iso ? new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }) : '';
+// change an item's kind, keeping what still fits (a stop's place becomes a move's destination and back)
+function setPlanKind(it, kind) {
+  const was = PLAN_MOVES.has(it.kind), now = PLAN_MOVES.has(kind); it.kind = kind;
+  if (was === now) return;
+  if (now) { it.to = hasLoc(it) || it.name?.en || it.name?.zh ? { name: it.name || { en: '', zh: '' }, lat: it.lat ?? null, lon: it.lon ?? null, cc: it.cc || '' } : planLoc(); it.from = planLoc(); Object.assign(it, { no: it.no || '', dep: it.dep || it.time || '', arr: it.arr || '' }); delete it.name; delete it.lat; delete it.lon; delete it.cc; }
+  else { const o = hasLoc(it.to) ? it.to : hasLoc(it.from) ? it.from : planLoc(); Object.assign(it, { name: o.name, lat: o.lat, lon: o.lon, cc: o.cc || '' }); it.time ||= it.dep || ''; ['from', 'to', 'no', 'dep', 'arr'].forEach(k => delete it[k]); }
+}
+// the nearest located point before this item in the trip (else after it): where to look for sights by name
+function planRef(trip, id) {
+  const pts = []; let at = -1;
+  trip.days.forEach(d => (d.items || []).forEach(it => {
+    if (it.id === id) at = pts.length;
+    if (PLAN_MOVES.has(it.kind)) { if (hasLoc(it.from)) pts.push(it.from); if (hasLoc(it.to)) pts.push(it.to); } else if (hasLoc(it)) pts.push(it);
+  }));
+  return pts[at - 1] || pts[at] || pts[0] || null;
+}
+// Search a place: towns and cities (geocoding), plus sights, stations and hotels by name near the trip's route; "lat, lon" works too
+async function planSearch(q, ref, kind) {
+  const ll = /^\s*(-?\d{1,2}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/.exec(q);
+  if (ll) return [{ name: { en: '', zh: '' }, lat: +ll[1], lon: +ll[2], cc: '', sub: 'coordinates' }];
+  const geo = geocode(q).then(rs => rs.slice(0, 6).map(r => ({ name: { en: r.city.en || r.city.zh, zh: r.city.zh || r.city.en }, lat: r.lat, lon: r.lon, cc: r.cc || '', sub: [r.admin, r.country?.en].filter(Boolean).join(', ') }))).catch(() => []);
+  const near = ref ? findSightByName({ lat: ref.lat, lon: ref.lon, cc: ref.cc || '', city: ref.name || { en: '', zh: '' } }, q).then(rs => rs.slice(0, 8).map(r => ({ name: r.name, lat: r.lat, lon: r.lon, cc: ref.cc || '', sub: `${Math.round(r.dist)} km away · ${r.src}` }))).catch(() => []) : Promise.resolve([]);
+  const [g, n] = await Promise.all([geo, near]);
+  return kind === 'city' ? [...g, ...n] : [...n, ...g];
+}
+const planAirport = code => { const ap = AVDB.byIata?.get(String(code || '').trim().toUpperCase()); return ap ? { ...apRecord(ap), name: { en: ap.city || ap.name, zh: cityZhNear(ap) || ap.city || ap.name } } : null; };
+
+function viewPlans(v) {
+  if (!FP.data) { viewFootprints(v, `<h2>Trip plans</h2><p class="lead">Trip plans are stored encrypted together with the footprints and open with the same <b>travel password</b> on <a href="plan.html" target="_blank">plan.html</a>.</p>`); return; }
+  const T = FP.data; T.plans ||= [];
+  if (!AVDB.airports) { v.innerHTML = `<h2>Trip plans</h2><div class="card"><p class="hint">Loading the airport list…</p></div>`; loadAvdb().then(() => { if (TAB === 'plans') render(); }, e => toast('Could not load the airport list: ' + e.message, true)); return; }
+  v.innerHTML = `<h2>Trip plans</h2><div class="tv-head tv-top"><span class="pill ok">${T.plans.length} trip${T.plans.length === 1 ? '' : 's'}</span><span class="hint">Shown on <a href="plan.html" target="_blank">plan.html</a> (travel password) · saved with <b>Publish changes</b>.</span><button class="btn sm primary" id="tp-new">+ New trip</button></div>
+    <p class="hint" style="margin:-0.4rem 0 1rem">A trip is a start date and its days. Add the stops of each day in order (cities, sights, hotels, food) and how you move between them (flights by airport code, trains, buses, cars, ferries, walks); the page draws the route on a map, one colour per day, and can play it back. Search finds towns, and sights, stations or hotels near the places already in the trip; coordinates (52.37, 4.90) work too.</p>
+    <div id="tp-list"></div>`;
+  $('#tp-new').onclick = () => { const p = { id: 'tp-' + rid(), title: { en: '', zh: '' }, start: new Date().toISOString().slice(0, 10), note: '', days: [{ title: { en: '', zh: '' }, items: [] }] }; T.plans.unshift(p); PLAN_OPEN.add(p.id); markDirty(); renderPlanList(T); };
+  renderPlanList(T);
+}
+function renderPlanList(T) {
+  const box = $('#tp-list'); if (!box) return;
+  const sorted = [...T.plans].sort((a, b) => String(b.start).localeCompare(String(a.start)));
+  const kindOpts = sel => PLAN_KINDS.map(([k, l]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${l}</option>`).join('');
+  const resHtml = key => { const rs = PLAN_RES.get(key); if (!rs) return ''; return `<div class="tp-res">${rs.length ? rs.map((r, i) => `<button type="button" class="tv-res" data-tp-pick="${esc(key)}|${i}"><span>${tvFlag(r.cc)} <b>${esc(r.name.zh && r.name.zh !== r.name.en ? `${r.name.en} · ${r.name.zh}` : r.name.en || r.name.zh || `${r.lat}, ${r.lon}`)}</b></span><span class="m">${esc(r.sub || '')}</span></button>`).join('') : '<p class="hint">Nothing found. Try another name, the English or Chinese name, or paste coordinates.</p>'}</div>`; };
+  const locHtml = (it, field, label) => {
+    const o = field ? (it[field] ||= planLoc()) : it, key = `${it.id}|${field}`; o.name ||= { en: '', zh: '' };
+    if (it.kind === 'flight' && field) { const ap = o.iata ? o : null;
+      return `<div class="tp-loc"><span class="tp-lab">${label}</span><div class="tp-row"><input type="text" class="mono tp-iata" data-tp-iata="${esc(key)}" value="${esc(o.iata || '')}" maxlength="3" placeholder="IATA, e.g. AMS" style="text-transform:uppercase"><span class="hint tp-ap">${ap ? `${tvFlag(ap.cc)} ${esc(ap.name.en)}${ap.name.zh && ap.name.zh !== ap.name.en ? ' · ' + esc(ap.name.zh) : ''} <span class="m">${esc(ap.iata)}</span>` : 'airport code'}</span></div></div>`; }
+    return `<div class="tp-loc"><span class="tp-lab">${label}</span><div class="tp-row"><input type="search" data-tp-q="${esc(key)}" value="${esc(PLAN_Q.get(key) || '')}" placeholder="Search a town, sight, station, hotel … or 52.37, 4.90"><button type="button" class="btn sm" data-tp-find="${esc(key)}">Find</button></div>
+      <div class="tp-row">${bind(o.name, 'en', 'text', 'placeholder="Name (EN)"')}${bind(o.name, 'zh', 'text', 'placeholder="名称（中文）"')}<span class="tp-coord ${hasLoc(o) ? 'ok' : ''}" title="${hasLoc(o) ? 'Location set' : 'No location yet: search above'}">${hasLoc(o) ? `📍 ${o.lat.toFixed(3)}, ${o.lon.toFixed(3)}` : 'no location'}</span></div>${resHtml(key)}</div>`;
+  };
+  const itemHtml = (it, p, di, ii) => {
+    const mv = PLAN_MOVES.has(it.kind);
+    return `<div class="tp-it${mv ? ' mv' : ''}" data-it="${esc(it.id)}"><div class="tp-it-h"><select data-tp-kind="${esc(it.id)}" title="What is it">${kindOpts(it.kind)}</select>
+        ${mv ? `${bind(it, 'no', 'text', `placeholder="${it.kind === 'flight' ? 'Flight no. KL897' : it.kind === 'train' ? 'Train no. G1' : 'No. (optional)'}" class="tp-no" data-tp-no="${esc(it.id)}"`)}${bind(it, 'dep', 'text', 'placeholder="Dep 08:10" class="tp-time"')}${bind(it, 'arr', 'text', 'placeholder="Arr 10:30" class="tp-time"')}` : bind(it, 'time', 'text', 'placeholder="Time 09:00" class="tp-time"')}
+        <span class="tp-tools"><button type="button" class="btn sm" data-tp-mv="${esc(it.id)}|up" title="Move up (to the day before at the top)">↑</button><button type="button" class="btn sm" data-tp-mv="${esc(it.id)}|down" title="Move down (to the next day at the bottom)">↓</button><button type="button" class="btn sm danger" data-tp-mv="${esc(it.id)}|del" title="Remove">✕</button></span></div>
+      ${mv ? `<div class="tp-two">${locHtml(it, 'from', 'From')}${locHtml(it, 'to', 'To')}</div>` : locHtml(it, '', 'Where')}
+      ${bind(it, 'note', 'text', 'placeholder="Note (optional): tickets, booking, what to see …" class="tp-note"')}</div>`;
+  };
+  box.innerHTML = sorted.map(p => {
+    const open = PLAN_OPEN.has(p.id), end = planDay(p.start, p.days.length - 1), n = p.days.reduce((s, d) => s + (d.items || []).length, 0);
+    return `<div class="item place ${open ? 'open' : ''}" data-trip="${esc(p.id)}"><div class="item-head" data-tp-toggle="${esc(p.id)}"><div class="title"><span class="chev">${open ? '▾' : '▸'}</span> ${esc(p.title.en || p.title.zh || 'New trip')}${p.title.zh && p.title.en && p.title.zh !== p.title.en ? ` <span class="tv-country-zh">${esc(p.title.zh)}</span>` : ''} <span class="hint" style="display:inline">· ${esc(p.start || '?')} → ${esc(end || '?')} · ${p.days.length} day${p.days.length === 1 ? '' : 's'}, ${n} item${n === 1 ? '' : 's'}</span></div>
+        <div class="tools"><a class="btn sm" href="plan.html#trip=${encodeURIComponent(p.id)}" target="_blank" title="Open on plan.html (after publishing)">↗</a><button type="button" class="btn sm danger" data-tp-deltrip="${esc(p.id)}" title="Delete this trip">✕</button></div></div>
+      <div class="pbody" ${open ? '' : 'hidden'}>${open ? `${biField('Trip title', p, 'title')}
+        <div class="row" style="grid-template-columns:200px 1fr;align-items:start"><div class="field"><label>Start date</label><input type="date" data-tp-start="${esc(p.id)}" value="${esc(p.start || '')}"></div>${field('Note', p, 'note', 'textarea', '', 'rows="2" placeholder="Optional: what the trip is about, who comes along …"')}</div>
+        ${p.days.map((d, di) => { d.items ||= []; d.title ||= { en: '', zh: '' }; const date = planDay(p.start, di);
+          return `<div class="tp-day"><div class="tp-day-h"><b>Day ${di + 1}</b><span class="hint">${esc(planWd(date))}</span>${bind(d.title, 'en', 'text', 'placeholder="Day title (optional), e.g. Old town"')}${bind(d.title, 'zh', 'text', 'placeholder="当天标题（可选）"')}<button type="button" class="btn sm danger" data-tp-delday="${esc(p.id)}|${di}" title="Remove this day">✕</button></div>
+            ${d.items.map((it, ii) => itemHtml(it, p, di, ii)).join('') || '<p class="hint" style="margin:0.3rem 0">Nothing planned yet.</p>'}
+            <div class="tp-add"><span class="hint">Add:</span>${PLAN_KINDS.map(([k, l]) => `<button type="button" class="tagbtn" data-tp-add="${esc(p.id)}|${di}|${k}">${l}</button>`).join('')}</div></div>`; }).join('')}
+        <div class="toolbar"><button type="button" class="btn sm" data-tp-addday="${esc(p.id)}">+ Add a day</button></div>` : ''}</div></div>`;
+  }).join('') || '<p class="hint">No trips yet. Press <b>+ New trip</b>.</p>';
+  wireBindings(box);
+  const findTrip = id => T.plans.find(p => p.id === id);
+  const findItem = id => { for (const p of T.plans) for (const [di, d] of p.days.entries()) { const ii = (d.items || []).findIndex(x => x.id === id); if (ii >= 0) return { p, d, di, ii, it: d.items[ii] }; } return null; };
+  const again = () => renderPlanList(T);
+  box.querySelectorAll('[data-tp-toggle]').forEach(h => h.onclick = e => { if (e.target.closest('.tools')) return; const id = h.dataset.tpToggle; PLAN_OPEN.has(id) ? PLAN_OPEN.delete(id) : PLAN_OPEN.add(id); again(); });
+  box.querySelectorAll('[data-tp-deltrip]').forEach(b => b.onclick = () => {
+    if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Delete?'; setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = '✕'; } }, 2500); return; }
+    T.plans.splice(T.plans.indexOf(findTrip(b.dataset.tpDeltrip)), 1); markDirty(); again(); renderNavCounts();
+  });
+  box.querySelectorAll('[data-tp-start]').forEach(inp => inp.onchange = () => { const p = findTrip(inp.dataset.tpStart); if (/^\d{4}-\d{2}-\d{2}$/.test(inp.value)) { p.start = inp.value; markDirty(); again(); } });
+  box.querySelectorAll('[data-tp-addday]').forEach(b => b.onclick = () => { findTrip(b.dataset.tpAddday).days.push({ title: { en: '', zh: '' }, items: [] }); markDirty(); again(); });
+  box.querySelectorAll('[data-tp-delday]').forEach(b => b.onclick = () => {
+    const [id, di] = b.dataset.tpDelday.split('|'), p = findTrip(id);
+    if (p.days.length === 1) return toast('A trip needs at least one day.', true);
+    if (p.days[+di].items.length && !b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Remove day?'; setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = '✕'; } }, 2500); return; }
+    p.days.splice(+di, 1); markDirty(); again();
+  });
+  box.querySelectorAll('[data-tp-add]').forEach(b => b.onclick = () => { const [id, di, k] = b.dataset.tpAdd.split('|'); findTrip(id).days[+di].items.push(planItem(k)); markDirty(); again(); });
+  box.querySelectorAll('[data-tp-kind]').forEach(s => s.onchange = () => { const f = findItem(s.dataset.tpKind); setPlanKind(f.it, s.value); markDirty(); again(); });
+  box.querySelectorAll('[data-tp-mv]').forEach(b => b.onclick = () => {
+    const [id, act] = b.dataset.tpMv.split('|'), f = findItem(id); if (!f) return;
+    const { p, d, di, ii, it } = f;
+    if (act === 'del') { d.items.splice(ii, 1); [...PLAN_RES.keys()].filter(k => k.startsWith(id + '|')).forEach(k => PLAN_RES.delete(k)); }
+    if (act === 'up') { if (ii > 0) [d.items[ii - 1], d.items[ii]] = [d.items[ii], d.items[ii - 1]]; else if (di > 0) { d.items.splice(ii, 1); p.days[di - 1].items.push(it); } }
+    if (act === 'down') { if (ii < d.items.length - 1) [d.items[ii + 1], d.items[ii]] = [d.items[ii], d.items[ii + 1]]; else if (di < p.days.length - 1) { d.items.splice(ii, 1); p.days[di + 1].items.unshift(it); } }
+    markDirty(); again();
+  });
+  const doFind = async key => {
+    const [id, fieldKey] = key.split('|'), f = findItem(id), inp = box.querySelector(`[data-tp-q="${CSS.escape(key)}"]`), q = inp?.value.trim(); if (!f || !q) return;
+    const btn = box.querySelector(`[data-tp-find="${CSS.escape(key)}"]`); if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    PLAN_Q.set(key, q);
+    try { PLAN_RES.set(key, await planSearch(q, planRef(f.p, id), f.it.kind)); } catch (e) { toast('Search failed: ' + e.message, true); }
+    again();
+  };
+  box.querySelectorAll('[data-tp-find]').forEach(b => b.onclick = () => doFind(b.dataset.tpFind));
+  box.querySelectorAll('[data-tp-q]').forEach(inp => inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); doFind(inp.dataset.tpQ); } });
+  box.querySelectorAll('[data-tp-pick]').forEach(b => b.onclick = () => {
+    const parts = b.dataset.tpPick.split('|'), i = +parts.pop(), key = parts.join('|'), [id, fieldKey] = parts, f = findItem(id), r = PLAN_RES.get(key)?.[i]; if (!f || !r) return;
+    const o = fieldKey ? (f.it[fieldKey] ||= planLoc()) : f.it;
+    o.name = { en: r.name.en || o.name?.en || '', zh: r.name.zh || o.name?.zh || '' }; o.lat = Math.round(r.lat * 1e5) / 1e5; o.lon = Math.round(r.lon * 1e5) / 1e5; o.cc = r.cc || o.cc || '';
+    PLAN_RES.delete(key); PLAN_Q.delete(key); markDirty(); again();
+  });
+  box.querySelectorAll('[data-tp-iata]').forEach(inp => inp.onchange = () => {
+    const [id, fieldKey] = inp.dataset.tpIata.split('|'), f = findItem(id), ap = planAirport(inp.value);
+    if (!inp.value.trim()) { f.it[fieldKey] = planLoc(); markDirty(); again(); return; }
+    if (!ap) return toast(`No airport with the code ${inp.value.trim().toUpperCase()}.`, true);
+    f.it[fieldKey] = ap; markDirty(); again();
+  });
+  // a flight number you have flown before fills in the airports
+  box.querySelectorAll('[data-tp-no]').forEach(inp => inp.addEventListener('change', () => {
+    const f = findItem(inp.dataset.tpNo); if (!f || f.it.kind !== 'flight' || (f.it.from?.iata && f.it.to?.iata)) return;
+    const prev = (T.flights || []).findLast(x => flNo(x.no) === flNo(inp.value) && x.from?.iata && x.to?.iata); if (!prev) return;
+    f.it.from = planAirport(prev.from.iata) || f.it.from; f.it.to = planAirport(prev.to.iata) || f.it.to;
+    if (!f.it.dep && prev.dep) f.it.dep = String(prev.dep).replace(/\+\d$/, ''); markDirty(); again(); toast(`Airports filled in from your earlier ${flNo(inp.value)}.`);
+  }));
+}
 function viewFlights(v) {
   if (!FP.data) { viewFootprints(v, `<h2>Flights</h2><p class="lead">The flight log is stored encrypted together with the footprints and opens with the same <b>travel password</b> on <a href="flights.html" target="_blank">flights.html</a>.</p>`); return; }
   const T = FP.data; T.flights ||= [];
@@ -3413,13 +3575,14 @@ function viewFootprints(v, introOverride) {
     <span class="sort-seg" id="tv-sort" role="group" aria-label="Sort"><button type="button" data-psort="name" class="${PLACE_SORT === 'name' ? 'on' : ''}">A–Z</button><button type="button" data-psort="date" class="${PLACE_SORT === 'date' ? 'on' : ''}">Newest first</button></span>
     <button class="btn sm" type="button" id="tv-open-all">Expand all</button><button class="btn sm" type="button" id="tv-close-all">Collapse all</button></div>
   <div id="tv-places"></div>
-  <div class="tv-folds">${foldCard('pages', 'Page titles &amp; introductions', 'travel.html, academic.html and flights.html', `<p class="hint" style="margin-bottom:0.8rem">One list of places for two pages. <a href="travel.html" target="_blank">travel.html</a> shows everything and opens only with the <b>travel password</b> (share it with family and friends; it gives no access to this manager). Entries ticked as <b>academic visit</b> are also published, in clear, on the public <a href="academic.html" target="_blank">academic.html</a>.</p>
+  <div class="tv-folds">${foldCard('pages', 'Page titles &amp; introductions', 'travel, academic, flights and trip planner', `<p class="hint" style="margin-bottom:0.8rem">One list of places for two pages. <a href="travel.html" target="_blank">travel.html</a> shows everything and opens only with the <b>travel password</b> (share it with family and friends; it gives no access to this manager). Entries ticked as <b>academic visit</b> are also published, in clear, on the public <a href="academic.html" target="_blank">academic.html</a>.</p>
     <p class="hint" style="margin-bottom:0.8rem">Titles: select words, then press B (bold) or I (italic, in the page’s accent colour); with nothing selected it applies to the whole title. The text box shows them as **bold** and *italic*.</p>
     <div class="row tf-row">
       <div><h3 style="font-size:1.1rem">Travel page (private)</h3>${titleField('Title', T, 'title')}${biField('Introduction', T, 'intro', 'textarea')}</div>
       <div><h3 style="font-size:1.1rem">Academic page (public)</h3>${titleField('Title', T, 'pub_title')}${biField('Introduction', T, 'pub_intro', 'textarea')}</div>
-      <div><h3 style="font-size:1.1rem">Flights page (private)</h3>${titleField('Title', T, 'fl_title')}</div></div>
-    <div class="toolbar"><a class="btn sm" href="travel.html" target="_blank">Open travel.html ↗</a><a class="btn sm" href="academic.html" target="_blank">Open academic.html ↗</a><a class="btn sm" href="flights.html" target="_blank">Open flights.html ↗</a></div>`)}
+      <div><h3 style="font-size:1.1rem">Flights page (private)</h3>${titleField('Title', T, 'fl_title')}</div>
+      <div><h3 style="font-size:1.1rem">Trip planner (private)</h3>${titleField('Title', T, 'plan_title')}</div></div>
+    <div class="toolbar"><a class="btn sm" href="travel.html" target="_blank">Open travel.html ↗</a><a class="btn sm" href="academic.html" target="_blank">Open academic.html ↗</a><a class="btn sm" href="flights.html" target="_blank">Open flights.html ↗</a><a class="btn sm" href="plan.html" target="_blank">Open plan.html ↗</a></div>`)}
   ${(T.flights || []).length ? foldCard('flmatch', 'Link flights to places', `${T.places.filter(p => (p.flights || []).length).length} places linked · ${[...flightSuggestionMap(T).values()].reduce((n, l) => n + l.length, 0)} suggestions`, `<p class="hint" style="margin-bottom:0.6rem">Each place can list the flights that took you there or away; travel.html shows them on the place and they open the flight on flights.html, which links back. A flight belongs to the city of each of its airports: the nearest place within ${AIRPORT_CITY_KM} km (PEK and PKX → Beijing, KIX → Osaka). New flights are linked this way when you add them; below are the flights not linked yet. Untick any that are wrong, then link. One-off links can also be added in each place's <b>Flights</b> field.</p><div id="tv-flmatch"></div>`) : ''}
   ${foldCard('check', 'Check all tags', '5A, national parks, World Heritage', `<div class="toolbar" style="margin:0"><button class="btn sm primary" id="tv-check">✓ Check all tags</button>
     <span class="hint" style="margin:0">Re-checks every saved sight: 5A against the official list (358, May 2025), national parks against the official rule, and World Heritage / 5A-area grouping. Tags you set by hand are checked too.</span></div>
