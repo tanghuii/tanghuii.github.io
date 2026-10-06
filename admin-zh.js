@@ -84,7 +84,7 @@ window.ADMIN_ZH = {
   'A month (2025-07), a year or a range (2018-2025, 2025 - present). Several visits: separate with “;”, e.g. 2019-05; 2023-08.': '月份（2025-07）、年份或区间（2018-2025、2025 - present）。多次访问用“;”分隔，如 2019-05; 2023-08。',
   'Academic': '学术', 'Personal': '个人', 'Presentation': '报告', 'Purpose': '目的', 'Icon (map marker and list)': '图标（地图标记与列表）', 'Other (type it in)…': '其他（自行输入）…',
   'Academic page (public)': '学术页（公开）', 'Travel page (private)': '旅行页（私密）', 'Open academic.html ↗': '打开 academic.html ↗', 'Open travel.html ↗': '打开 travel.html ↗',
-  'Trip plans': '旅行规划', 'Trip planner (private)': '旅行规划（私密）', 'Open plan.html ↗': '打开 plan.html ↗', 'travel, academic, flights and trip planner': '足迹、学术、飞行与旅行规划',
+  'Trip plans': '旅行规划', 'Trip planner (public)': '旅行规划（公开）', 'Open plan.html ↗': '打开 plan.html ↗', 'travel, academic, flights and trip planner': '足迹、学术、飞行与旅行规划',
   '+ New trip': '+ 新建行程', 'New trip': '新行程', 'Trip title': '行程标题', 'Start date': '出发日期', 'Note': '备注', '+ Add a day': '+ 添加一天', 'Nothing planned yet.': '还没有安排。', 'Add:': '添加：',
   'City': '城市', 'Sight': '景点', 'Stay': '住宿', 'Food': '美食', 'Other place': '其他地点', 'Flight': '航班', 'Train': '火车', 'Bus': '大巴', 'Car / taxi': '汽车 / 打车', 'Ferry': '轮渡', 'Walk': '步行',
   'From': '出发', 'To': '到达', 'Where': '地点', 'Find': '查找', 'no location': '未定位', 'airport code': '机场代码', 'No trips yet. Press': '还没有行程。点击', 'Remove this day': '删除这一天', 'Delete this trip': '删除这个行程',
