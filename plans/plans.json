@@ -1162,10 +1162,10 @@
               "id": "ti-03fc3c418f",
               "kind": "bus",
               "time": "",
-              "no": "",
-              "dep": "16:00",
-              "arr": "19:15",
-              "note": "运营商、交通类型与两端车站以预订凭证为准；若 Oriente：红线，若 Sete Rios：蓝线 Jardim Zoológico。13:30–14:00 回酒店取行李，15:15 前到站候车",
+              "no": "FlixBus",
+              "dep": "15:30",
+              "arr": "19:00",
+              "note": "FlixBus，约 3.5 小时；到达时间、票价与两端车站以车票为准（到达选 Porto Campanhã TIC）。若 Oriente：蓝线转红线约 30–35 分钟；若 Sete Rios：蓝线 Jardim Zoológico 约 10 分钟。14:00 回酒店取行李，14:15 出发，15:00 前到站候车",
               "from": {
                 "name": {
                   "en": "Lisboa Oriente",
