@@ -667,13 +667,13 @@
               "kind": "bus",
               "time": "",
               "no": "Aerobús",
-              "dep": "14:00",
+              "dep": "14:15",
               "arr": "",
-              "note": "约 14:00 从酒店取行李出发，目标 15:00 到 BCN",
+              "note": "只背包、不回酒店：博恩区逛完步行约 15–20 分钟到加泰罗尼亚广场，约 14:15 上 Aerobús A1（Vueling 在 T1），车程约 35 分钟，目标 15:00 到 BCN",
               "from": {
                 "name": {
-                  "en": "Hotel, Plaça Catalunya (Barcelona)",
-                  "zh": "巴塞罗那酒店（加泰罗尼亚广场一带）"
+                  "en": "Plaça de Catalunya (Aerobús stop)",
+                  "zh": "加泰罗尼亚广场（Aerobús 站）"
                 },
                 "lat": 41.387,
                 "lon": 2.17,
