@@ -4,7 +4,7 @@
     "en": "Trip planner",
     "zh": "旅行规划"
   },
-  "updated": "2026-10-07",
+  "updated": "2026-11-24",
   "plans": [
     {
       "id": "tp-df694ae602",
@@ -787,10 +787,10 @@
               "id": "ti-a487c262ef",
               "kind": "bus",
               "time": "",
-              "no": "",
-              "dep": "06:30",
-              "arr": "10:30",
-              "note": "FlixBus / Rede Expressos 直达，约 3 小时 40 分；目标 06:00–07:00 出发、11:00 前到；出发站按车票地址核对",
+              "no": "Rede Expressos",
+              "dep": "08:15",
+              "arr": "11:55",
+              "note": "Rede Expressos 直达，约 3 小时 40 分；Sete Rios 发车（地铁蓝线 Jardim Zoológico，自由大道沿线约 10 分钟）；到达时间以车票为准，车上带点吃的",
               "from": {
                 "name": {
                   "en": "Lisboa Sete Rios coach station",
@@ -813,7 +813,7 @@
             {
               "id": "ti-2f8a4ce42c",
               "kind": "sight",
-              "time": "11:00",
+              "time": "12:15",
               "note": "崖顶步道、多个观景点，重点拍岩柱与海蚀洞；从长途站短程打车",
               "name": {
                 "en": "Ponta da Piedade",
@@ -826,7 +826,7 @@
             {
               "id": "ti-14611024ae",
               "kind": "sight",
-              "time": "12:30",
+              "time": "13:30",
               "note": "岩壁间的小海湾，阶梯约 200 级，下沙滩看开放情况与体力",
               "name": {
                 "en": "Praia do Camilo",
@@ -839,7 +839,7 @@
             {
               "id": "ti-0545f91cfd",
               "kind": "sight",
-              "time": "13:15",
+              "time": "14:15",
               "note": "金色岩壁与海中岩石；含停留共约 1.5 小时",
               "name": {
                 "en": "Praia Dona Ana",
@@ -852,8 +852,8 @@
             {
               "id": "ti-5c22acb3ba",
               "kind": "food",
-              "time": "14:00",
-              "note": "回老城午餐；Praça Infante、Santa Maria 与堡垒外观，河边短逛",
+              "time": "15:00",
+              "note": "回老城午餐（偏晚）；Praça Infante、Santa Maria 与堡垒外观，河边短逛；日落约 17:20，之后步行约 5 分钟到长途站",
               "name": {
                 "en": "Lagos old town",
                 "zh": "拉各斯老城"
@@ -866,10 +866,10 @@
               "id": "ti-878393934b",
               "kind": "bus",
               "time": "",
-              "no": "",
-              "dep": "17:30",
-              "arr": "21:00",
-              "note": "回程约 3 小时 30 分；16:00 后取餐食补给，提前去长途站候车；不在 Lagos 过夜",
+              "no": "Rede Expressos",
+              "dep": "17:45",
+              "arr": "21:25",
+              "note": "Rede Expressos 直达 Sete Rios，约 3 小时 40 分；17:30 前到长途站候车；回程蓝线回酒店；不在 Lagos 过夜",
               "from": {
                 "name": {
                   "en": "Lagos coach station",
@@ -1162,10 +1162,10 @@
               "id": "ti-03fc3c418f",
               "kind": "bus",
               "time": "",
-              "no": "",
-              "dep": "16:00",
-              "arr": "19:15",
-              "note": "运营商、交通类型与两端车站以预订凭证为准；若 Oriente：红线，若 Sete Rios：蓝线 Jardim Zoológico。13:30–14:00 回酒店取行李，15:15 前到站候车",
+              "no": "FlixBus",
+              "dep": "15:30",
+              "arr": "19:00",
+              "note": "FlixBus，约 3.5 小时；到达时间、票价与两端车站以车票为准（到达选 Porto Campanhã TIC）。若 Oriente：蓝线转红线约 30–35 分钟；若 Sete Rios：蓝线 Jardim Zoológico 约 10 分钟。14:00 回酒店取行李，14:15 出发，15:00 前到站候车",
               "from": {
                 "name": {
                   "en": "Lisboa Oriente",
