@@ -1165,7 +1165,7 @@
               "no": "FlixBus",
               "dep": "15:30",
               "arr": "19:00",
-              "note": "FlixBus，约 3.5 小时；到达时间、票价与两端车站以车票为准（到达选 Porto Campanhã TIC）。若 Oriente：蓝线转红线约 30–35 分钟；若 Sete Rios：蓝线 Jardim Zoológico 约 10 分钟。14:00 回酒店取行李，14:15 出发，15:00 前到站候车",
+              "note": "FlixBus，约 3.5 小时；到达时间、票价与两端车站以车票为准（到达选 Porto Campanhã TIC）。只背包、不回酒店，逛完直接去车站：若 Oriente，约 14:25 从 Baixa-Chiado 坐绿线到 Alameda 换红线，约 30 分钟；若 Sete Rios，约 14:45 从 Baixa-Chiado 坐蓝线直达 Jardim Zoológico，约 12 分钟。15:00–15:10 到站候车",
               "from": {
                 "name": {
                   "en": "Lisboa Oriente",
